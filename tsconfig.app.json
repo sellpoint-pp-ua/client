@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "ESNext",
+    "target": "ESNext",
+
+    "strict": true,
+    "verbatimModuleSyntax": false,
+    "erasableSyntaxOnly": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+
+    "jsx": "react-jsx",
+    "moduleResolution": "bundler",
+    "types": ["vite/client"]
+  },
+  "include": ["src"]
+}
