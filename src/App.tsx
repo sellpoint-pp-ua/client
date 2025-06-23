@@ -2,23 +2,24 @@ import { useState, useEffect } from 'react';
 import reactLogo from './assets/react.svg';
 import viteLogo from '/vite.svg';
 import './App.css';
-import { getCategories } from './services/api';
-import { Category } from './types/Category';
 
-/// <summary>
-/// Root component of the React application.
-/// Fetches categories on mount and renders header, counter, and info.
-/// </summary>
+import { getCategories } from './services/api';
+import type { Category } from './types/Category';
+
+/**
+ * Root component of the React application.
+ * Fetches categories on mount and renders header, counter, and information.
+ *
+ * @returns JSX element representing the application UI.
+ */
 function App() {
-  /// <summary>
-  /// State for the counter button.
-  /// </summary>
+  /** Count state for the counter button. */
   const [count, setCount] = useState<number>(0);
 
-  /// <summary>
-  /// Fetches category list once when component mounts.
-  /// Logs result or error to console.
-  /// </summary>
+  /**
+   * Fetches the list of categories when the component mounts.
+   * Logs the result or error to the console.
+   */
   useEffect(() => {
     getCategories()
       .then((categories: Category[]) => {
@@ -29,12 +30,12 @@ function App() {
       });
   }, []);
 
-  /// <summary>
-  /// Renders application UI including logos, title, counter, and docs link.
-  /// </summary>
+  /**
+   * Renders the application UI, including header, title, counter, and docs link.
+   */
   return (
     <>
-      {/* Header logos linking to Vite and React docs */}
+      {/* Header logos linking to Vite and React documentation */}
       <div>
         <a href="https://vite.dev" target="_blank" rel="noopener noreferrer">
           <img src={viteLogo} className="logo" alt="Vite logo" />

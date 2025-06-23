@@ -1,20 +1,19 @@
-/// <summary>
-/// Represents a product feature with a typed value, its type description, and validation rules.
-/// </summary>
+/**
+ * Represents a product feature with a typed value, its type description,
+ * and a collection of validation rules.
+ *
+ * @template T Runtime type of the feature value.
+ */
 export interface ProductFeatureDto<T> {
-  /// <summary>
-  /// The value of the feature.
-  /// </summary>
+  /** The actual value of the feature. */
   value: T;
 
-  /// <summary>
-  /// The type of the value as a string (e.g., "string", "number", "boolean").
-  /// </summary>
+  /** String representation of the value type (e.g., `"string"`, `"number"`, `"boolean"`). */
   type: string;
 
-  /// <summary>
-  /// A map of validation rules that apply to the feature's value.
-  /// Key – rule name, value – its parameter or message.
-  /// </summary>
+  /**
+   * Validation rules that must hold for {@link value}.
+   * Key – rule name, value – its parameter or message.
+   */
   rules: Record<string, string>;
 }

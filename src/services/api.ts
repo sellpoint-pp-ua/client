@@ -2,18 +2,21 @@ import type { Category } from '../types/Category';
 import type { Product } from '../types/Product';
 import type { ProductFilterRequest } from '../types/ProductFilterRequest';
 
-/// <summary>
-/// Base URL for all API requests.  
-/// Uses VITE_API_BASE_URL from environment or defaults to local dev URL.
-/// </summary>
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:7142';
+/**
+ * Base URL for all API requests.
+ * Uses the `VITE_API_BASE_URL` environment variable or falls back to local dev URL.
+ */
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ?? 'https://localhost:7142';
 
-/// <summary>
-/// Returns parsed JSON on success, throws Error otherwise.
-/// </summary>
-/// <typeparam name="T">Expected response type.</typeparam>
-/// <param name="response">Fetch API Response object.</param>
-/// <returns>Parsed JSON of type T.</returns>
+/**
+ * Parses a fetch response as JSON on success, throws an Error otherwise.
+ *
+ * @template T Expected response type.
+ * @param response Fetch API Response object.
+ * @returns Parsed JSON object of type {@link T}.
+ * @throws Error when {@link response.ok} is `false`.
+ */
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const message = await response.text();
@@ -22,36 +25,55 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json() as Promise<T>;
 }
 
-/* ==============  CATEGORIES  ============== */
+/* --------------------------------------------------------------------------
+ *  CATEGORIES
+ * -------------------------------------------------------------------------*/
 
-/// <summary>Retrieves every category.</summary>
+/** Retrieves a full list of product categories. */
 export async function getCategories(): Promise<Category[]> {
-  return handleResponse<Category[]>(await fetch(`${API_BASE_URL}/categories`));
+  return handleResponse<Category[]>(
+    await fetch(`${API_BASE_URL}/categories`)
+  );
 }
 
-/// <summary>Retrieves a single category by id.</summary>
-/// <param name="id">Category identifier.</param>
+/**
+ * Retrieves a single category by identifier.
+ *
+ * @param id Category identifier.
+ */
 export async function getCategoryById(id: string): Promise<Category> {
-  return handleResponse<Category>(await fetch(`${API_BASE_URL}/categories/${id}`));
+  return handleResponse<Category>(
+    await fetch(`${API_BASE_URL}/categories/${id}`)
+  );
 }
 
-/* ==============  PRODUCTS  ============== */
+/* --------------------------------------------------------------------------
+ *  PRODUCTS
+ * -------------------------------------------------------------------------*/
 
-/// <summary>Retrieves every product.</summary>
+/** Retrieves a full list of products. */
 export async function getProducts(): Promise<Product[]> {
-  return handleResponse<Product[]>(await fetch(`${API_BASE_URL}/products`));
+  return handleResponse<Product[]>(
+    await fetch(`${API_BASE_URL}/products`)
+  );
 }
 
-/// <summary>Retrieves a single product by id.</summary>
-/// <param name="id">Product identifier.</param>
+/**
+ * Retrieves a single product by identifier.
+ *
+ * @param id Product identifier.
+ */
 export async function getProductById(id: string): Promise<Product> {
-  return handleResponse<Product>(await fetch(`${API_BASE_URL}/products/${id}`));
+  return handleResponse<Product>(
+    await fetch(`${API_BASE_URL}/products/${id}`)
+  );
 }
 
-/// <summary>
-/// Sends filter criteria and returns matching products.
-/// </summary>
-/// <param name="filterRequest">Filter parameters.</param>
+/**
+ * Sends filter criteria to the server and returns products that match them.
+ *
+ * @param filterRequest Filter parameters (price range, categories, features, etc.).
+ */
 export async function filterProducts(
   filterRequest: ProductFilterRequest
 ): Promise<Product[]> {

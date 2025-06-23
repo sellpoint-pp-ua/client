@@ -1,52 +1,34 @@
 import type { ProductFeatureDto } from './ProductFeatureDto';
 import type { ProductMedia } from './ProductMedia';
 
-/// <summary>
-/// Represents a product stored in the system.
-/// </summary>
+/**
+ * Represents a product stored in the system.
+ */
 export interface Product {
-  /// <summary>
-  /// Unique identifier of the product (e.g., MongoDB ObjectId).
-  /// </summary>
+  /** Unique identifier of the product (e.g., MongoDB ObjectId as a string). */
   id: string;
 
-  /// <summary>
-  /// Human-friendly unique identifier shown to users.
-  /// </summary>
+  /** Human-friendly unique identifier shown to users. */
   uniqueId: string;
 
-  /// <summary>
-  /// Name of the product (max 200 characters).
-  /// </summary>
+  /** Name of the product (maximum 200 characters). */
   name: string;
 
-  /// <summary>
-  /// Category or type of the product.
-  /// </summary>
+  /** Category or type of the product. */
   productType: string;
 
-  /// <summary>
-  /// Optional textual description in markdown or plain text.
-  /// </summary>
+  /** Optional textual description in markdown or plain text. */
   description?: string;
 
-  /// <summary>
-  /// Map of feature keys to typed feature definitions.
-  /// </summary>
+  /** Map of feature keys to typed feature definitions. */
   features: Record<string, ProductFeatureDto<unknown>>;
 
-  /// <summary>
-  /// Collection of media files (images, videos) attached to the product.
-  /// </summary>
+  /** Collection of media files (images, videos) attached to the product. */
   media?: ProductMedia[];
 
-  /// <summary>
-  /// Identifier of the seller who owns this product.
-  /// </summary>
+  /** Identifier of the seller who owns this product. */
   sellerId: number;
 
-  /// <summary>
-  /// Inventory status, e.g., 'InStock', 'OutOfStock', 'Limited'.
-  /// </summary>
+  /** Inventory status, e.g., `'InStock'`, `'OutOfStock'`, `'Limited'`. */
   quantityStatus?: string;
 }

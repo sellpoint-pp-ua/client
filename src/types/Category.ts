@@ -1,21 +1,17 @@
-/// <summary>
-/// Represents a product category in the system.
-/// Categories can be nested hierarchically via the optional <c>parentId</c>.
-/// </summary>
+/**
+ * Represents a product category in the system.
+ * Categories may be nested hierarchically via the optional {@link parentId}.
+ */
 export interface Category {
-  /// <summary>
-  /// Unique identifier of the category (e.g., MongoDB ObjectId as a string).
-  /// </summary>
+  /** Unique identifier of the category (e.g., MongoDB ObjectId as a string). */
   id: string;
 
-  /// <summary>
-  /// Human-readable name of the category (3 – 100 characters).
-  /// </summary>
+  /** Human-readable name of the category (3–100 characters). */
   name: string;
 
-  /// <summary>
-  /// Optional identifier of the parent category.
-  /// Use <c>null</c> or omit when the category is a root node.
-  /// </summary>
+  /**
+   * Optional identifier of the parent category.
+   * Omit or set to `null` if the category is a root node.
+   */
   parentId?: string;
 }

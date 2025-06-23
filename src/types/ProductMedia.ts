@@ -1,24 +1,24 @@
-/// <summary>
-/// Literal-union of supported media types attached to a product.
-/// </summary>
+/**
+ * Literal-union of supported media types attached to a product.
+ */
 export type MediaType = 'Image' | 'Video';
 
-/// <summary>
-/// Represents a media asset (image, video, etc.) associated with a product.
-/// </summary>
+/**
+ * Represents a media asset (image, video, etc.) associated with a product.
+ */
 export interface ProductMedia {
-  /// <summary>Unique identifier of the media item (e.g., MongoDB ObjectId).</summary>
+  /** Unique identifier of the media item (e.g., MongoDB ObjectId). */
   id: string;
 
-  /// <summary>Identifier of the product this media belongs to.</summary>
+  /** Identifier of the product this media belongs to. */
   productId: string;
 
-  /// <summary>Public URL where the media can be accessed.</summary>
+  /** Public URL where the media can be accessed. */
   url: string;
 
-  /// <summary>Type of the media (image or video).</summary>
+  /** Type of the media (image or video). */
   type: MediaType;
 
-  /// <summary>Display order in the product gallery (lower value = shown earlier).</summary>
+  /** Display order in the product gallery (lower value = shown earlier). */
   order: number;
 }

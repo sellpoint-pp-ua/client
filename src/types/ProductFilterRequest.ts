@@ -1,31 +1,23 @@
-/// <summary>
-/// Request model used to filter products returned by the API.
-/// Provide any combination of criteria; omitted fields are ignored by the server.
-/// </summary>
+/**
+ * Request model used to filter products returned by the API.
+ * Provide any combination of criteria; omitted fields are ignored by the server.
+ */
 export interface ProductFilterRequest {
-  /// <summary>
-  /// Optional list of category identifiers included in the search scope.
-  /// </summary>
+  /** Optional list of category identifiers included in the search scope. */
   categoryIds?: string[];
 
-  /// <summary>
-  /// Optional lower price bound (inclusive), expressed in store currency.
-  /// </summary>
+  /** Optional lower price bound (inclusive), expressed in store currency. */
   priceMin?: number;
 
-  /// <summary>
-  /// Optional upper price bound (inclusive), expressed in store currency.
-  /// </summary>
+  /** Optional upper price bound (inclusive), expressed in store currency. */
   priceMax?: number;
 
-  /// <summary>
-  /// Optional free-text search query applied to product name / description.
-  /// </summary>
+  /** Optional free-text search query applied to product name or description. */
   search?: string;
 
-  /// <summary>
-  /// Optional map of product feature keys to expected values
-  /// (e.g., { "color": "Blue", "size": 42 }).
-  /// </summary>
+  /**
+   * Optional map of product feature keys to expected values
+   * (e.g., `{ "color": "Blue", "size": 42 }`).
+   */
   features?: Record<string, unknown>;
 }
