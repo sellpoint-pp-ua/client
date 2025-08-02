@@ -1,0 +1,38 @@
+name: Build and Deploy Client
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        run: |
+          docker build -t pashhun/app-client-image .
+          docker push pashhun/app-client-image
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ubuntu
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            docker stop app-client-container || true
+            docker rm app-client-container || true
+            docker pull pashhun/app-client-image
+            docker run -d -p 3000:3000 --restart=always --name app-client-container pashhun/app-client-image
