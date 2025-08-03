@@ -1,12 +1,112 @@
-import { Metadata } from 'next'
-import Link from 'next/link'
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Реєстрація | Sell Point',
-  description: 'Створіть новий акаунт на Sell Point',
-}
+import Link from 'next/link'
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function RegisterPage() {
+  const { register, isLoading, error, clearError } = useAuth();
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+    agreeTerms: false
+  });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
+    // Clear API error when user starts typing
+    if (error) {
+      clearError();
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'Ім\'я обов\'язкове';
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Прізвище обов\'язкове';
+    }
+
+    if (!formData.email.trim()) {
+      errors.email = 'Email обов\'язковий';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      errors.email = 'Введіть коректний email';
+    }
+
+    if (!formData.phone.trim()) {
+      errors.phone = 'Номер телефону обов\'язковий';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Пароль обов\'язковий';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Пароль має бути мінімум 8 символів';
+    }
+
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Підтвердження пароля обов\'язкове';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Паролі не співпадають';
+    }
+
+    if (!formData.agreeTerms) {
+      errors.agreeTerms = 'Необхідно погодитися з умовами використання';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+      
+      await register({
+        fullName,
+        email: formData.email,
+        password: formData.password
+      });
+    } catch (err) {
+      // Error is handled by useAuth hook
+      console.error('Registration failed:', err);
+    }
+  };
+
+  const getInputClassName = (fieldName: string) => {
+    const baseClass = "mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm";
+    const errorClass = validationErrors[fieldName] ? "border-red-300" : "border-gray-300";
+    return `${baseClass} ${errorClass}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -25,7 +125,13 @@ export default function RegisterPage() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -38,9 +144,14 @@ export default function RegisterPage() {
                   type="text"
                   autoComplete="given-name"
                   required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className={getInputClassName('firstName')}
                   placeholder="Ваше ім&apos;я"
                 />
+                {validationErrors.firstName && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.firstName}</p>
+                )}
               </div>
               
               <div>
@@ -53,9 +164,14 @@ export default function RegisterPage() {
                   type="text"
                   autoComplete="family-name"
                   required
-                  className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className={getInputClassName('lastName')}
                   placeholder="Ваше прізвище"
                 />
+                {validationErrors.lastName && (
+                  <p className="mt-1 text-sm text-red-600">{validationErrors.lastName}</p>
+                )}
               </div>
             </div>
             
@@ -69,9 +185,14 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={getInputClassName('email')}
                 placeholder="your@email.com"
               />
+              {validationErrors.email && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+              )}
             </div>
             
             <div>
@@ -84,9 +205,14 @@ export default function RegisterPage() {
                 type="tel"
                 autoComplete="tel"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className={getInputClassName('phone')}
                 placeholder="+380"
               />
+              {validationErrors.phone && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
+              )}
             </div>
             
             <div>
@@ -99,9 +225,14 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={getInputClassName('password')}
                 placeholder="Мінімум 8 символів"
               />
+              {validationErrors.password && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+              )}
             </div>
             
             <div>
@@ -114,18 +245,25 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className={getInputClassName('confirmPassword')}
                 placeholder="Повторіть пароль"
               />
+              {validationErrors.confirmPassword && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+              )}
             </div>
           </div>
 
           <div className="flex items-center">
             <input
               id="agree-terms"
-              name="agree-terms"
+              name="agreeTerms"
               type="checkbox"
               required
+              checked={formData.agreeTerms}
+              onChange={handleInputChange}
               className="h-4 w-4 text-[#7B1FA2] focus:ring-[#7B1FA2] border-gray-300 rounded"
             />
             <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
@@ -139,13 +277,17 @@ export default function RegisterPage() {
               </Link>
             </label>
           </div>
+          {validationErrors.agreeTerms && (
+            <p className="text-sm text-red-600">{validationErrors.agreeTerms}</p>
+          )}
 
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#7B1FA2] hover:bg-[#6a1b8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7B1FA2]"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#7B1FA2] hover:bg-[#6a1b8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7B1FA2] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Створити акаунт
+              {isLoading ? 'Створення акаунту...' : 'Створити акаунт'}
             </button>
           </div>
         </form>

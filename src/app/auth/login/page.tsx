@@ -1,12 +1,79 @@
-import type { Metadata } from "next";
-import Link from "next/link";
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Вхід | Sell Point',
-  description: 'Увійдіть до свого акаунту на Sell Point',
-}
+import Link from "next/link";
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function LoginPage() {
+  const { login, isLoading, error, clearError } = useAuth();
+  const [formData, setFormData] = useState({
+    login: '',
+    password: '',
+    rememberMe: false
+  });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
+    // Clear API error when user starts typing
+    if (error) {
+      clearError();
+    }
+  };
+
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    if (!formData.login.trim()) {
+      errors.login = 'Email або логін обов\'язковий';
+    }
+
+    if (!formData.password) {
+      errors.password = 'Пароль обов\'язковий';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    try {
+      await login({
+        login: formData.login,
+        password: formData.password
+      });
+    } catch (err) {
+      // Error is handled by useAuth hook
+      console.error('Login failed:', err);
+    }
+  };
+
+  const getInputClassName = (fieldName: string) => {
+    const baseClass = "mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm";
+    const errorClass = validationErrors[fieldName] ? "border-red-300" : "border-gray-300";
+    return `${baseClass} ${errorClass}`;
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -25,21 +92,32 @@ export default function LoginPage() {
           </p>
         </div>
         
-        <form className="mt-8 space-y-6">
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
           <div className="space-y-4">
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
+              <label htmlFor="login" className="block text-sm font-medium text-gray-700">
+                Email або логін
               </label>
               <input
-                id="email"
-                name="email"
-                type="email"
+                id="login"
+                name="login"
+                type="text"
                 autoComplete="email"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
-                placeholder="Введіть ваш email"
+                value={formData.login}
+                onChange={handleInputChange}
+                className={getInputClassName('login')}
+                placeholder="Введіть ваш email або логін"
               />
+              {validationErrors.login && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.login}</p>
+              )}
             </div>
             
             <div>
@@ -52,9 +130,14 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="mt-1 appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm"
+                value={formData.password}
+                onChange={handleInputChange}
+                className={getInputClassName('password')}
                 placeholder="Введіть ваш пароль"
               />
+              {validationErrors.password && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+              )}
             </div>
           </div>
 
@@ -62,8 +145,10 @@ export default function LoginPage() {
             <div className="flex items-center">
               <input
                 id="remember-me"
-                name="remember-me"
+                name="rememberMe"
                 type="checkbox"
+                checked={formData.rememberMe}
+                onChange={handleInputChange}
                 className="h-4 w-4 text-[#7B1FA2] focus:ring-[#7B1FA2] border-gray-300 rounded"
               />
               <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
@@ -81,9 +166,10 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#7B1FA2] hover:bg-[#6a1b8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7B1FA2]"
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#7B1FA2] hover:bg-[#6a1b8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7B1FA2] disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Увійти
+              {isLoading ? 'Вхід...' : 'Увійти'}
             </button>
           </div>
         </form>
