@@ -106,7 +106,7 @@ export default function Header() {
         </Link>
 
         {/* Search Bar */}
-        <div className="flex w-[60%] items-center" ref={searchContainerRef}>
+        <div className="flex w-[60%] items-center" ref={searchContainerRef} style={{ marginLeft: '-8px' }}>
           <div className="relative flex w-full">
             <form onSubmit={handleSearchSubmit} className="flex w-full">
               <input
@@ -179,8 +179,15 @@ export default function Header() {
             <ShoppingCart className="h-6 w-6" />
             <span className="text-xs">Кошик</span>
           </Link>
+          {/* Auth Buttons */}
+          <Link href="/auth/login" className="rounded-lg bg-[#7B1FA2] px-4 py-2 text-white font-semibold hover:bg-[#6a1b8c] transition">
+            Увійти
+          </Link>
+          <Link href="/auth/register" className="rounded-lg bg-[#FFD700] px-4 py-2 text-gray-900 font-semibold hover:bg-[#ffd900]/90 transition">
+            Зареєструватися
+          </Link>
         </div>
       </div>
     </header>
   )
-} 
+}
