@@ -290,6 +290,15 @@ export default function RegisterPage() {
               {isLoading ? 'Створення акаунту...' : 'Створити акаунт'}
             </button>
           </div>
+          
+          <div className="text-center">
+            <p className="text-sm text-gray-600">
+              Вже маєте акаунт?{' '}
+              <Link href="/auth/login" className="font-medium text-[#7B1FA2] hover:text-[#6a1b8c]">
+                Увійти
+              </Link>
+            </p>
+          </div>
         </form>
       </div>
     </div>

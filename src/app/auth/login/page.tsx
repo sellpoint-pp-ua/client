@@ -139,6 +139,8 @@ export default function LoginPage() {
                 <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
               )}
             </div>
+            
+
           </div>
 
           <div className="flex items-center justify-between">
