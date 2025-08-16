@@ -33,7 +33,7 @@ interface CategoryCardProps {
 }
 
 const iconMap: Record<string, LucideIcon> = {
-  // Beauty icons
+
   sparkles: Sparkles,
   sprout: Sprout,
   pill: Pill,
@@ -42,17 +42,16 @@ const iconMap: Record<string, LucideIcon> = {
   sun: Sun,
   heart: Heart,
   droplet: Droplet,
-  // Fashion icons
+
   shirt: Shirt,
-  dress: Shirt, // Using Shirt for dress since Lucide doesn't have a dress icon
-  boot: Footprints, // Using Footprints for boots
+  dress: Shirt, 
+  boot: Footprints, 
   footprints: Footprints,
   watch: Watch,
   baby: Baby,
   home: Home,
   dumbbell: Dumbbell,
-  jacket: Shirt, // Using Shirt for jacket
-  // Electronics icons
+  jacket: Shirt,
   smartphone: Smartphone,
   laptop: Laptop,
   tv: Tv,
@@ -69,7 +68,7 @@ export default function CategoryCard({ title, iconType, count, href }: CategoryC
       href={href}
       className="group flex flex-col items-center rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
     >
-      <div className="mb-4 rounded-full bg-gray-50 p-4 text-[#7B1FA2] transition-colors group-hover:bg-[#7B1FA2] group-hover:text-white">
+      <div className="mb-4 rounded-full bg-gray-50 p-4 text-[#4563d1] transition-colors group-hover:bg-[#4563d1] group-hover:text-white">
         <Icon className="h-8 w-8" />
       </div>
       <h3 className="mb-2 text-center text-sm font-medium text-gray-900">

@@ -39,7 +39,7 @@ export default function BeautyProductCard({
           className="object-cover transition-transform group-hover:scale-105"
         />
         <button
-          className="absolute right-2 top-2 rounded-full bg-white p-1.5 text-gray-400 transition-colors hover:text-[#7B1FA2]"
+          className="absolute right-2 top-2 rounded-full bg-white p-1.5 text-gray-400 transition-colors hover:text-[#4563d1]"
           aria-label="Add to wishlist"
         >
           <Heart className="h-5 w-5" />
@@ -47,7 +47,7 @@ export default function BeautyProductCard({
       </div>
       
       <Link href={href} className="block">
-        <p className="mb-1 text-sm font-medium text-[#7B1FA2]">{brand}</p>
+        <p className="mb-1 text-sm font-medium text-[#4563d1]">{brand}</p>
         <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm font-medium text-gray-900">
           {title}
         </h3>

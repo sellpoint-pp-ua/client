@@ -22,12 +22,11 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
         headers: {
           'Content-Type': 'application/json',
         },
-        cache: 'no-store' // Disable caching to ensure fresh data
+        next: { revalidate: 3600 } 
       }
     )
 
     if (!response.ok) {
-      // Return empty array for 404 to handle missing subcategories gracefully
       if (response.status === 404) {
         return NextResponse.json([])
       }
@@ -38,7 +37,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     return NextResponse.json(data)
   } catch (error) {
     console.error('Error fetching category children:', error)
-    // Return empty array instead of error to handle missing subcategories gracefully
     return NextResponse.json([])
   }
-} 
+}
