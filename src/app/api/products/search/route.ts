@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/Category/search?name=${encodeURIComponent(name)}&languageCode=${languageCode}`,
+      `${API_BASE_URL}/api/Product/search?name=${encodeURIComponent(name)}&languageCode=${languageCode}`,
       {
         headers: {
           'Content-Type': 'application/json',
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     return NextResponse.json(data)
   } catch (error) {
-    console.error('Error fetching category search results:', error)
+    console.error('Error fetching product search results:', error)
     return NextResponse.json(
       { error: 'Failed to fetch search results' },
       { status: 500 }

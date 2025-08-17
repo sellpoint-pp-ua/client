@@ -71,7 +71,7 @@ export default function Home() {
                 </div>
               </section>
 
-              <section className="rounded-lg bg-[#7B1FA2] p-8 text-center text-white">
+              <section className="rounded-lg bg-[#4563d1] p-8 text-center text-white">
                 <h2 className="mb-4 text-3xl font-bold">
                   Почніть продавати на Sell Point
                 </h2>

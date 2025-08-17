@@ -31,7 +31,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }, [isAuthenticated, router, redirectTo]);
 
   if (!isAuthenticated) {
-    return null; // or a loading spinner
+    return null;
   }
 
   return <>{children}</>;

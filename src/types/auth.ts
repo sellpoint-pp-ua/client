@@ -9,9 +9,7 @@ export interface RegisterRequest {
   password: string;
 }
 
-export interface AuthResponse {
-  token: string;
-}
+export type AuthResponse = { token: string } | string;
 
 export interface AuthError {
   message: string;

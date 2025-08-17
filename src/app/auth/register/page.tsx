@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { Eye, EyeOff } from 'lucide-react';
+import AnimatedLogo from '@/components/shared/AnimatedLogo'
 
 export default function RegisterPage() {
   const { register, isLoading, error, clearError } = useAuth();
@@ -16,6 +18,8 @@ export default function RegisterPage() {
     agreeTerms: false
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -24,7 +28,6 @@ export default function RegisterPage() {
       [name]: type === 'checkbox' ? checked : value
     }));
     
-    // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -33,7 +36,6 @@ export default function RegisterPage() {
       });
     }
     
-    // Clear API error when user starts typing
     if (error) {
       clearError();
     }
@@ -96,30 +98,32 @@ export default function RegisterPage() {
         password: formData.password
       });
     } catch (err) {
-      // Error is handled by useAuth hook
       console.error('Registration failed:', err);
     }
   };
 
   const getInputClassName = (fieldName: string) => {
-    const baseClass = "mt-1 appearance-none relative block w-full px-3 py-2 border placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-[#7B1FA2] focus:border-[#7B1FA2] focus:z-10 sm:text-sm";
+    const baseClass = " mt-0 bg-white appearance-none relative block w-full px-4 py-2.5 border-2 border-white placeholder-gray-500 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1] focus:z-10 sm:text-sm transition-[border-color,box-shadow] duration-200 ease-out shadow-md";
     const errorClass = validationErrors[fieldName] ? "border-red-300" : "border-gray-300";
     return `${baseClass} ${errorClass}`;
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-no-repeat bg-cover bg-center"
+      style={{ backgroundImage: 'url(/background.png)' }}
+    >
       <div className="max-w-md w-full space-y-8">
         <div>
-          <Link href="/" className="flex justify-center">
-            <h1 className="text-3xl font-bold text-[#7B1FA2]">Sell Point</h1>
+          <Link href="/" className="flex justify-center group" aria-label="Sell Point">
+            <AnimatedLogo className="w-[300px] h-auto" />
           </Link>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Створення акаунту
+          <h2 className="mt-5 text-center font-semibold text-gray-900 max-w-[300px] mx-auto">
+            Ще немаєте профілю? Зареєструйтеся зараз!
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Або{' '}
-            <Link href="/auth/login" className="font-medium text-[#7B1FA2] hover:text-[#6a1b8c]">
+            <Link href="/auth/login" className="font-medium text-[#4563d1] hover:text-[#364ea8]">
               увійдіть до існуючого акаунту
             </Link>
           </p>
@@ -131,13 +135,10 @@ export default function RegisterPage() {
           </div>
         )}
         
-        <form onSubmit={handleSubmit} className="mt-8 space-y-6">
+        <form onSubmit={handleSubmit} className="-mt-2 space-y-6 max-w-[350px] mx-auto">
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  Ім&apos;я
-                </label>
                 <input
                   id="firstName"
                   name="firstName"
@@ -155,9 +156,6 @@ export default function RegisterPage() {
               </div>
               
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Прізвище
-                </label>
                 <input
                   id="lastName"
                   name="lastName"
@@ -176,9 +174,6 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
               <input
                 id="email"
                 name="email"
@@ -188,7 +183,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleInputChange}
                 className={getInputClassName('email')}
-                placeholder="your@email.com"
+                placeholder="Ел. пошта"
               />
               {validationErrors.email && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
@@ -196,9 +191,6 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                Номер телефону
-              </label>
               <input
                 id="phone"
                 name="phone"
@@ -216,40 +208,56 @@ export default function RegisterPage() {
             </div>
             
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Пароль
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={formData.password}
-                onChange={handleInputChange}
-                className={getInputClassName('password')}
-                placeholder="Мінімум 8 символів"
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  className={`${getInputClassName('password')} pr-10`}
+                  placeholder="Пароль - мінімум 8 символів"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? 'Сховати пароль' : 'Показати пароль'}
+                  className="absolute inset-y-0 px-2 py-2 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPassword(v => !v)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
               {validationErrors.password && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
               )}
             </div>
             
             <div>
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-                Підтвердження пароля
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                autoComplete="new-password"
-                required
-                value={formData.confirmPassword}
-                onChange={handleInputChange}
-                className={getInputClassName('confirmPassword')}
-                placeholder="Повторіть пароль"
-              />
+              <div className="relative">
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={handleInputChange}
+                  className={`${getInputClassName('confirmPassword')} pr-10`}
+                  placeholder="Повторіть пароль"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? 'Сховати пароль' : 'Показати пароль'}
+                  className="px-2 py-2 absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowConfirmPassword(v => !v)}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
               {validationErrors.confirmPassword && (
                 <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
               )}
@@ -264,15 +272,15 @@ export default function RegisterPage() {
               required
               checked={formData.agreeTerms}
               onChange={handleInputChange}
-              className="h-4 w-4 text-[#7B1FA2] focus:ring-[#7B1FA2] border-gray-300 rounded"
+              className="h-4 w-4 text-[#4563d1] focus:ring-[#4563d1] border-gray-300 rounded"
             />
             <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
               Я погоджуюсь з{' '}
-              <Link href="/terms" className="font-medium text-[#7B1FA2] hover:text-[#6a1b8c]">
+              <Link href="/terms" className="font-medium text-[#4563d1] hover:text-[#364ea8]">
                 умовами використання
               </Link>
               {' '}та{' '}
-              <Link href="/privacy" className="font-medium text-[#7B1FA2] hover:text-[#6a1b8c]">
+              <Link href="/privacy" className="font-medium text-[#4563d1] hover:text-[#364ea8]">
                 політикою конфіденційності
               </Link>
             </label>
@@ -285,7 +293,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-[#7B1FA2] hover:bg-[#6a1b8c] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#7B1FA2] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed  transition-colors duration-200 ease-out"
             >
               {isLoading ? 'Створення акаунту...' : 'Створити акаунт'}
             </button>

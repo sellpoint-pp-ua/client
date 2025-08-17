@@ -38,7 +38,7 @@ export default function ElectronicsProductCard({
       )}
       
       <button
-        className="absolute right-4 top-4 rounded-full bg-white p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-[#7B1FA2] group-hover:opacity-100"
+        className="absolute right-4 top-4 rounded-full bg-white p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-[#4563d1] group-hover:opacity-100"
         aria-label="Add to favorites"
       >
         <Heart className="h-5 w-5" />
@@ -66,7 +66,7 @@ export default function ElectronicsProductCard({
           <span className="ml-1 text-xs text-gray-500">({reviewCount})</span>
         </div>
 
-        <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm text-gray-700 hover:text-[#7B1FA2]">
+        <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm text-gray-700 hover:text-[#4563d1]">
           {title}
         </h3>
 
@@ -76,7 +76,7 @@ export default function ElectronicsProductCard({
               {oldPrice.toLocaleString('uk-UA')} ₴
             </p>
           )}
-          <p className="text-lg font-semibold text-[#7B1FA2]">
+          <p className="text-lg font-semibold text-[#4563d1]">
             {price.toLocaleString('uk-UA')} ₴
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function ElectronicsProductCard({
       </Link>
 
       {isAvailable && (
-        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#7B1FA2] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6a1b8c]">
+        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#4563d1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#364ea8]">
           <ShoppingCart className="h-4 w-4" />
           В кошик
         </button>

@@ -60,7 +60,7 @@ export default function FilterSidebar({ filterOptions, sortOptions }: FilterSide
                 value={option.value}
                 checked={selectedSort === option.value}
                 onChange={(e) => handleSortChange(e.target.value)}
-                className="text-[#7B1FA2] focus:ring-[#7B1FA2]"
+                className="text-[#4563d1] focus:ring-[#4563d1]"
               />
               <span className="text-sm">{option.label}</span>
             </label>
@@ -82,7 +82,7 @@ export default function FilterSidebar({ filterOptions, sortOptions }: FilterSide
                   type="checkbox"
                   checked={selectedFilters[filter.title]?.includes(option) || false}
                   onChange={() => handleFilterChange(filter.title, option)}
-                  className="rounded text-[#7B1FA2] focus:ring-[#7B1FA2]"
+                  className="rounded text-[#4563d1] focus:ring-[#4563d1]"
                 />
                 <span className="text-sm">{option}</span>
               </label>

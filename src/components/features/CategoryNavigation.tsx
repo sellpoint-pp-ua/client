@@ -25,7 +25,7 @@ export default function CategoryNavigation() {
             href={`/aksesuary-ta-prykrasy/${category.id}`}
             className={`flex min-w-fit items-center whitespace-nowrap border-b-2 px-4 py-2 text-sm font-medium transition-colors ${
               activeCategory === category.id
-                ? 'border-[#7B1FA2] text-[#7B1FA2]'
+                ? 'border-[#4563d1] text-[#4563d1]'
                 : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
             }`}
             onClick={() => setActiveCategory(category.id)}
