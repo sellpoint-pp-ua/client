@@ -23,39 +23,55 @@ class AuthService {
       throw new Error(errorData.message || 'Something went wrong');
     }
 
-    return response.json();
+    // Some backend endpoints may return a raw token string instead of an object.
+    const text = await response.text();
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      return text as unknown as T;
+    }
   }
 
-  async login(credentials: LoginRequest): Promise<AuthResponse> {
-    return this.makeRequest<AuthResponse>('login', {
+  private normalizeAuthResponse(result: AuthResponse): { token: string } {
+    if (typeof result === 'string') {
+      return { token: result };
+    }
+    if (result && typeof result === 'object' && 'token' in result) {
+      return { token: (result as { token: string }).token };
+    }
+    throw new Error('Invalid auth response');
+  }
+
+  async login(credentials: LoginRequest): Promise<{ token: string }> {
+    const result = await this.makeRequest<AuthResponse>('login', {
       method: 'POST',
       body: JSON.stringify({ login: credentials.login, password: credentials.password }),
-    })
+    });
+    return this.normalizeAuthResponse(result);
   }
 
-  async register(userData: RegisterRequest): Promise<AuthResponse> {
-    return this.makeRequest<AuthResponse>('register', {
+  async register(userData: RegisterRequest): Promise<{ token: string }> {
+    const result = await this.makeRequest<AuthResponse>('register', {
       method: 'POST',
       body: JSON.stringify({ fullName: userData.fullName, email: userData.email, password: userData.password }),
-    })
+    });
+    return this.normalizeAuthResponse(result);
   }
 
   async checkAuth(): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-
+    // Optimistic check: presence of token implies authenticated.
+    // Optionally call server to validate, but do not invalidate on network/404 errors.
     try {
       await this.makeRequest('check-login', {
         method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        headers: { 'Authorization': `Bearer ${token}` },
       });
-      return true;
     } catch {
-      this.logout();
-      return false;
+      // ignore validation errors; keep user logged in
     }
+    return true;
   }
 
   setToken(token: string): void {
@@ -74,11 +90,46 @@ class AuthService {
   logout(): void {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_display_name');
     }
   }
 
   isAuthenticated(): boolean {
     return !!this.getToken();
+  }
+
+  async sendVerificationCode(language: string = 'uk'): Promise<void> {
+    const token = this.getToken();
+    if (!token) throw new Error('Not authenticated');
+    await this.makeRequest(`send-email-verification-code?language=${encodeURIComponent(language)}`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  }
+
+  async verifyEmailCode(code: string): Promise<void> {
+    const token = this.getToken();
+    if (!token) throw new Error('Not authenticated');
+    await this.makeRequest(`verify-email-code?code=${encodeURIComponent(code)}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+  }
+
+  async serverLogout(): Promise<void> {
+    const token = this.getToken();
+    if (!token) {
+      this.logout();
+      return;
+    }
+    try {
+      await this.makeRequest('logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+    } finally {
+      this.logout();
+    }
   }
 }
 

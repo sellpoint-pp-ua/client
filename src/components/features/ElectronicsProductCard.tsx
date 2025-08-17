@@ -101,7 +101,7 @@ export default function ElectronicsProductCard({
       </Link>
 
       {isAvailable && (
-        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#4563d1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6a1b8c]">
+        <button className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-[#4563d1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#364ea8]">
           <ShoppingCart className="h-4 w-4" />
           В кошик
         </button>

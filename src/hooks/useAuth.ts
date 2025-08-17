@@ -11,6 +11,41 @@ export const useAuth = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
+  const translateAuthError = useCallback((message: string): string => {
+    const m = message.toLowerCase();
+    if (/(invalid|incorrect).*(username|login|email|password)/.test(m)) {
+      return 'Невірний логін, email або пароль';
+    }
+    if (/(user|email).*(already exists|exists|taken)/.test(m)) {
+      return 'Користувач з таким email уже існує';
+    }
+    if (/(unauthorized|forbidden|401|403)/.test(m)) {
+      return 'Доступ заборонено. Перевірте ваші облікові дані';
+    }
+    if (/(network)/.test(m)) {
+      return 'Помилка мережі. Спробуйте пізніше';
+    }
+    if (/(failed).*(login|sign in)/.test(m)) {
+      return 'Не вдалося увійти';
+    }
+    if (/(failed).*(register|sign up|signup)/.test(m)) {
+      return 'Не вдалося зареєструватися';
+    }
+    if (/(invalid).*(code)/.test(m)) {
+      return 'Невірний код підтвердження';
+    }
+    if (/(expired).*(code)/.test(m)) {
+      return 'Код підтвердження прострочено';
+    }
+    if (/(too many|rate limit|429)/.test(m)) {
+      return 'Забагато спроб. Спробуйте пізніше';
+    }
+    if (!message || message.trim() === '') {
+      return 'Сталася невідома помилка. Спробуйте пізніше';
+    }
+    return message;
+  }, []);
+
   const checkAuth = useCallback(async () => {
     try {
       const authenticated = await authService.checkAuth();
@@ -32,18 +67,21 @@ export const useAuth = () => {
       try {
         const response = await authService.login(credentials);
         authService.setToken(response.token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_display_name', credentials.login);
+        }
         setIsAuthenticated(true);
         router.push('/');
         return response;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Login failed';
-        setError(errorMessage);
+        setError(translateAuthError(errorMessage));
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [router]
+    [router, translateAuthError]
   );
 
   const register = useCallback(
@@ -54,22 +92,29 @@ export const useAuth = () => {
       try {
         const response = await authService.register(userData);
         authService.setToken(response.token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('user_display_name', userData.fullName);
+        }
         setIsAuthenticated(true);
-        router.push('/');
+        // Send verification code and redirect to verification page
+        try {
+          await authService.sendVerificationCode('uk');
+        } catch {}
+        router.push('/auth/verify-email');
         return response;
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Registration failed';
-        setError(errorMessage);
+        setError(translateAuthError(errorMessage));
         throw err;
       } finally {
         setIsLoading(false);
       }
     },
-    [router]
+    [router, translateAuthError]
   );
 
   const logout = useCallback(() => {
-    authService.logout();
+    authService.serverLogout();
     setIsAuthenticated(false);
     router.push('/auth/login');
   }, [router]);
@@ -87,5 +132,7 @@ export const useAuth = () => {
     logout,
     clearError,
     checkAuth,
+    sendVerificationCode: authService.sendVerificationCode.bind(authService),
+    verifyEmailCode: authService.verifyEmailCode.bind(authService),
   };
 };

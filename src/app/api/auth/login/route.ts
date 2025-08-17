@@ -22,10 +22,14 @@ export async function POST(request: NextRequest) {
 
     const text = await res.text()
     let data: unknown
-    try { data = JSON.parse(text) } catch { data = { raw: text } }
+    try { data = JSON.parse(text) } catch { data = text }
 
     if (!res.ok) {
-      return NextResponse.json(data, { status: res.status })
+      return NextResponse.json(typeof data === 'string' ? { message: data } : data as object, { status: res.status })
+    }
+    // Backend may return plain token string; normalize to { token }
+    if (typeof data === 'string') {
+      return NextResponse.json({ token: data })
     }
     return NextResponse.json(data)
   } catch {

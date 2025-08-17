@@ -257,7 +257,7 @@ export default function ProductPageTemplate({ productId }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-15">
-                <button className="rounded-full bg-[#4563d1] px-1 py-2 text-sm text-white hover:bg-[#6a1b8c]">Купити</button>
+                <button className="rounded-full bg-[#4563d1] px-1 py-2 text-sm text-white hover:bg-[#364ea8]">Купити</button>
                 <button className="rounded-full border border-[#4563d1] px-1 py-2 text-sm border-2 text-[#4563d1] hover:bg-[#4563d1]/5">Купити зараз</button>
               </div>
             </div>
