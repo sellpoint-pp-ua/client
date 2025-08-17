@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, User, Bell, Heart, ShoppingCart, LogOut } from 'lucide-react'
 import Link from 'next/link'
-// Image import removed (unused)
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -26,7 +25,6 @@ type ProductSearchResult = {
         value?: string;
         timestamp?: number;
         creationTime?: string;
-        // some backends return Mongo-style ids
         $oid?: string;
       };
   highlighted: string;

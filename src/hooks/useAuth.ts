@@ -96,7 +96,6 @@ export const useAuth = () => {
           localStorage.setItem('user_display_name', userData.fullName);
         }
         setIsAuthenticated(true);
-        // Send verification code and redirect to verification page
         try {
           await authService.sendVerificationCode('uk');
         } catch {}

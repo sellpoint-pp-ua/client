@@ -23,7 +23,6 @@ class AuthService {
       throw new Error(errorData.message || 'Something went wrong');
     }
 
-    // Some backend endpoints may return a raw token string instead of an object.
     const text = await response.text();
     try {
       return JSON.parse(text) as T;
@@ -61,15 +60,12 @@ class AuthService {
   async checkAuth(): Promise<boolean> {
     const token = this.getToken();
     if (!token) return false;
-    // Optimistic check: presence of token implies authenticated.
-    // Optionally call server to validate, but do not invalidate on network/404 errors.
     try {
       await this.makeRequest('check-login', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` },
       });
     } catch {
-      // ignore validation errors; keep user logged in
     }
     return true;
   }
