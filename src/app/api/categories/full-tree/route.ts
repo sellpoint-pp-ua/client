@@ -11,11 +11,20 @@ export async function GET() {
       next: { revalidate: 3600 } 
     });
 
+    if (response.status === 204) {
+      return NextResponse.json([], { status: 200 })
+    }
+
     if (!response.ok) {
       throw new Error(`API error: ${response.status}`);
     }
 
-    const data = await response.json();
+    let data: unknown
+    try {
+      data = await response.json();
+    } catch {
+      data = []
+    }
     return NextResponse.json(data);
   } catch (error) {
     console.error('Error fetching category tree:', error);
