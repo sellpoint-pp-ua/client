@@ -73,7 +73,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="relative w-[250px] bg-white p-4 rounded-lg">
+    <aside className="relative w-[320px] bg-white pl-4 mr-0 rounded-lg">
       <nav className="space-y-1">
         {categories.map((category) => (
           <div

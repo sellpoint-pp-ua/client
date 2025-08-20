@@ -61,7 +61,6 @@ export default function LoginPage() {
     }
 
     try {
-      // Backend expects Login without domain part
       const loginValue = formData.login.includes('@')
         ? formData.login.split('@')[0]
         : formData.login

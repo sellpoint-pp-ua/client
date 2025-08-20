@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useAuth } from '@/hooks/useAuth'
-// Image removed because it's not used in this page
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 
 export default function VerifyEmailPage() {
@@ -19,7 +18,6 @@ export default function VerifyEmailPage() {
     try {
       await verifyEmailCode(code.trim())
       setMessage('Емейл підтверджено. Дякуємо! Ви будете перенаправлені...')
-      // Auto-redirect to home after 1 second
       setTimeout(() => {
         if (typeof window !== 'undefined') {
           window.location.href = '/'

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Search, User, Bell, Heart, ShoppingCart, LogOut } from 'lucide-react'
 import Link from 'next/link'
-// Image import removed (unused)
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
@@ -26,7 +25,6 @@ type ProductSearchResult = {
         value?: string;
         timestamp?: number;
         creationTime?: string;
-        // some backends return Mongo-style ids
         $oid?: string;
       };
   highlighted: string;
@@ -64,6 +62,7 @@ const cleanCategoryName = (name: string): string => {
 
 const highlightCategoryText = (text: string, searchQuery: string): React.JSX.Element => {
   const cleanText = cleanCategoryName(text)
+  if (!searchQuery) return <span className="text-gray-500">{cleanText}</span>
   const regex = new RegExp(`(${searchQuery})`, 'gi')
   const parts = cleanText.split(regex)
   
@@ -189,12 +188,12 @@ export default function Header() {
       className="sticky top-0 z-50 h-[80px] shadow-md"
       style={{
         backgroundImage: 'url(/background.png)',
-        backgroundRepeat: 'no-repeat',
+        backgroundRepeat: 'repeat',
         backgroundPosition: 'center top',
         backgroundSize: 'auto',
       }}
     >
-      <div className="mx-auto flex h-full max-w-[1500px] items-center justify-between px-4 gap-4 flex-nowrap">
+      <div className="flex h-full w-screen  items-center justify-around px-20 gap-4 flex-nowrap">
         {/* Logo */}
         <Link href="/" className="flex items-center whitespace-nowrap mt-2 mr-8 group" aria-label="Sell Point">
           <span className="relative block h-[32px] w-[148px] md:h-[36px] md:w-[168px] lg:h-[40px] lg:w-[186px]">
@@ -290,7 +289,7 @@ export default function Header() {
         </div>
 
         {/* Utility Icons */}
-        <div className="flex shrink-0 items-center gap-4 ">
+        <div className="flex shrink-0 items-center gap-6 ">
           <Link href="/notifications" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <Bell className="h-6 w-6" />
             <span className="hidden text-[12px] xl:block">Сповіщення</span>
