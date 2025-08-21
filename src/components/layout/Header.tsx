@@ -62,6 +62,7 @@ const cleanCategoryName = (name: string): string => {
 
 const highlightCategoryText = (text: string, searchQuery: string): React.JSX.Element => {
   const cleanText = cleanCategoryName(text)
+  if (!searchQuery) return <span className="text-gray-500">{cleanText}</span>
   const regex = new RegExp(`(${searchQuery})`, 'gi')
   const parts = cleanText.split(regex)
   
@@ -187,12 +188,12 @@ export default function Header() {
       className="sticky top-0 z-50 h-[80px] shadow-md"
       style={{
         backgroundImage: 'url(/background.png)',
-        backgroundRepeat: 'no-repeat',
+        backgroundRepeat: 'repeat',
         backgroundPosition: 'center top',
         backgroundSize: 'auto',
       }}
     >
-      <div className="mx-auto flex h-full max-w-[1500px] items-center justify-between px-4 gap-4 flex-nowrap">
+      <div className="flex h-full w-screen  items-center justify-around px-20 gap-4 flex-nowrap">
         {/* Logo */}
         <Link href="/" className="flex items-center whitespace-nowrap mt-2 mr-8 group" aria-label="Sell Point">
           <span className="relative block h-[32px] w-[148px] md:h-[36px] md:w-[168px] lg:h-[40px] lg:w-[186px]">
@@ -288,7 +289,7 @@ export default function Header() {
         </div>
 
         {/* Utility Icons */}
-        <div className="flex shrink-0 items-center gap-4 ">
+<div className="flex shrink-0 items-center gap-6 ">
           <Link href="/admin" className="max-h-[35px] shadow-md rounded-xl bg-[#4563d1] px-3 py-2 text-sm text-white hover:bg-[#364ea8] transition-colors duration-200 ease-out">
             Адмін панель
           </Link>

@@ -6,17 +6,17 @@ import Image from 'next/image'
 const slides = [
   {
     id: 1,
-    imageUrl: 'https://picsum.photos/id/1/1200/400',
+    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/ad_2.png',
     title: 'Весняні знижки',
   },
   {
     id: 2,
-    imageUrl: 'https://picsum.photos/id/2/1200/400',
+    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/ad_2.png',
     title: 'Нова колекція',
   },
   {
     id: 3,
-    imageUrl: 'https://picsum.photos/id/3/1200/400',
+    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/ad_2.png',
     title: 'Спеціальні пропозиції',
   },
 ]
@@ -32,7 +32,7 @@ export default function Carousel() {
   }, [])
 
   return (
-    <div className="relative h-[400px] w-full overflow-hidden rounded-xl">
+    <div className="relative h-[350px] w-full overflow-hidden rounded-xl">
       {slides.map((slide, index) => (
         <div
           key={slide.id}

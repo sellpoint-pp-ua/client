@@ -27,7 +27,6 @@ export async function POST(request: NextRequest) {
     if (!res.ok) {
       return NextResponse.json(typeof data === 'string' ? { message: data } : data as object, { status: res.status })
     }
-    // Backend may return plain token string; normalize to { token }
     if (typeof data === 'string') {
       return NextResponse.json({ token: data })
     }

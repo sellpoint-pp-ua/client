@@ -15,6 +15,7 @@ interface ApiProductCardProps {
   discountPercentage?: number;
   quantityStatus?: string;
   quantity?: number;
+  imageUrl?: string; // optional hardcoded image for demo data
 }
 
 export default function ApiProductCard({ 
@@ -26,9 +27,10 @@ export default function ApiProductCard({
   finalPrice,
   discountPercentage,
   quantityStatus,
-  quantity
+  quantity,
+  imageUrl: providedImageUrl,
 }: ApiProductCardProps) {
-  const [imageUrl, setImageUrl] = useState<string>('')
+  const [resolvedImageUrl, setResolvedImageUrl] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
 
   const title = name || 'Без назви'
@@ -74,7 +76,7 @@ export default function ApiProductCard({
  
   const primaryPrice = hasDiscount ? (finalPrice ?? discountPrice ?? price) : price
   const showOldPrice = Boolean(hasDiscount && price && primaryPrice && price > primaryPrice)
-  const priceDisplay = `${Math.round(primaryPrice)} ₴`
+  const priceDisplay = `${Math.round(primaryPrice)} грн`
 
   useEffect(() => {
     async function fetchProductImage() {
@@ -86,7 +88,7 @@ export default function ApiProductCard({
             type MediaItem = { url?: string; secondaryUrl?: string; order?: number }
             const sortedMedia = (media as Array<MediaItem>).sort((a, b) => (a.order || 0) - (b.order || 0))
             const firstImage = sortedMedia[0]
-            setImageUrl(firstImage.url || firstImage.secondaryUrl || '')
+            setResolvedImageUrl(firstImage.url || firstImage.secondaryUrl || '')
           }
         }
       } catch (error) {
@@ -96,8 +98,14 @@ export default function ApiProductCard({
       }
     }
 
+    if (providedImageUrl) {
+      setResolvedImageUrl(providedImageUrl)
+      setIsLoading(false)
+      return
+    }
+
     fetchProductImage()
-  }, [id])
+  }, [id, providedImageUrl])
 
   return (
     <div className="group relative rounded-lg bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
@@ -114,9 +122,9 @@ export default function ApiProductCard({
             <div className="flex h-full w-full items-center justify-center">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-[#4563d1]"></div>
             </div>
-          ) : imageUrl ? (
+          ) : resolvedImageUrl ? (
             <Image
-              src={imageUrl}
+              src={resolvedImageUrl}
               alt={title}
               fill
               className="object-cover transition-transform group-hover:scale-105"
@@ -132,21 +140,7 @@ export default function ApiProductCard({
         <h3 className="mb-2 line-clamp-2 min-h-[2.5rem] text-sm text-gray-700">
           {title}
         </h3>
-        
-        <div className="mb-2 flex items-center gap-2">
-          <p className="text-lg font-semibold text-[#4563d1]">
-            {priceDisplay}
-          </p>
-          {showOldPrice && (
-            <span className="text-sm text-gray-400 line-through">{Math.round(price)} ₴</span>
-          )}
-          {hasDiscount && discountPercentage ? (
-            <span className="ml-auto inline-flex items-center gap-1 rounded bg-red-50 px-3 py-0.5 text-sm font-medium text-red-700">
-              -{discountPercentage}%
-            </span>
-          ) : null}
-        </div>
-        
+
         <div className="mb-2 flex items-center gap-2">
           <span 
             className={`inline-block rounded-full px-2 py-1 text-xs font-medium ${availabilityBadge.classes}`}
@@ -154,6 +148,21 @@ export default function ApiProductCard({
             {availabilityBadge.text}
           </span>
         </div>
+        
+        <div className="mb-2 flex items-baseline gap-2">
+          <p className="text-[18px] md:text-lg font-semibold whitespace-nowrap">
+            {priceDisplay}
+          </p>
+          {showOldPrice && (
+            <span className="text-sm text-gray-400 line-through whitespace-nowrap">{Math.round(price)} грн</span>
+          )}
+          {hasDiscount && discountPercentage ? (
+            <span className="ml-auto inline-flex items-center gap-1 rounded bg-red-50 px-3 py-0.5 text-sm font-medium text-red-700 whitespace-nowrap">
+              -{discountPercentage}%
+            </span>
+          ) : null}
+        </div>
+        
         
         {isReadyToShip && (
           <p className="mb-3 text-xs text-blue-600">
@@ -163,7 +172,7 @@ export default function ApiProductCard({
       </Link>
       
       <button 
-        className="w-full rounded-lg bg-[#4563d1] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#6A1B9A] disabled:bg-gray-300"
+        className="w-full rounded-full bg-[#4563d1] px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#6A1B9A] disabled:bg-gray-300"
         disabled={!isAvailable}
         onClick={(e) => {
           e.preventDefault()

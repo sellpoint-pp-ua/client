@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import Header from '@/components/layout/Header'
 import Image from 'next/image'
 import Link from 'next/link'
-import { Star, Truck, Package, CreditCard, ShieldCheck, Store } from 'lucide-react'
+import { Star, Truck, Package, CreditCard, ShieldCheck, Store, ChevronRight } from 'lucide-react'
+
 
 type MediaItem = { url?: string; secondaryUrl?: string; order?: number }
 
@@ -121,7 +122,7 @@ export default function ProductPageTemplate({ productId }: Props) {
             </li>
             {crumbs.map((c, idx) => (
               <li key={`${c.id}-${idx}`} className="flex items-center gap-1">
-                <span className="text-xl">»</span>
+                <span className="text-xl"><ChevronRight className="h-5 w-5" /></span>
                 <Link href={`/category/${c.id}`} className="text-[#4563d1] hover:underline cursor-pointer mr-2 ml-2">{c.name}</Link>
               </li>
             ))}
