@@ -1,5 +1,3 @@
-// @ts-nocheck
-/* eslint-disable */
 export default function AdminSellersPage() {
   return (
     <div className="p-6">

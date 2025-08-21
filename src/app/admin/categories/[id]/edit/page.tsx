@@ -1,9 +1,6 @@
 'use client'
-'use client'
-// @ts-nocheck
-/* eslint-disable */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { authService } from '@/services/authService'
 
@@ -42,7 +39,7 @@ export default function EditCategoryPage() {
     load()
   }, [categoryId])
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!model) return
     try {

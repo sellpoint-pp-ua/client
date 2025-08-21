@@ -1,6 +1,4 @@
 "use client"
-// @ts-nocheck
-/* eslint-disable */
 import AdminRoute from '@/components/auth/AdminRoute'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
