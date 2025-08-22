@@ -9,6 +9,12 @@ type CategoryRow = {
   parentId?: string | null
 }
 
+type CategoryNode = {
+  id: string
+  name: { uk: string }
+  children?: CategoryNode[]
+}
+
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<CategoryRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -21,9 +27,9 @@ export default function AdminCategoriesPage() {
         setError(null)
         const res = await fetch('/api/categories/full-tree', { cache: 'no-store' })
         if (!res.ok) throw new Error('Не вдалося завантажити категорії')
-        const tree = await res.json() as Array<{ id: string; name: { uk: string }; children?: any[] }>
+        const tree = await res.json() as CategoryNode[]
         const flat: CategoryRow[] = []
-        const walk = (nodes: any[], parentId?: string | null) => {
+        const walk = (nodes: CategoryNode[], parentId?: string | null) => {
           for (const n of nodes) {
             flat.push({ id: n.id, name: { uk: n.name.uk }, parentId: parentId || null })
             if (n.children?.length) walk(n.children, n.id)

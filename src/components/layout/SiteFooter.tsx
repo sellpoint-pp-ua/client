@@ -1,4 +1,5 @@
 import React from 'react'
+import Image from 'next/image'
 
 const searchChips: string[] = [
 	'Автомобільні шини',
@@ -74,9 +75,11 @@ export default function SiteFooter() {
 						{/* Right image */}
 						<div className="lg:col-span-2 ">
 							<div className="flex items-center justify-end ">
-								<img
+								<Image
 									src="https://cloud.sellpoint.pp.ua/media/adds-photos/ad_1.png"
 									alt="Почніть бізнес на SellPoint уже сьогодні"
+									width={200}
+									height={200}
 									className=" w-auto object-contain mr-15"
 								/>
 							</div>
