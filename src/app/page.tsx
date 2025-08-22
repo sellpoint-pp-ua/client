@@ -3,6 +3,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import Carousel from '@/components/features/Carousel'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import SiteFooter from '@/components/layout/SiteFooter'
+import Image from 'next/image'
 
 const homepageProducts = [
   { id: '1001', name: 'Смартфон Samsung Galaxy A54 6/128GB', price: 13999, hasDiscount: true, finalPrice: 12499, discountPercentage: 11, quantityStatus: 'В наявності', quantity: 7, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png' },
@@ -38,9 +39,11 @@ export default function Home() {
                   <div className="hidden md:block w-[360px]">
                     <div className="h-full rounded-xl bg-white  flex flex-col items-center justify-between p-4 overflow-hidden">
                       <div className="w-full flex items-center justify-center">
-                        <img
+                        <Image
                           src="https://cloud.sellpoint.pp.ua/media/adds-photos/ad_1.png"
                           alt="Почніть бізнес на SellPoint уже сьогодні"
+                          width={250}
+                          height={250}
                           className="max-w-[250px] h-auto object-contain"
                         />
                       </div>
@@ -89,7 +92,13 @@ export default function Home() {
                   <div key={idx} className="flex flex-col items-center">
                     <div className="w-full rounded-lg border border-gray-300 bg-white p-1 hover:shadow-md transition-shadow">
                       <div className="aspect-square flex items-center justify-center rounded-lg bg-gray-50">
-                        <img src={c.img} alt={c.title} className="w-full h-full object-contain" />
+                        <Image 
+                          src={c.img} 
+                          alt={c.title} 
+                          width={100}
+                          height={100}
+                          className="w-full h-full object-contain" 
+                        />
                       </div>
                     </div>
                     <p className="mt-2 text-center text-[12px] sm:text-xs text-gray-900 ">{c.title}</p>

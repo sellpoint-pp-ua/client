@@ -1,6 +1,7 @@
 'use client'
 
 import { Copy, MoreVertical } from 'lucide-react'
+import Image from 'next/image'
 
 interface WishlistCardProps {
 	title: string
@@ -13,7 +14,13 @@ export default function WishlistCard({ title, countLabel, imageUrl }: WishlistCa
 		<div className="flex items-center justify-between rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
 			<div className="flex items-center gap-4">
 				<div className="h-22 w-22 overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-					<img src={imageUrl} alt={title} className="h-full w-full object-contain" />
+					<Image 
+						src={imageUrl} 
+						alt={title} 
+						width={88}
+						height={88}
+						className="h-full w-full object-contain" 
+					/>
 				</div>
 				<div>
 					<h3 className="text-[16px] font-semibold text-gray-900">{title}</h3>
