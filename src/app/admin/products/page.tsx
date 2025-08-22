@@ -1,6 +1,5 @@
 'use client'
-// @ts-nocheck
-/* eslint-disable */
+
 
 import { useEffect, useState } from 'react'
 
@@ -22,7 +21,6 @@ export default function AdminProductsPage() {
       try {
         setIsLoading(true)
         setError(null)
-        // Load category tree and build options
         const treeRes = await fetch('/api/categories/full-tree', { cache: 'no-store' })
         if (!treeRes.ok) throw new Error('Не вдалося завантажити категорії')
         const tree = await treeRes.json() as Array<{ id: string; name?: { uk?: string }; children?: any[] }>

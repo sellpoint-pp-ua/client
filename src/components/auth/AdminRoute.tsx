@@ -1,7 +1,5 @@
 'use client'
 'use client'
-// @ts-nocheck
-/* eslint-disable */
 
 import { useEffect, useState } from 'react'
 import { authService } from '@/services/authService'
@@ -16,7 +14,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
   useEffect(() => {
-    // Dev bypass: allow if local flag is set
     if (typeof window !== 'undefined') {
       const devBypass = localStorage.getItem('admin_dev_bypass')
       if (devBypass === 'true') {
@@ -27,7 +24,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
     }
     const check = async () => {
       const token = authService.getToken()
-      // Soft mode: even if no token, still allow, but skip admin check
       if (!token) {
         setIsAdmin(false)
         return
@@ -38,10 +34,8 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
           cache: 'no-store',
         })
         setIsAdmin(res.ok)
-        // Soft mode: do not block, only record state
         setAllowed(true)
       } catch {
-        // Soft mode: allow but mark as not admin
         setIsAdmin(false)
         setAllowed(true)
       }
@@ -49,7 +43,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
     check()
   }, [redirectTo])
 
-  // Always render in soft mode
   return <>{children}</>
 }
 
