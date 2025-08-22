@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { Star, Truck, Package, CreditCard, ShieldCheck, Store, ChevronRight } from 'lucide-react'
 
 
-type MediaItem = { url?: string; secondaryUrl?: string; order?: number }
+type MediaItem = { url?: string; secondaryUrl?: string; order?: number; type?: 'image' | 'video' }
 
 type ProductFeatureItem = { value: string | number | null; type: string; nullable: boolean }
 type ProductFeatureCategory = { category: string; features: Record<string, ProductFeatureItem> }
@@ -75,7 +75,9 @@ export default function ProductPageTemplate({ productId }: Props) {
           }
           if (mRes.ok) {
             const media = await mRes.json()
-            const items: MediaItem[] = (media || []).sort((a: MediaItem, b: MediaItem) => (a.order || 0) - (b.order || 0))
+            const items: MediaItem[] = (Array.isArray(media) ? media : [])
+              .map((m: MediaItem) => ({ ...m }))
+              .sort((a: MediaItem, b: MediaItem) => (a.order || 0) - (b.order || 0))
             setImages(items)
           }
         }
@@ -140,7 +142,15 @@ export default function ProductPageTemplate({ productId }: Props) {
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-[#4563d1]"></div>
                   </div>
                 ) : images.length > 0 ? (
-                  <Image src={images[activeIdx]?.url || images[activeIdx]?.secondaryUrl || ''} alt={product?.name || ''} fill className="object-contain" />
+                  images[activeIdx]?.type === 'video' ? (
+                    <video
+                      src={images[activeIdx]?.url || images[activeIdx]?.secondaryUrl || ''}
+                      className="h-full w-full object-contain"
+                      controls
+                    />
+                  ) : (
+                    <Image src={images[activeIdx]?.url || images[activeIdx]?.secondaryUrl || ''} alt={product?.name || ''} fill className="object-contain" />
+                  )
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-gray-400">Немає фото</div>
                 )}
@@ -155,7 +165,9 @@ export default function ProductPageTemplate({ productId }: Props) {
                       onClick={() => setActiveIdx(i)}
                       className={`relative aspect-[4/3] overflow-hidden rounded border ${activeIdx === i ? 'border-[#4563d1]' : 'border-transparent'} bg-gray-100`}
                     >
-                      {img.url || img.secondaryUrl ? (
+                      {img.type === 'video' ? (
+                        <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-700 bg-gray-200">Відео</div>
+                      ) : (img.url || img.secondaryUrl) ? (
                         <Image src={img.url || img.secondaryUrl || ''} alt={`thumb-${i}`} fill className="object-cover" />
                       ) : null}
                     </button>

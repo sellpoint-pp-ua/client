@@ -289,7 +289,10 @@ export default function Header() {
         </div>
 
         {/* Utility Icons */}
-        <div className="flex shrink-0 items-center gap-6 ">
+<div className="flex shrink-0 items-center gap-6 ">
+          <Link href="/admin" className="max-h-[35px] shadow-md rounded-xl bg-[#4563d1] px-3 py-2 text-sm text-white hover:bg-[#364ea8] transition-colors duration-200 ease-out">
+            Адмін панель
+          </Link>
           <Link href="/notifications" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <Bell className="h-6 w-6" />
             <span className="hidden text-[12px] xl:block">Сповіщення</span>

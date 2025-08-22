@@ -8,6 +8,15 @@ type RouteContext = {
   }>;
 };
 
+type ServerMedia = {
+  files?: {
+    sourceUrl?: string | null;
+    compressedUrl?: string | null;
+  } | null;
+  type?: number | string | null;
+  order?: number | null;
+}
+
 export async function GET(_request: NextRequest, { params }: RouteContext) {
   const { productId } = await params
 
@@ -31,7 +40,25 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const media = await response.json()
-    return NextResponse.json(media)
+    const normalized = Array.isArray(media)
+  ? media.map((item: ServerMedia) => {
+          const files = item?.files || {}
+          const sourceUrl: string | null = files?.sourceUrl || null
+          const compressedUrl: string | null = files?.compressedUrl || null
+          const chosenUrl: string | null = (compressedUrl || sourceUrl) || null
+          const secondaryUrl: string | null = (compressedUrl && sourceUrl && compressedUrl !== sourceUrl) ? sourceUrl : (sourceUrl || null)
+          const isVideoByType = Number(item?.type) === 1
+          const isVideoByExt = typeof sourceUrl === 'string' && /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(sourceUrl)
+          const type: 'image' | 'video' = (isVideoByType || isVideoByExt) ? 'video' : 'image'
+          return {
+            url: chosenUrl,
+            secondaryUrl: secondaryUrl,
+            order: typeof item?.order === 'number' ? item.order : 0,
+            type,
+          }
+        })
+      : []
+    return NextResponse.json(normalized)
   } catch (error) {
     console.error('Error fetching product media:', error)
     return NextResponse.json([])

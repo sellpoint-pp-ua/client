@@ -84,12 +84,11 @@ export default function ApiProductCard({
         const response = await fetch(`/api/products/media/${id}`)
         if (response.ok) {
           const media = await response.json()
-          if (media.length > 0) {
-            type MediaItem = { url?: string; secondaryUrl?: string; order?: number }
-            const sortedMedia = (media as Array<MediaItem>).sort((a, b) => (a.order || 0) - (b.order || 0))
-            const firstImage = sortedMedia[0]
-            setResolvedImageUrl(firstImage.url || firstImage.secondaryUrl || '')
-          }
+          type MediaItem = { url?: string; secondaryUrl?: string; order?: number; type?: 'image' | 'video' }
+          const sortedMedia = (Array.isArray(media) ? media : []) as Array<MediaItem>
+          sortedMedia.sort((a, b) => (a.order || 0) - (b.order || 0))
+          const firstImage = sortedMedia.find((m) => (m.type || 'image') === 'image' && (m.url || m.secondaryUrl))
+          if (firstImage) setResolvedImageUrl(firstImage.url || firstImage.secondaryUrl || '')
         }
       } catch (error) {
         console.error('Error fetching product image:', error)
