@@ -17,43 +17,17 @@ type CategorySearchResult = {
 }
 
 type ProductSearchResult = {
-  id?: string;
-  productId?:
-    | string
-    | {
-        id?: string;
-        value?: string;
-        timestamp?: number;
-        creationTime?: string;
-        $oid?: string;
-      };
-  highlighted: string;
-  rank?: number;
-}
-
-const processHighlightedText = (highlightedText: string): React.JSX.Element => {
-  const regex = /\[(.*?)\]/g
-  const parts: React.ReactNode[] = []
-  let lastIndex = 0
-  let match
-
-  while ((match = regex.exec(highlightedText)) !== null) {
-    if (match.index > lastIndex) {
-      const beforeText = highlightedText.slice(lastIndex, match.index)
-      parts.push(<span key={`before-${lastIndex}`} className="text-gray-500">{beforeText}</span>)
-    }
-    
-    parts.push(<strong key={`bold-${match.index}`} className="font-bold">{match[1]}</strong>)
-    
-    lastIndex = match.index + match[0].length
-  }
-
-  if (lastIndex < highlightedText.length) {
-    const remainingText = highlightedText.slice(lastIndex)
-    parts.push(<span key={`after-${lastIndex}`} className="text-gray-500">{remainingText}</span>)
-  }
-
-  return <span>{parts}</span>
+  id: string;
+  name: string;
+  price: number;
+  discountPrice?: number;
+  hasDiscount?: boolean;
+  finalPrice?: number;
+  discountPercentage?: number;
+  quantityStatus?: string;
+  quantity?: number;
+  productType?: string;
+  categoryPath?: string[];
 }
 
 const cleanCategoryName = (name: string): string => {
@@ -79,17 +53,22 @@ const highlightCategoryText = (text: string, searchQuery: string): React.JSX.Ele
   )
 }
 
-const extractProductId = (product: ProductSearchResult): string | null => {
-  if (product.id && typeof product.id === 'string') return product.id
-  const pid = product.productId as unknown
-  if (typeof pid === 'string') return pid
-  if (pid && typeof pid === 'object') {
-    const obj = pid as { id?: string; value?: string; $oid?: string }
-    if (obj.id && typeof obj.id === 'string') return obj.id
-    if (obj.value && typeof obj.value === 'string') return obj.value
-    if (obj.$oid && typeof obj.$oid === 'string') return obj.$oid
-  }
-  return null
+const highlightProductText = (text: string, searchQuery: string): React.JSX.Element => {
+  if (!searchQuery) return <span className="text-gray-700">{text}</span>
+  const regex = new RegExp(`(${searchQuery})`, 'gi')
+  const parts = text.split(regex)
+  
+  return (
+    <span>
+      {parts.map((part, index) => 
+        regex.test(part) ? (
+          <strong key={index} className="font-bold">{part}</strong>
+        ) : (
+          <span key={index} className="text-gray-700">{part}</span>
+        )
+      )}
+    </span>
+  )
 }
 
 export default function Header() {
@@ -129,6 +108,8 @@ export default function Header() {
         setIsLoading(true)
         setError(null)
         try {
+          console.log('Searching for:', searchQuery)
+          
           const [categoryResponse, productResponse] = await Promise.all([
             fetch(`/api/categories/search?name=${encodeURIComponent(searchQuery)}&languageCode=uk`),
             fetch(`/api/products/search?name=${encodeURIComponent(searchQuery)}&languageCode=uk`)
@@ -137,9 +118,19 @@ export default function Header() {
           const categoryData = categoryResponse.ok ? await categoryResponse.json() : []
           const productData = productResponse.ok ? await productResponse.json() : []
 
+          console.log('Category response:', categoryData)
+          console.log('Product response:', productData)
+
+          // Фільтруємо продукти, щоб переконатися, що вони мають всі необхідні поля
+          const validProducts = productData.filter((product: ProductSearchResult) => 
+            product && product.id && product.name && product.name !== 'Без назви'
+          )
+
+          console.log('Valid products:', validProducts)
+
           setCategoryResults(categoryData)
-          setProductResults(productData.slice(0, 5)) 
-          setShowDropdown(categoryData.length > 0 || productData.length > 0)
+          setProductResults(validProducts.slice(0, 5))
+          setShowDropdown(categoryData.length > 0 || validProducts.length > 0)
         } catch (error) {
           console.error('Error fetching search results:', error)
           setError('Помилка пошуку. Спробуйте ще раз.')
@@ -152,7 +143,7 @@ export default function Header() {
         setShowDropdown(false)
         setError(null)
       }
-    }, 300) 
+    }, 300)
 
     return () => clearTimeout(timer)
   }, [searchQuery])
@@ -164,11 +155,13 @@ export default function Header() {
   }
 
   const handleProductClick = (product: ProductSearchResult) => {
-    const id = extractProductId(product)
-    setShowDropdown(false)
-    setSearchQuery('')
-    if (id) {
-      router.push(`/product/${id}`)
+    console.log('Product clicked:', product)
+    if (product.id) {
+      const productUrl = `/product/${product.id}`
+      console.log('Redirecting to:', productUrl)
+      router.push(productUrl)
+      setShowDropdown(false)
+      setSearchQuery('')
     } else {
       console.warn('Cannot navigate: missing product id in search result', product)
     }
@@ -176,8 +169,18 @@ export default function Header() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (categoryResults.length > 0) {
-      handleCategoryClick(categoryResults[0].id) 
+    if (searchQuery.trim()) {
+      console.log('Search submitted:', searchQuery)
+      console.log('Product results:', productResults)
+      console.log('Category results:', categoryResults)
+      
+      // Завжди перенаправляємо на сторінку пошуку з запитом
+      // Це забезпечить, що користувач завжди потрапить на правильну сторінку
+      const searchUrl = `/search?q=${encodeURIComponent(searchQuery)}`
+      console.log('Redirecting to search page:', searchUrl)
+      router.push(searchUrl)
+      setShowDropdown(false)
+      setSearchQuery('')
     }
   }
 
@@ -251,8 +254,13 @@ export default function Header() {
                             className="flex w-full items-center px-4 py-2 text-left hover:bg-gray-100"
                           >
                             <span className="text-sm">
-                              {processHighlightedText(product.highlighted)}
+                              {highlightProductText(product.name, searchQuery)}
                             </span>
+                            {product.price && (
+                              <span className="ml-auto text-sm text-gray-500">
+                                {Math.round(product.price)} грн
+                              </span>
+                            )}
                           </button>
                         ))}
                       </div>
@@ -299,7 +307,7 @@ export default function Header() {
           </Link>
           <Link href="/favorites" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <Heart className="h-6 w-6" />
-            <span className="hidden text-[12px] xl:block">Обране</span>
+            <span className="text-[12px] xl:block">Обране</span>
           </Link>
           <Link href="/cart" className=" pr-4 flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <ShoppingCart className="h-6 w-6" />

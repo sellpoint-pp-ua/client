@@ -27,7 +27,23 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json()
-    return NextResponse.json(data)
+    
+    // Нормалізуємо дані категорій
+    const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
+      id: category.id || category._id || '',
+      name: {
+        uk: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).uk || 'Без назви' : (category.name as string) || 'Без назви',
+        en: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).en || 'No name' : (category.name as string) || 'No name'
+      },
+      parentId: category.parentId || null
+    })) : []
+
+    // Фільтруємо категорії без ID або назви
+    const validCategories = normalizedCategories.filter(category => 
+      category.id && category.name.uk && category.name.uk !== 'Без назви'
+    )
+
+    return NextResponse.json(validCategories)
   } catch (error) {
     console.error('Error fetching category search results:', error)
     return NextResponse.json(
