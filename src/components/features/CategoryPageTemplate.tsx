@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header'
 import CategoryCard from '@/components/features/CategoryCard'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import FilterSidebar from '@/components/features/FilterSidebar'
-import { ArrowDownAZ } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { filterOptions, sortOptions } from '@/constants/sampleData'
 
 interface ProductFeatureItem {
@@ -51,6 +51,9 @@ export default function CategoryPageTemplate({
   const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [sortBy, setSortBy] = useState('relevance')
 
   useEffect(() => {
     async function fetchCategoryData() {
@@ -58,7 +61,6 @@ export default function CategoryPageTemplate({
         setIsLoadingCategories(true)
         setError(null)
         
-      
         const response = await fetch(`/api/categories/${categoryId}/children`)
         if (!response.ok) {
           throw new Error('Failed to fetch categories')
@@ -76,16 +78,23 @@ export default function CategoryPageTemplate({
       try {
         setIsLoadingProducts(true)
         
-       
-        const response = await fetch(`/api/products/by-category/${categoryId}?pageSize=20`)
+        const response = await fetch(`/api/products/by-category/${categoryId}?pageSize=50`)
         if (!response.ok) {
           throw new Error('Failed to fetch products')
         }
         const productsData = await response.json()
-        setProducts(productsData)
+        
+        // Переконуємося, що всі продукти мають необхідні поля
+        const validProducts = productsData.filter((product: { id?: string; name?: string }) => 
+          product && product.id && product.name && product.name !== 'Без назви'
+        )
+        
+        setProducts(validProducts)
+        setFilteredProducts(validProducts)
       } catch (err) {
         console.error('Error fetching products:', err)
-        setProducts([]) 
+        setProducts([])
+        setFilteredProducts([])
       } finally {
         setIsLoadingProducts(false)
       }
@@ -94,6 +103,43 @@ export default function CategoryPageTemplate({
     fetchCategoryData()
     fetchProducts()
   }, [categoryId])
+
+  // Фільтрація та сортування продуктів
+  useEffect(() => {
+    let result = [...products]
+
+    // Фільтрація по пошуковому запиту
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase()
+      result = result.filter(product => 
+        product.name.toLowerCase().includes(query)
+      )
+    }
+
+    // Сортування
+    switch (sortBy) {
+      case 'price-low':
+        result.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price))
+        break
+      case 'price-high':
+        result.sort((a, b) => (b.finalPrice || b.price) - (a.finalPrice || a.price))
+        break
+      case 'name':
+        result.sort((a, b) => a.name.localeCompare(b.name, 'uk'))
+        break
+      case 'relevance':
+      default:
+        // Залишаємо оригінальний порядок
+        break
+    }
+
+    setFilteredProducts(result)
+  }, [products, searchQuery, sortBy])
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Пошук вже реалізований через useEffect
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -119,7 +165,6 @@ export default function CategoryPageTemplate({
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
               {isLoadingCategories ? (
-           
                 Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={index}
@@ -147,15 +192,37 @@ export default function CategoryPageTemplate({
         <section>
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">
-              {products.length > 0 ? `Товари (${products.length})` : 'Товари'}
+              {filteredProducts.length > 0 ? `Товари (${filteredProducts.length})` : 'Товари'}
             </h2>
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-600">Сортувати:</span>
-              <button className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
-                <ArrowDownAZ className="h-4 w-4" />
-                За популярністю
-              </button>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30"
+              >
+                <option value="relevance">За релевантністю</option>
+                <option value="price-low">Ціна: від дешевих</option>
+                <option value="price-high">Ціна: від дорогих</option>
+                <option value="name">За назвою</option>
+              </select>
             </div>
+          </div>
+
+          {/* Search Bar */}
+          <div className="mb-6">
+            <form onSubmit={handleSearch} className="max-w-md">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Пошук товарів в категорії..."
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]"
+                />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              </div>
+            </form>
           </div>
 
           <div className="flex gap-6">
@@ -176,18 +243,38 @@ export default function CategoryPageTemplate({
                     />
                   ))}
                 </div>
-              ) : products.length === 0 ? (
+              ) : filteredProducts.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <p className="text-lg text-gray-500 mb-2">
-                    Товари в цій категорії поки що відсутні
-                  </p>
-                  <p className="text-sm text-gray-400">
-                    Спробуйте переглянути інші категорії
-                  </p>
+                  {searchQuery ? (
+                    <>
+                      <Search className="h-12 w-12 text-gray-400 mb-4" />
+                      <p className="text-lg text-gray-500 mb-2">
+                        Нічого не знайдено для &quot;{searchQuery}&quot;
+                      </p>
+                      <p className="text-sm text-gray-400 mb-4">
+                        Спробуйте змінити пошуковий запит
+                      </p>
+                      <button
+                        onClick={() => setSearchQuery('')}
+                        className="rounded-lg bg-[#4563d1] px-4 py-2 text-white hover:bg-[#364ea8] transition-colors"
+                      >
+                        Очистити пошук
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-lg text-gray-500 mb-2">
+                        Товари в цій категорії поки що відсутні
+                      </p>
+                      <p className="text-sm text-gray-400">
+                        Спробуйте переглянути інші категорії
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {products.map((product) => (
+                  {filteredProducts.map((product) => (
                     <ApiProductCard
                       key={product.id}
                       id={product.id}

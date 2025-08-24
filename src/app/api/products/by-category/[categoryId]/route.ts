@@ -41,7 +41,28 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     }
 
     const products = await response.json()
-    return NextResponse.json(products)
+    
+    // Нормалізуємо дані продуктів
+    const normalizedProducts = Array.isArray(products) ? products.map((product: { id?: string; productId?: string; _id?: string; name?: string; price?: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number; quantityStatus?: string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
+      id: product.id || product.productId || product._id || '',
+      name: product.name || 'Без назви',
+      price: product.price || 0,
+      discountPrice: product.discountPrice,
+      hasDiscount: product.hasDiscount || false,
+      finalPrice: product.finalPrice,
+      discountPercentage: product.discountPercentage,
+      quantityStatus: product.quantityStatus,
+      quantity: product.quantity,
+      productType: product.productType,
+      categoryPath: product.categoryPath || []
+    })) : []
+
+    // Фільтруємо продукти без ID або назви
+    const validProducts = normalizedProducts.filter(product => 
+      product.id && product.name && product.name !== 'Без назви'
+    )
+
+    return NextResponse.json(validProducts)
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(
