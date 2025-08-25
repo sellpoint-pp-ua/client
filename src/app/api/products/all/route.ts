@@ -9,6 +9,11 @@ export async function GET(request: NextRequest) {
   const page = parseInt(searchParams.get('page') || '0')
   const pageSize = parseInt(searchParams.get('pageSize') || '20')
 
+  // Валідація categoryId
+  if (categoryId && categoryId.trim().length < 2) {
+    return NextResponse.json([], { status: 200 })
+  }
+
   try {
     const response = await fetch(`${API_BASE_URL}/api/Product/get-all`, {
       method: 'POST',
@@ -27,6 +32,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
+      console.error(`API responded with status: ${response.status} for categoryId: ${categoryId}`)
+      if (response.status === 404) {
+        return NextResponse.json([], { status: 200 })
+      }
       throw new Error(`API responded with status: ${response.status}`)
     }
 
@@ -34,9 +43,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(products)
   } catch (error) {
     console.error('Error fetching products:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    )
+    // Повертаємо порожній масив замість помилки, щоб уникнути 404 помилок
+    return NextResponse.json([], { status: 200 })
   }
 }
+

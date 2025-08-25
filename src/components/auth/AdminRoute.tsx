@@ -29,12 +29,12 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 return
             }
             try {
-                const res = await fetch('/api/test-zone/check-admin', {
+                const res = await fetch('https://sellpoint.pp.ua/api/Auth/check-admin', {
                     headers: { Authorization: `Bearer ${token}` },
                     cache: 'no-store',
                 })
                 const data = await res.json() 
-                if (!res.ok || !data.isAdmin) { // Adjust based on your API's response structure
+                if (!res.ok || !data.isAdmin) {
                     router.push(redirectTo)
                 }
                 setIsLoading(false)
