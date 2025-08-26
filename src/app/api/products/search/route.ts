@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
 
   console.log('Product search API called with:', { name, categoryId, languageCode })
 
-  if (!name) {
-    return NextResponse.json({ error: 'Name parameter is required' }, { status: 400 })
+  if (!name || name.trim().length < 2) {
+    return NextResponse.json({ error: 'Name parameter is required and must be at least 2 characters long' }, { status: 400 })
   }
 
   try {
@@ -51,6 +51,10 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
+      console.error(`API responded with status: ${response.status} for URL: ${apiUrl}`)
+      if (response.status === 404) {
+        return NextResponse.json([], { status: 200 })
+      }
       throw new Error(`API responded with status: ${response.status}`)
     }
 
@@ -88,9 +92,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(normalizedData)
   } catch (error) {
     console.error('Error fetching product search results:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch search results' },
-      { status: 500 }
-    )
+    // Повертаємо порожній масив замість помилки, щоб уникнути 404 помилок
+    return NextResponse.json([], { status: 200 })
   }
 }

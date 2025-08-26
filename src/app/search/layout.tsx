@@ -5,3 +5,5 @@ export default function SearchLayout({
 }) {
   return children
 }
+
+
