@@ -151,7 +151,7 @@ export default function UsersPage() {
               onClick={testConnection}
               className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm mr-2"
             >
-              🧪 Тестувати з'єднання з сервером
+              🧪 Тестувати з&apos;єднання з сервером
             </button>
             <button
               onClick={async () => {

@@ -49,7 +49,7 @@ export async function GET() {
           ok: boolean
           headers: { [key: string]: string }
           dataLength?: string | number
-          sampleData?: any
+          sampleData?: unknown
           parseError?: string
         } = {
           endpoint: endpoint.url,
@@ -62,10 +62,10 @@ export async function GET() {
 
         if (response.ok) {
           try {
-            const data = await response.json()
+            const data: unknown = await response.json()
             result.dataLength = Array.isArray(data) ? data.length : 'Not an array'
             result.sampleData = Array.isArray(data) && data.length > 0 ? data[0] : null
-          } catch (parseError) {
+          } catch {
             result.parseError = 'Failed to parse response as JSON'
           }
         }
