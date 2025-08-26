@@ -29,7 +29,7 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 return
             }
             try {
-                const res = await fetch('https://sellpoint.pp.ua/api/Auth/check-admin', {
+                const res = await fetch('https://api.sellpoint.pp.ua/api/Auth/check-admin', {
                     headers: { Authorization: `Bearer ${token}` },
                     cache: 'no-store',
                 })
