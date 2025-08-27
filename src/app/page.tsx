@@ -27,7 +27,7 @@ export default function Home() {
         {/* Full-bleed top container */}
         <div className="w-full bg-white">
           <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-            <div className="flex flex-col lg:flex-row gap-6 py-4 sm:py-6 lg:py-8">
+            <div className="flex flex-col lg:flex-row gap-6 py-4 sm:py-6 lg:py-5">
               <div className="hidden lg:block lg:w-[300px] lg:flex-shrink-0">
                 <Sidebar />
               </div>

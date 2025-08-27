@@ -7,8 +7,8 @@ export async function GET(request: NextRequest) {
   const name = searchParams.get('name')
   const languageCode = searchParams.get('languageCode') || 'uk'
 
-  if (!name || name.trim().length < 2) {
-    return NextResponse.json({ error: 'Name parameter is required and must be at least 2 characters long' }, { status: 400 })
+  if (!name) {
+    return NextResponse.json({ error: 'Name parameter is required' }, { status: 400 })
   }
 
   try {
@@ -18,21 +18,16 @@ export async function GET(request: NextRequest) {
         headers: {
           'Content-Type': 'application/json',
         },
-        next: { revalidate: 3600 } 
+        cache: 'no-store'
       }
     )
 
     if (!response.ok) {
-      console.error(`API responded with status: ${response.status} for name: ${name}`)
-      if (response.status === 404) {
-        return NextResponse.json([], { status: 200 })
-      }
       throw new Error(`API responded with status: ${response.status}`)
     }
 
     const data = await response.json()
     
-    // Нормалізуємо дані категорій
     const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
       id: category.id || category._id || '',
       name: {
@@ -42,7 +37,6 @@ export async function GET(request: NextRequest) {
       parentId: category.parentId || null
     })) : []
 
-    // Фільтруємо категорії без ID або назви
     const validCategories = normalizedCategories.filter(category => 
       category.id && category.name.uk && category.name.uk !== 'Без назви'
     )
@@ -50,7 +44,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(validCategories)
   } catch (error) {
     console.error('Error fetching category search results:', error)
-    // Повертаємо порожній масив замість помилки, щоб уникнути 404 помилок
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json(
+      { error: 'Failed to fetch search results' },
+      { status: 500 }
+    )
   }
 }

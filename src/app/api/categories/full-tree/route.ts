@@ -8,7 +8,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 3600 } 
+      cache: 'no-store'
     });
 
     if (response.status === 204) {

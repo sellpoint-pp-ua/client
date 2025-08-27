@@ -42,7 +42,6 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
 
     const products = await response.json()
     
-    // Нормалізуємо дані продуктів
     const normalizedProducts = Array.isArray(products) ? products.map((product: { id?: string; productId?: string; _id?: string; name?: string; price?: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number; quantityStatus?: string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
       id: product.id || product.productId || product._id || '',
       name: product.name || 'Без назви',
@@ -57,7 +56,6 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       categoryPath: product.categoryPath || []
     })) : []
 
-    // Фільтруємо продукти без ID або назви
     const validProducts = normalizedProducts.filter(product => 
       product.id && product.name && product.name !== 'Без назви'
     )
