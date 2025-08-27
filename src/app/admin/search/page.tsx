@@ -24,23 +24,18 @@ export default function SearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  // Функція для отримання назви категорії з урахуванням локалізації
   const getCategoryName = (category: Category): string => {
     if (typeof category.name === 'string') {
       return category.name
     }
     
-    // Якщо name є об'єктом з локалізованими назвами
     if (typeof category.name === 'object' && category.name !== null) {
-      // Спочатку намагаємось знайти українську назву
       if (category.name.uk) {
         return category.name.uk
       }
-      // Потім англійську
       if (category.name.en) {
         return category.name.en
       }
-      // Якщо нічого не знайдено, беремо першу доступну назву
       const firstValue = Object.values(category.name)[0]
       return firstValue || 'Без назви'
     }
@@ -49,7 +44,7 @@ export default function SearchPage() {
   }
 
   const searchCategories = async (query: string) => {
-    if (!query.trim() || query.trim().length < 2) {
+    if (!query.trim()) {
       setSearchResults([])
       setSearchError(null)
       return
@@ -61,7 +56,6 @@ export default function SearchPage() {
     try {
       let results: Category[] = []
       
-      // Пошук за назвою
       try {
         const nameResponse = await fetch(`/api/categories/search?name=${encodeURIComponent(query)}&languageCode=uk`)
         if (nameResponse.ok) {
@@ -76,21 +70,18 @@ export default function SearchPage() {
         console.warn('Error in name search:', error)
       }
 
-      // Пошук за ID (якщо query виглядає як ID)
-      if (/^[a-zA-Z0-9-_]+$/.test(query) && query.length >= 2) {
+      if (/^[a-zA-Z0-9-_]+$/.test(query) && query.length > 2) {
         try {
           const idResponse = await fetch(`/api/categories/${query}`)
           if (idResponse.ok) {
             const category = await idResponse.json()
             if (category && category.id) {
-              // Перевіряємо, чи не додали ми вже цю категорію
               if (!results.find(r => r.id === category.id)) {
                 results.unshift(category)
               }
             }
           }
         } catch (error) {
-          // Ігноруємо помилки пошуку за ID
           console.warn('Error in ID search:', error)
         }
       }
@@ -122,8 +113,7 @@ export default function SearchPage() {
     try {
       let results: Product[] = []
       
-      // Пошук за назвою продукту
-      if (query.trim() && query.trim().length >= 2) {
+      if (query.trim()) {
         try {
           const nameResponse = await fetch(`/api/products/search?name=${encodeURIComponent(query)}&languageCode=uk`)
           if (nameResponse.ok) {
@@ -137,14 +127,12 @@ export default function SearchPage() {
         }
       }
 
-      // Пошук за ID категорії
-      if (categoryId && categoryId.trim() && categoryId.trim().length >= 2) {
+      if (categoryId && categoryId.trim()) {
         try {
           const categoryResponse = await fetch(`/api/products/all?categoryId=${encodeURIComponent(categoryId)}&pageSize=50`)
           if (categoryResponse.ok) {
             const categoryResults = await categoryResponse.json()
             if (Array.isArray(categoryResults)) {
-              // Додаємо результати, уникаючи дублікатів
               categoryResults.forEach((product: Product) => {
                 if (!results.find(r => r.id === product.id)) {
                   results.push(product)
@@ -181,7 +169,7 @@ export default function SearchPage() {
           setSearchError(null)
         }
       } else if (activeTab === 'products') {
-        if (searchQuery.trim().length >= 2 || (categoryIdInput.trim() && categoryIdInput.trim().length >= 2)) {
+        if (searchQuery.trim().length >= 2 || categoryIdInput.trim()) {
           searchProducts(searchQuery, categoryIdInput)
         } else {
           setSearchResults([])
@@ -196,7 +184,7 @@ export default function SearchPage() {
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setSearchQuery(value)
-    if (!value.trim() || value.trim().length < 2) {
+    if (!value.trim()) {
       setSearchResults([])
       setSearchError(null)
     }
@@ -205,7 +193,7 @@ export default function SearchPage() {
   const handleCategoryIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setCategoryIdInput(value)
-    if (!value.trim() || value.trim().length < 2) {
+    if (!value.trim()) {
       setSearchResults([])
       setSearchError(null)
     }
@@ -274,14 +262,7 @@ export default function SearchPage() {
         <div className="mb-6">
           <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
             <button
-              onClick={() => {
-                setActiveTab('categories')
-                // Очищаємо поля при зміні вкладки
-                setSearchQuery('')
-                setCategoryIdInput('')
-                setSearchResults([])
-                setSearchError(null)
-              }}
+              onClick={() => setActiveTab('categories')}
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
                 activeTab === 'categories'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -292,14 +273,7 @@ export default function SearchPage() {
               Категорії
             </button>
             <button
-              onClick={() => {
-                setActiveTab('products')
-                // Очищаємо поля при зміні вкладки
-                setSearchQuery('')
-                setCategoryIdInput('')
-                setSearchResults([])
-                setSearchError(null)
-              }}
+              onClick={() => setActiveTab('products')}
               className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
                 activeTab === 'products'
                   ? 'bg-white text-gray-900 shadow-sm'
@@ -319,7 +293,6 @@ export default function SearchPage() {
           </h2>
           
           {activeTab === 'categories' ? (
-            // Пошук категорій
             <div className="space-y-4">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -338,7 +311,6 @@ export default function SearchPage() {
               </div>
             </div>
           ) : (
-            // Пошук продуктів
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">
@@ -375,7 +347,7 @@ export default function SearchPage() {
         </div>
 
         {/* Результати пошуку */}
-        {((searchQuery && searchQuery.trim().length >= 2) || (categoryIdInput && categoryIdInput.trim().length >= 2)) && (
+        {(searchQuery || categoryIdInput) && (
           <div className="bg-white rounded-lg shadow border p-6 mb-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
@@ -403,7 +375,7 @@ export default function SearchPage() {
               <div className="space-y-4">
                 {renderSearchResults()}
               </div>
-            ) : ((searchQuery.trim().length >= 2 && activeTab === 'categories') || (searchQuery.trim().length >= 2 || categoryIdInput.trim().length >= 2)) ? (
+            ) : (searchQuery.trim().length >= 2 || categoryIdInput.trim().length >= 2) ? (
               <div className="text-center py-8">
                 <div className="text-gray-400 text-lg mb-2">🔍</div>
                 <p className="text-gray-600">

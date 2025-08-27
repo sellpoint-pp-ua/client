@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 
@@ -11,10 +11,66 @@ type MenuItem = {
 }
 
 export default function Sidebar() {
+  const COLLAPSED_MAX_HEIGHT = 380
+  const SHADOW_HEIGHT_PX = 28
+  const HOVER_SWITCH_DELAY_MS = 500
   const [categories, setCategories] = useState<MenuItem[]>([])
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const containerRef = useRef<HTMLDivElement | null>(null)
+  const expandedPanelRef = useRef<HTMLDivElement | null>(null)
+  const [expandedPos, setExpandedPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
+  const [expandedHeightPx, setExpandedHeightPx] = useState<number>(0)
+  const isHoveringSidebarRef = useRef(false)
+  const isHoveringSubpanelRef = useRef(false)
+  const closeTimeoutRef = useRef<number | null>(null)
+  const hoverSwitchTimeoutRef = useRef<number | null>(null)
+  const prevBodyOverflowRef = useRef<string>('')
+  const prevHtmlOverflowRef = useRef<string>('')
+  const prevBodyPaddingRightRef = useRef<string>('')
+  const prevHtmlPaddingRightRef = useRef<string>('')
+
+  const setSidebarHover = (v: boolean) => {
+    isHoveringSidebarRef.current = v
+  }
+  const setSubpanelHover = (v: boolean) => {
+    isHoveringSubpanelRef.current = v
+  }
+  const scheduleClose = (delay: number = 100) => {
+    if (closeTimeoutRef.current !== null) {
+      clearTimeout(closeTimeoutRef.current)
+    }
+    closeTimeoutRef.current = window.setTimeout(() => {
+      if (!isHoveringSidebarRef.current && !isHoveringSubpanelRef.current) {
+        setIsExpanded(false)
+        setHoveredCategory(null)
+      }
+    }, delay)
+  }
+
+  const openExpanded = () => {
+    const rect = containerRef.current?.getBoundingClientRect()
+    if (rect) {
+      setExpandedPos({ left: rect.left, top: rect.top })
+    }
+    setIsExpanded(true)
+  }
+
+  const scheduleHoverCategory = (categoryId: string, hasChildren: boolean) => {
+    if (hoverSwitchTimeoutRef.current !== null) {
+      clearTimeout(hoverSwitchTimeoutRef.current)
+      hoverSwitchTimeoutRef.current = null
+    }
+    if (!hasChildren) {
+      setHoveredCategory(categoryId)
+      return
+    }
+    hoverSwitchTimeoutRef.current = window.setTimeout(() => {
+      setHoveredCategory(categoryId)
+    }, HOVER_SWITCH_DELAY_MS)
+  }
 
   useEffect(() => {
     async function fetchCategories() {
@@ -52,6 +108,50 @@ export default function Sidebar() {
     fetchCategories()
   }, [])
 
+  useEffect(() => {
+    function measure() {
+      const el = expandedPanelRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setExpandedHeightPx(Math.max(0, Math.floor(rect.height)))
+    }
+    if (isExpanded) {
+      requestAnimationFrame(measure)
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+  }, [isExpanded, categories.length])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const htmlEl = document.documentElement
+    const bodyEl = document.body
+    if (isExpanded) {
+      prevBodyOverflowRef.current = bodyEl.style.overflow
+      prevHtmlOverflowRef.current = htmlEl.style.overflow
+      prevBodyPaddingRightRef.current = bodyEl.style.paddingRight
+      prevHtmlPaddingRightRef.current = htmlEl.style.paddingRight
+
+      const scrollbarWidth = window.innerWidth - htmlEl.clientWidth
+      if (scrollbarWidth > 0) {
+        bodyEl.style.paddingRight = `${scrollbarWidth}px`
+      }
+      bodyEl.style.overflow = 'hidden'
+      htmlEl.style.overflow = 'hidden'
+    } else {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+    return () => {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+  }, [isExpanded])
+
   if (isLoading) {
     return (
       <aside className="relative w-[250px] bg-white p-4 rounded-lg">
@@ -73,57 +173,146 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className="relative w-[320px] bg-white pl-4 mr-0 rounded-lg">
-      <nav className="space-y-1">
-        {categories.map((category) => (
-          <div
-            key={category.id}
-            className="relative"
-            onMouseEnter={() => setHoveredCategory(category.id)}
-            onMouseLeave={() => setHoveredCategory(null)}
-          >
-            <Link
-              href={`/category/${category.id}`}
-              className="text-sm flex items-center justify-between rounded-lg px-4 py-2 text-gray-800 hover:bg-gray-50 hover:text-[#4563d1]"
+    <div
+      className="relative w-[320px]"
+      ref={containerRef}
+      onMouseEnter={() => { setSidebarHover(true); openExpanded() }}
+      onMouseLeave={() => {
+        setSidebarHover(false)
+        scheduleClose(100)
+      }}
+    >
+      {/* Collapsed sidebar (layout placeholder, fixed height, shadowed overflow) */}
+      <aside className="relative -mt-2 bg-white pl-4 pt-4  mr-0 overflow-hidden" style={{ maxHeight: COLLAPSED_MAX_HEIGHT }}>
+        <nav className="space-y-1">
+          {categories.map((category) => (
+            <div
+              key={category.id}
+              className="relative"
+              onMouseEnter={() => { openExpanded(); scheduleHoverCategory(category.id, Boolean(category.children && category.children.length > 0)) }}
             >
-              <span>{category.name}</span>
-              {category.children && category.children.length > 0 && (
-                <ChevronRight className="h-5 w-5" />
-              )}
-            </Link>
+              <Link
+                href={`/category/${category.id}`}
+                className="text-sm flex items-center justify-between rounded-lg px-4 py-2 text-gray-800 hover:bg-gray-50 hover:text-[#4563d1]"
+              >
+                <span>{category.name}</span>
+                {category.children && category.children.length > 0 && (
+                  <ChevronRight className="h-5 w-5" />
+                )}
+              </Link>
+              {/* Flyout is disabled in collapsed mode to avoid clipping */}
+            </div>
+          ))}
+        </nav>
+        {/* Bottom gradient shadow to indicate more content */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-white to-transparent" style={{ height: SHADOW_HEIGHT_PX }} />
+      </aside>
 
-            {hoveredCategory === category.id && category.children && category.children.length > 0 && (
-              <div className="absolute left-full top-0 z-50 ml-0 w-[400px] rounded-lg bg-white p-4 shadow-lg">
-                <div className="space-y-6">
-                  {category.children.map((subcategory) => (
-                    <div key={subcategory.id}>
-                      <h3 className="mb-2 font-medium text-gray-900">
-                        <Link href={`/category/${subcategory.id}`} className="hover:text-[#4563d1]">
-                          {subcategory.name}
-                        </Link>
-                      </h3>
-                      {subcategory.children && subcategory.children.length > 0 && (
-                        <ul className="space-y-2">
-                          {subcategory.children.map((item) => (
-                            <li key={item.id}>
-                              <Link
-                                href={`/category/${item.id}`}
-                                className="text-sm text-gray-600 hover:text-[#4563d1]"
-                              >
-                                {item.name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
+      {/* Floating expanded sidebar with dim overlay (overlay sits below the panels) */}
+      {isExpanded && (
+        <>
+          <div
+            className="fixed inset-0 z-[60] bg-gray-700/30"
+            onMouseEnter={() => { setSidebarHover(false); setSubpanelHover(false); scheduleClose(60) }}
+            onClick={() => { setIsExpanded(false); setHoveredCategory(null) }}
+          />
+          {/* Expanded main sidebar showing full list */}
+          <aside
+            className="fixed z-[70] w-[320px] bg-white pl-4 mr-0 rounded-lg  overflow-auto"
+            style={{ left: expandedPos.left, top: expandedPos.top, maxHeight: '90vh' }}
+            onMouseEnter={() => setSidebarHover(true)}
+            onMouseLeave={() => {
+              setSidebarHover(false)
+              scheduleClose(120)
+            }}
+            ref={expandedPanelRef}
+          >
+            <nav className="space-y-1 pt-4 pb-4">
+              {categories.map((category) => (
+                <div
+                  key={category.id}
+                  className="relative"
+                  onMouseEnter={() => { scheduleHoverCategory(category.id, Boolean(category.children && category.children.length > 0)) }}
+                >
+                  <Link
+                    href={`/category/${category.id}`}
+                    className="text-sm flex items-center justify-between rounded-lg px-4 py-2 text-gray-800 hover:bg-gray-50 hover:text-[#4563d1]"
+                  >
+                    <span>{category.name}</span>
+                    {category.children && category.children.length > 0 && (
+                      <ChevronRight className="h-5 w-5" />
+                    )}
+                  </Link>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </nav>
-    </aside>
+              ))}
+            </nav>
+          </aside>
+          {/* Fixed-position subcategory panel glued to the right of the sidebar */}
+          {hoveredCategory && (() => {
+            const cat = categories.find(c => c.id === hoveredCategory);
+            const items = cat?.children || [];
+            if (!items.length) return null;
+            
+            const left = expandedPos.left + (containerRef.current?.getBoundingClientRect().width || 320) - 6;
+            const top = expandedPos.top;
+            
+            const containerHeight = expandedHeightPx || Math.floor(window.innerHeight * 0.8);
+            const approxItemHeight = 72; 
+            
+            const bias = 1.2;              
+            const verticalPadding = 48;    
+            const hardCap = 3;             
+
+            const usableHeight = Math.max(0, containerHeight - verticalPadding);
+            const itemsPerColumnRaw = Math.floor(usableHeight / (approxItemHeight * bias));
+            const itemsPerColumn = Math.min(hardCap, Math.max(1, itemsPerColumnRaw));
+            
+            const columns = Math.max(1, Math.ceil(items.length / itemsPerColumn));
+            const columnWidth = 370; 
+            const panelWidth = Math.min(columns, 5) * columnWidth + 32; 
+            
+            return (
+              <aside
+                className="fixed z-[80] bg-white rounded-r-lg  overflow-hidden"
+                style={{ left, top, height: containerHeight, width: panelWidth }}
+                onMouseEnter={() => setSubpanelHover(true)}
+                onMouseLeave={() => {
+                  setSubpanelHover(false)
+                  scheduleClose(100)
+                }}
+              >
+                <div className="h-full p-6 overflow-y-auto" style={{ scrollbarGutter: 'stable' as unknown as undefined }}>
+                  <div
+                    className="space-y-6"
+                    style={{ columnCount: Math.min(columns, 5), columnGap: '16px' }}
+                  >
+                    {items.map((subcategory) => (
+                      <div key={subcategory.id} style={{ breakInside: 'avoid' }}>
+                        <h3 className="mb-2 font-bold text-sm text-gray-900">
+                          <Link href={`/category/${subcategory.id}`} className="hover:text-[#4563d1]">
+                            {subcategory.name}
+                          </Link>
+                        </h3>
+                        {subcategory.children && subcategory.children.length > 0 && (
+                          <ul className="space-y-2">
+                            {subcategory.children.map((item) => (
+                              <li key={item.id}>
+                                <Link href={`/category/${item.id}`} className="text-sm text-gray-600 hover:text-[#4563d1]">
+                                  {item.name}
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </aside>
+            )
+          })()}
+        </>
+      )}
+    </div>
   )
 }

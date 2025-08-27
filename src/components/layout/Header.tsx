@@ -121,7 +121,6 @@ export default function Header() {
           console.log('Category response:', categoryData)
           console.log('Product response:', productData)
 
-          // Фільтруємо продукти, щоб переконатися, що вони мають всі необхідні поля
           const validProducts = productData.filter((product: ProductSearchResult) => 
             product && product.id && product.name && product.name !== 'Без назви'
           )
@@ -174,8 +173,6 @@ export default function Header() {
       console.log('Product results:', productResults)
       console.log('Category results:', categoryResults)
       
-      // Завжди перенаправляємо на сторінку пошуку з запитом
-      // Це забезпечить, що користувач завжди потрапить на правильну сторінку
       const searchUrl = `/search?q=${encodeURIComponent(searchQuery)}`
       console.log('Redirecting to search page:', searchUrl)
       router.push(searchUrl)

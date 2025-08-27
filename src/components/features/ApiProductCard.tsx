@@ -171,7 +171,7 @@ export default function ApiProductCard({
       </Link>
       
       <button 
-        className="w-full rounded-full bg-[#4563d1] px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#6A1B9A] disabled:bg-gray-300"
+        className="w-full rounded-full bg-[#4563d1] px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#364ea8] disabled:bg-gray-300"
         disabled={!isAvailable}
         onClick={(e) => {
           e.preventDefault()

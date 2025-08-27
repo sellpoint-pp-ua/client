@@ -10,8 +10,8 @@ export async function GET(request: NextRequest) {
 
   console.log('Product search API called with:', { name, categoryId, languageCode })
 
-  if (!name || name.trim().length < 2) {
-    return NextResponse.json({ error: 'Name parameter is required and must be at least 2 characters long' }, { status: 400 })
+  if (!name) {
+    return NextResponse.json({ error: 'Name parameter is required' }, { status: 400 })
   }
 
   try {
@@ -19,7 +19,6 @@ export async function GET(request: NextRequest) {
     let requestBody: { categoryId: string; include: Record<string, never>; exclude: Record<string, never>; page: number; pageSize: number; language: string } | undefined
 
     if (categoryId) {
-      // Якщо вказана категорія, шукаємо в ній
       apiUrl = `${API_BASE_URL}/api/Product/get-all`
       requestBody = {
         categoryId: categoryId,
@@ -31,7 +30,6 @@ export async function GET(request: NextRequest) {
       }
       console.log('Searching in category:', categoryId)
     } else {
-      // Якщо категорія не вказана, шукаємо по всіх продуктах
       apiUrl = `${API_BASE_URL}/api/Product/search?name=${encodeURIComponent(name)}&languageCode=${languageCode}`
       console.log('Searching in all products')
     }
@@ -51,17 +49,12 @@ export async function GET(request: NextRequest) {
     })
 
     if (!response.ok) {
-      console.error(`API responded with status: ${response.status} for URL: ${apiUrl}`)
-      if (response.status === 404) {
-        return NextResponse.json([], { status: 200 })
-      }
       throw new Error(`API responded with status: ${response.status}`)
     }
 
     let data = await response.json()
     console.log('Raw API response:', data)
 
-    // Якщо шукали по категорії, фільтруємо результати по назві
     if (categoryId && Array.isArray(data)) {
       const searchTerm = name.toLowerCase()
       data = data.filter((product: { name?: string }) => 
@@ -72,7 +65,6 @@ export async function GET(request: NextRequest) {
       console.log('Filtered by name:', data)
     }
 
-    // Переконуємося, що всі продукти мають необхідні поля
     const normalizedData = Array.isArray(data) ? data.map((product: { id?: string; productId?: string; _id?: string; name?: string; highlighted?: string; price?: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number; quantityStatus?: string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
       id: product.id || product.productId || product._id || '',
       name: product.name || product.highlighted || 'Без назви',
@@ -92,7 +84,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(normalizedData)
   } catch (error) {
     console.error('Error fetching product search results:', error)
-    // Повертаємо порожній масив замість помилки, щоб уникнути 404 помилок
-    return NextResponse.json([], { status: 200 })
+    return NextResponse.json(
+      { error: 'Failed to fetch search results' },
+      { status: 500 }
+    )
   }
 }

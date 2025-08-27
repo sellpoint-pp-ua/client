@@ -22,7 +22,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
         headers: {
           'Content-Type': 'application/json',
         },
-        next: { revalidate: 3600 } 
+        cache: 'no-store'
       }
     )
 
@@ -35,7 +35,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
 
     const data = await response.json()
     
-    // Нормалізуємо дані категорій
     const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
       id: category.id || category._id || '',
       name: {
@@ -45,7 +44,6 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       parentId: category.parentId || id
     })) : []
 
-    // Фільтруємо категорії без ID або назви
     const validCategories = normalizedCategories.filter(category => 
       category.id && category.name.uk && category.name.uk !== 'Без назви'
     )

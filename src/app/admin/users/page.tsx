@@ -42,7 +42,6 @@ export default function UsersPage() {
       setIsLoading(true)
       setError(null)
       
-      // Отримуємо всіх користувачів з серверного API
       const response = await fetch('/api/users/regular')
       if (!response.ok) {
         throw new Error('Failed to fetch users')
@@ -55,25 +54,6 @@ export default function UsersPage() {
       setError('Помилка завантаження користувачів')
     } finally {
       setIsLoading(false)
-    }
-  }
-
-  const testConnection = async () => {
-    try {
-      console.log('Testing connection to server API...')
-      // Тестуємо з'єднання з серверним API для отримання користувачів
-      const response = await fetch('/api/test-connection')
-      const result = await response.json()
-      console.log('Connection test result:', result)
-      
-      if (result.success) {
-        alert(`✅ З'єднання з сервером успішне!\nСтатус: ${result.status}\nПовідомлення: ${result.message}`)
-      } else {
-        alert(`❌ Помилка з'єднання з сервером!\nСтатус: ${result.status}\nПовідомлення: ${result.message}`)
-      }
-    } catch (err) {
-      console.error('Error testing connection:', err)
-      alert('❌ Помилка при тестуванні з\'єднання')
     }
   }
 
@@ -143,33 +123,7 @@ export default function UsersPage() {
     <div className="p-6">
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Користувачі</h1>
-          <p className="text-gray-600">Перегляд всіх користувачів системи</p>
-          
-          {/* Кнопка тестування з'єднання */}
-          <div className="mt-4">
-            <button
-              onClick={testConnection}
-              className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 text-sm mr-2"
-            >
-              🧪 Тестувати з&apos;єднання з сервером
-            </button>
-            <button
-              onClick={async () => {
-                try {
-                  const response = await fetch('/api/test-server')
-                  const result = await response.json()
-                  console.log('Server test result:', result)
-                  alert(`Результат тесту серверного API:\n${JSON.stringify(result, null, 2)}`)
-                } catch (err) {
-                  console.error('Error testing server:', err)
-                  alert('❌ Помилка при тестуванні серверного API')
-                }
-              }}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-            >
-              🔧 Тестувати серверне API
-            </button>
-          </div>
+          <p className="text-gray-600">Перегляд звичайних користувачів системи</p>
         </div>
 
         {/* Пошук */}

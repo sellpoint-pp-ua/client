@@ -8,4 +8,3 @@ export default function SellersLayout({ children }: { children: React.ReactNode 
     </AdminRoute>
   )
 }
-
