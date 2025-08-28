@@ -13,4 +13,9 @@ export type AuthResponse = { token: string } | string;
 
 export interface AuthError {
   message: string;
+  errors?: Record<string, string[]>;
+  type?: string;
+  title?: string;
+  status?: number;
+  traceId?: string;
 } 
