@@ -48,14 +48,18 @@ export const useAuth = () => {
 
   const checkAuth = useCallback(async () => {
     try {
+      console.log('useAuth: Checking authentication');
       const authenticated = await authService.checkAuth();
+      console.log('useAuth: Authentication result:', authenticated);
       setIsAuthenticated(authenticated);
-    } catch {
+    } catch (error) {
+      console.error('useAuth: Authentication check failed:', error);
       setIsAuthenticated(false);
     }
   }, []);
 
   useEffect(() => {
+    console.log('useAuth: Initial auth check');
     checkAuth();
   }, [checkAuth]);
 
@@ -66,6 +70,7 @@ export const useAuth = () => {
 
       try {
         const response = await authService.login(credentials);
+        console.log('useAuth: Login successful, setting token');
         authService.setToken(response.token);
         if (typeof window !== 'undefined') {
           localStorage.setItem('user_display_name', credentials.login);
@@ -122,6 +127,17 @@ export const useAuth = () => {
     setError(null);
   }, []);
 
+  const checkAdminStatus = useCallback(async (): Promise<boolean> => {
+    if (!isAuthenticated) {
+      return false;
+    }
+    try {
+      return await authService.checkAdminStatus();
+    } catch {
+      return false;
+    }
+  }, [isAuthenticated]);
+
   return {
     isLoading,
     error,
@@ -131,6 +147,7 @@ export const useAuth = () => {
     logout,
     clearError,
     checkAuth,
+    checkAdminStatus,
     sendVerificationCode: authService.sendVerificationCode.bind(authService),
     verifyEmailCode: authService.verifyEmailCode.bind(authService),
   };
