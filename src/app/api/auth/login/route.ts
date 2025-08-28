@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       
       // If it's a validation error, try to provide a more helpful message
       if (res.status === 400 && typeof data === 'object' && data && 'errors' in data) {
-        const errors = (data as any).errors;
+        const errors = (data as { errors?: Record<string, string[]> }).errors;
         if (errors && errors.Password) {
           return NextResponse.json({ 
             message: 'Пароль не відповідає вимогам системи. Спробуйте інший пароль або зверніться до адміністратора.',

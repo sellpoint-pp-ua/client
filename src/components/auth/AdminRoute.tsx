@@ -85,7 +85,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
             try {
                 setError(null)
                 console.log(`AdminRoute: Attempting admin check (attempt ${retryCount + 1}/${maxRetries + 1})`)
-                console.log('AdminRoute: Current error state:', error);
                 
                 // Use authService to check admin status
                 console.log('AdminRoute: Starting admin status check');
@@ -105,30 +104,34 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
 
                 console.log('AdminRoute: Setting loading to false');
                 setIsLoading(false)
-            } catch (error: any) {
-                console.error('AdminRoute: Admin check failed:', error.message || error)
-                console.error('AdminRoute: Error stack:', error.stack)
+            } catch (error: unknown) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                const errorStack = error instanceof Error ? error.stack : undefined;
+                const errorName = error instanceof Error ? error.name : 'Unknown';
+                
+                console.error('AdminRoute: Admin check failed:', errorMessage)
+                console.error('AdminRoute: Error stack:', errorStack)
                 console.error('AdminRoute: Full error object:', error)
                 console.error('AdminRoute: Error type:', typeof error);
-                console.error('AdminRoute: Error constructor:', error.constructor.name);
+                console.error('AdminRoute: Error name:', errorName);
                 
                 // Handle specific error types
-                if (error.name === 'AbortError') {
+                if (errorName === 'AbortError') {
                     console.warn('AdminRoute: Admin check timed out')
                     setError('Перевірка доступу зайняла забагато часу')
-                } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError') || error.message?.includes('fetch') || error.message?.includes('network')) {
+                } else if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError') || errorMessage.includes('fetch') || errorMessage.includes('network')) {
                     console.warn('AdminRoute: Network error during admin check')
                     setError('Помилка мережі. Перевірте з\'єднання')
-                } else if (error.message?.includes('401') || error.message?.includes('403') || error.message?.includes('Unauthorized') || error.message?.includes('unauthorized')) {
+                } else if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized') || errorMessage.includes('unauthorized')) {
                     console.warn('AdminRoute: Authentication error during admin check')
                     router.push(redirectTo)
                     return
                 } else {
-                    console.warn('AdminRoute: General error during admin check:', error.message);
+                    console.warn('AdminRoute: General error during admin check:', errorMessage);
                     console.warn('AdminRoute: Error details:', {
-                        name: error.name,
-                        message: error.message,
-                        stack: error.stack
+                        name: errorName,
+                        message: errorMessage,
+                        stack: errorStack
                     });
                     setError('Помилка перевірки доступу')
                 }
