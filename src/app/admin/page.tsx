@@ -1,4 +1,4 @@
-import { Users, Package, ShoppingBag, Store } from 'lucide-react'
+import { Users, Package, ShoppingBag, Search } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AdminPage() {
@@ -10,7 +10,7 @@ export default function AdminPage() {
             Адмін панель
           </h1>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Categories Management */}
             <Link href="/admin/categories/" className="group">
               <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -41,6 +41,21 @@ export default function AdminPage() {
               </div>
             </Link>
 
+            {/* Search */}
+            <Link href="/admin/search/" className="group">
+              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Пошук</h3>
+                    <p className="text-sm text-gray-600">Швидкий пошук категорій та товарів</p>
+                  </div>
+                  <div className="p-3 bg-yellow-100 rounded-lg group-hover:bg-yellow-200 transition-colors">
+                    <Search className="h-6 w-6 text-yellow-600" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+
             {/* Users Management */}
             <Link href="/admin/users/" className="group">
               <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
@@ -51,21 +66,6 @@ export default function AdminPage() {
                   </div>
                   <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
                     <Users className="h-6 w-6 text-purple-600" />
-                  </div>
-                </div>
-              </div>
-            </Link>
-
-            {/* Sellers Management */}
-            <Link href="/admin/sellers/" className="group">
-              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Продавці</h3>
-                    <p className="text-sm text-gray-600">Управління продавцями</p>
-                  </div>
-                  <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
-                    <Store className="h-6 w-6 text-orange-600" />
                   </div>
                 </div>
               </div>

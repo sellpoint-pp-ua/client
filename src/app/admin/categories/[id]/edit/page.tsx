@@ -6,7 +6,7 @@ import { authService } from '@/services/authService'
 
 type CategoryDto = {
   id: string
-  name: Record<string, string>
+  name: string
   parentId?: string | null
 }
 
@@ -29,7 +29,7 @@ export default function EditCategoryPage() {
         const res = await fetch(`/api/categories/${categoryId}`, { cache: 'no-store' })
         if (!res.ok) throw new Error('Не вдалося завантажити категорію')
         const data = await res.json() as CategoryDto
-        setModel({ id: data.id, name: { ...data.name }, parentId: data.parentId ?? null })
+        setModel({ id: data.id, name: data.name, parentId: data.parentId ?? null })
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Помилка')
       } finally {
@@ -78,11 +78,11 @@ export default function EditCategoryPage() {
       <h1 className="text-2xl font-semibold mb-4">Редагувати категорію</h1>
       <form onSubmit={onSubmit} className="space-y-4 bg-white p-4 rounded border">
         <div>
-          <label className="block text-sm text-gray-600 mb-1">Назва (uk)</label>
+          <label className="block text-sm text-gray-600 mb-1">Назва</label>
           <input
             className="w-full rounded border px-3 py-2"
-            value={model.name.uk || ''}
-            onChange={e => setModel(m => m ? { ...m, name: { ...m.name, uk: e.target.value } } : m)}
+            value={model.name || ''}
+            onChange={e => setModel(m => m ? { ...m, name: e.target.value } : m)}
           />
         </div>
         <div>

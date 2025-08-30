@@ -30,15 +30,14 @@ export async function GET(request: NextRequest) {
     
     const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
       id: category.id || category._id || '',
-      name: {
-        uk: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).uk || 'Без назви' : (category.name as string) || 'Без назви',
-        en: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).en || 'No name' : (category.name as string) || 'No name'
-      },
+      name: typeof category.name === 'object' && category.name ? 
+        (category.name as { uk?: string; en?: string }).uk || 'Без назви' : 
+        (category.name as string) || 'Без назви',
       parentId: category.parentId || null
     })) : []
 
     const validCategories = normalizedCategories.filter(category => 
-      category.id && category.name.uk && category.name.uk !== 'Без назви'
+      category.id && category.name && category.name !== 'Без назви'
     )
 
     return NextResponse.json(validCategories)
