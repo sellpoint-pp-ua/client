@@ -9,7 +9,6 @@ import {
   FolderIcon,
   CubeIcon,
   UsersIcon,
-  UserGroupIcon,
   HomeIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline'
@@ -23,7 +22,6 @@ export default function AdminSidebar() {
     { name: 'Категорії', href: '/admin/categories', icon: FolderIcon },
     { name: 'Продукти', href: '/admin/products', icon: CubeIcon },
     { name: 'Користувачі', href: '/admin/users', icon: UsersIcon },
-    { name: 'Продавці', href: '/admin/sellers', icon: UserGroupIcon },
     { name: 'Пошук', href: '/admin/search', icon: MagnifyingGlassIcon },
   ]
 
@@ -46,7 +44,7 @@ export default function AdminSidebar() {
 
       {/* Бічне меню */}
       <div className={`
-        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:w-64
+        fixed inset-y-0 left-0 z-40 w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 lg:w-64 lg:h-full
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="flex flex-col h-full">
@@ -85,13 +83,13 @@ export default function AdminSidebar() {
           </nav>
 
           {/* Футер */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t mt-auto">
             <Link
               href="/"
               className="flex items-center text-sm text-gray-600 hover:text-gray-900 transition-colors"
             >
               <HomeIcon className="mr-2 h-4 w-4" />
-              На головну
+              На домашню сторінку
             </Link>
           </div>
         </div>

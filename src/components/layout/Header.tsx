@@ -9,10 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 
 type CategorySearchResult = {
   id: string;
-  name: {
-    uk: string;
-    en: string;
-  };
+  name: string;
   parentId: string | null;
 }
 
@@ -276,7 +273,7 @@ export default function Header() {
                             className="flex w-full items-center px-4 py-2 text-left hover:bg-gray-100"
                           >
                             <span className="text-sm">
-                              {highlightCategoryText(category.name.uk, searchQuery)}
+                              {highlightCategoryText(category.name, searchQuery)}
                             </span>
                           </button>
                         ))}

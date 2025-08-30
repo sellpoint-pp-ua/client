@@ -61,7 +61,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                     const r = await fetch(`/api/categories/${id}`)
                     if (!r.ok) return { id, name: 'Категорія' }
                     const c = await r.json()
-                    const nameUk: string = c?.name?.uk || 'Категорія'
+                    const nameUk: string = c?.name || 'Категорія'
                     return { id, name: nameUk }
                   })
                 )

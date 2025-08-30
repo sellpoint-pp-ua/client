@@ -1,176 +1,139 @@
-# Нові функції адмін панелі
+```markdown
+# Admin Panel - Features and Capabilities
 
-## Оновлення AdminRoute
-- Тимчасово прибрано перевірку на адміна
-- Залишено тільки базову перевірку на токен авторизації
+## Overview
 
-## Нове бокове меню (AdminSidebar)
+The Admin Panel provides a comprehensive set of tools for managing categories, products, and users.
 
-### Основні функції:
-1. **Згортається меню** - кнопка бургер для мобільних пристроїв
-2. **Навігація** - зручний доступ до всіх розділів адмін панелі
-3. **Спрощений інтерфейс** - прибрано функціональність пошуку з sidebar
+## Admin Panel Pages
 
-### Адаптивність:
-- **Desktop** - бокове меню завжди видиме
-- **Mobile** - меню згортається, кнопка бургер зліва зверху
-- **Оверлей** - темний фон при відкритому мобільному меню
+### 1. Categories (`/admin/categories`)
 
-### Навігаційні посилання:
-- Головна (`/admin`)
-- Категорії (`/admin/categories`)
-- Продукти (`/admin/products`)
-- Користувачі (`/admin/users`) - звичайні користувачі
-- Продавці (`/admin/sellers`) - користувачі з продуктами
-- Пошук (`/admin/search`) - окрема сторінка пошуку
+**Features:**
+- ✅ View all categories in a table format
+- ✅ Search categories by name or ID
+- ✅ Edit categories
+- ✅ Automatic search with a 300ms delay
+- ✅ Backward compatibility with the old name structure
 
-## Сторінка користувачів
+**Category Search:**
+- Enter the category name to search by name
+- Enter the category ID to search by ID
+- Minimum search length: 2 characters
+- Results are displayed in a separate block with a clear option
 
-### URL: `/admin/users`
+### 2. Products (`/admin/products`)
 
-### Функціональність:
-1. **Перегляд звичайних користувачів** - тільки ті, хто НЕ є продавцем
-2. **Фільтрація по ролях** - виключає admin та moderator
-3. **Пошук користувачів** - за ім'ям, email, іменем
-4. **Статистика** - загальна кількість, підтверджені email, активні користувачі
+**Features:**
+- ✅ View products by category
+- ✅ Search products by name and/or category
+- ✅ Filter by category via a dropdown list
+- ✅ Automatic search with a 300ms delay
 
-### Відображувана інформація:
-- **Основна інформація**: username, ID, email, ролі
-- **Профіль**: аватар, дата реєстрації
-- **Додаткова інформація**: ім'я, прізвище, телефон
-- **Статус**: підтвердження email, активність
+**Product Search:**
+- Enter the product name to search by name
+- Enter the category ID to filter by category
+- Leave the category ID empty to search across all categories
+- Combine name and category for refined searches
 
-### API Endpoint:
-- **`/api/users/regular`** - отримання звичайних користувачів
+### 3. Users (`/admin/users`)
 
-## Сторінка продавців
+**Features:**
+- ✅ View regular users
+- ✅ Filter by roles
+- ✅ Search users by name, email, or username
+- ✅ User statistics
+- ✅ Compact design with optimal width
 
-### URL: `/admin/sellers`
+### 4. Search (`/admin/search`)
 
-### Функціональність:
-1. **Перегляд продавців** - користувачі з продуктами
-2. **Статистика продаж** - кількість продуктів, загальний дохід
-3. **Пошук продавців** - за ім'ям, email, іменем
-4. **Аналітика** - загальна статистика по всіх продавцях
+**Features:**
+- ✅ Universal search for categories and products
+- ✅ Toggle between "Categories" and "Products" tabs
+- ✅ Search by name and ID
+- ✅ Detailed usage instructions
 
-### Відображувана інформація:
-- **Основна інформація**: username, ID, email, ролі
-- **Профіль**: аватар, дата реєстрації
-- **Додаткова інформація**: ім'я, прізвище, телефон
-- **Статистика продаж**: кількість продуктів, загальний дохід
+**Details:**
+- Kept as a separate page for quick access
+- Provides detailed information about search results
+- Includes comprehensive usage instructions
 
-### API Endpoint:
-- **`/api/users/sellers`** - отримання продавців з аналітикою
+## Data Structure
 
-### Логіка визначення продавців:
-- Продавець = користувач, у якого є продукти в системі
-- Аналізується поле `sellerId` в продуктах
-- Автоматично підраховується кількість продуктів та дохід
-
-## Окрема сторінка пошуку
-
-### URL: `/admin/search`
-
-### Функціональність:
-1. **Таби пошуку** - перемикання між пошуком категорій та продуктів
-2. **Пошук категорій** - за назвою або ID
-3. **Пошук продуктів** - за назвою та/або категорією
-4. **Автопошук** - запускається через 300мс після введення
-
-### Пошук категорій:
-- **Пошук за назвою** - використовує API `/api/categories/search`
-- **Пошук за ID** - використовує API `/api/categories/[id]`
-- **Автопошук** - запускається через 300мс після введення
-- **Мінімальна довжина** - пошук починається з 2 символів
-- **Результати** - показує назву та ID категорії
-- **Перехід** - кнопка "Переглянути" веде на сторінку категорії
-- **Локалізація** - автоматично обробляє локалізовані назви `{uk: "назва", en: "name"}`
-
-### Пошук продуктів:
-- **Пошук за назвою** - використовує API `/api/products/search`
-- **Фільтрація за категорією** - використовує API `/api/products/all`
-- **Підтримка null категорії** - можна шукати по всіх категоріях
-- **Комбінований пошук** - можна поєднувати назву та категорію
-- **Результати** - показує назву, ID та категорію продукту
-- **Перехід** - кнопка "Переглянути" веде на сторінку продукту
-
-## Виправлення помилок
-
-### Проблема з локалізацією:
-- **Оригінальна помилка**: `Objects are not valid as a React child (found: object with keys {uk, en})`
-- **Причина**: Поле `name` в категоріях є `Dictionary<string, string>` з локалізованими назвами
-- **Рішення**: Додано функцію `getCategoryName()` для правильного відображення локалізованих назв
-- **Пріоритет мов**: 1) Українська (uk), 2) Англійська (en), 3) Перша доступна
-
-### Структура даних категорій:
+### Categories
+New category name structure:
 ```typescript
-type Category = {
-  id: string
-  name: Dictionary<string, string> | string  // {uk: "назва", en: "name"}
-  languageCode?: string
+{
+  id: string;
+  name: string; // Simple string instead of an object with languages
+  parentId?: string | null;
 }
 ```
 
-## Нові API Endpoints:
-- **`/api/products/all`** - отримання всіх продуктів з фільтрацією за категорією
-- **`/api/users/regular`** - отримання звичайних користувачів (не продавців)
-- **`/api/users/sellers`** - отримання продавців з аналітикою
-- **Підтримка `categoryId: null`** - для пошуку по всіх категоріях
-- **Покращений пошук продуктів** - комбінація назви та категорії
+### Products
+```typescript
+{
+  id: string;
+  name: string;
+  price: number;
+  categoryId?: string;
+  categoryName?: string;
+}
+```
 
-## Оновлена головна сторінка адмін панелі
-- Сучасний дизайн з картками
-- Іконки для кожного розділу
-- Інформація про швидкі дії
-- Підказки по використанню
+## API Routes
 
-## Технічні деталі:
-- Компонент: `client/src/components/admin/AdminSidebar.tsx`
-- Layout: `client/src/app/admin/layout.tsx`
-- Головна сторінка: `client/src/app/admin/page.tsx`
-- Сторінка пошуку: `client/src/app/admin/search/page.tsx`
-- Сторінка користувачів: `client/src/app/admin/users/page.tsx`
-- Сторінка продавців: `client/src/app/admin/sellers/page.tsx`
-- Нові API: `client/src/app/api/products/all/route.ts`, `client/src/app/api/users/regular/route.ts`, `client/src/app/api/users/sellers/route.ts`
-- Залежності: `@heroicons/react` для іконок
+### Categories
+- `GET /api/categories/full-tree` - Retrieve the full category tree
+- `GET /api/categories/search` - Search categories by name
+- `GET /api/categories/[id]` - Retrieve a category by ID
+- `GET /api/categories/[id]/children` - Retrieve child categories
+- `PUT /api/categories/update` - Update a category
 
-## Використання:
-1. Відкрийте адмін панель (`/admin`)
-2. Використовуйте бокове меню для навігації
-3. **Користувачі** - перегляд звичайних користувачів системи
-4. **Продавці** - перегляд користувачів з продуктами та статистикою
-5. **Пошук** - швидкий пошук категорій та продуктів
-6. Клікніть по кнопці "Переглянути" для переходу на відповідну сторінку
-7. На мобільних пристроях використовуйте кнопку бургер
+### Products
+- `GET /api/products/search` - Search products by name
+- `GET /api/products/all` - Retrieve products with filtering
+- `GET /api/products/by-category/[id]` - Retrieve products by category
 
-## Особливості пошуку продуктів:
-- **Порожній ID категорії** = пошук по всіх категоріях
-- **Тільки назва** = пошук продуктів за назвою
-- **Тільки категорія** = всі продукти з вказаної категорії
-- **Назва + категорія** = комбінований пошук
+### Users
+- `GET /api/users/all` - Retrieve all users
+- `GET /api/users/regular` - Retrieve regular users
+- `POST /api/users/ban` - Ban a user
+- `POST /api/users/unban` - Unban a user
 
-## Переваги нової структури:
-- **Окрема сторінка пошуку** - більше місця для результатів та інструкцій
-- **Спрощений sidebar** - тільки навігація без зайвих функцій
-- **Кращий UX** - зосередження на пошуку без відволікаючих елементів
-- **Масштабованість** - легко додавати нові функції пошуку
-- **Виправлена локалізація** - правильно обробляються багатомовні назви категорій
-- **Повна аналітика** - детальна інформація про користувачів та продавців
+## Implementation Details
 
-## Примітки по локалізації:
-- Бекенд повертає назви категорій у форматі `{uk: "назва", en: "name"}`
-- Frontend автоматично вибирає найкращу мову для відображення
-- Пріоритет: українська → англійська → перша доступна
-- Якщо назва не знайдена, показується "Без назви"
+### Backward Compatibility
+- The `getCategoryName()` function ensures compatibility with the old name structure
+- Supports both the new format (simple string) and the old format (object with languages)
 
-## Логіка розділення користувачів:
-- **Звичайні користувачі** (`/admin/users`):
-  - Не мають продуктів в системі
-  - Не є admin або moderator
-  - Тільки базові функції користувача
-  
-- **Продавці** (`/admin/sellers`):
-  - Мають хоча б один продукт в системі
-  - Можуть мати різні ролі
-  - Показується статистика продаж
-  - Аналітика по продуктах та доході
+### Automatic Search
+- Search triggers automatically after a 300ms delay
+- Minimum search length: 2 characters
+- Results are displayed in real-time
+
+### UI/UX
+- Clear separation between search results and regular views
+- Color coding: blue for categories, green for products
+- Intuitive icons and tooltips
+- "Clear" buttons to reset search results
+- Sidebar stretches to full screen height
+- Compact design without unnecessary navigation buttons
+
+## Sidebar
+
+**Features:**
+- Stretches to full screen height
+- Responsive design for mobile devices
+- Fixed position on desktop
+- Mobile burger button for collapsing/expanding
+- Eliminates the need for additional navigation buttons on pages
+
+**Navigation Links:**
+- Home (`/admin`)
+- Categories (`/admin/categories`)
+- Products (`/admin/products`)
+- Users (`/admin/users`)
+- Search (`/admin/search`)
+- Back to Home (in the sidebar footer)
+```

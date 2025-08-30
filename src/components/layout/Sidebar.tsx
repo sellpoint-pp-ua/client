@@ -82,17 +82,17 @@ export default function Sidebar() {
           throw new Error('Failed to fetch categories')
         }
         const data = await response.json()
-  const menuItems = data.map((category: { id: string; name: { uk: string }; children?: unknown[] }) => {
-    const catChildren = category.children as Array<{ id: string; name: { uk: string }; children?: unknown[] }> | undefined
+  const menuItems = data.map((category: { id: string; name: string; children?: unknown[] }) => {
+    const catChildren = category.children as Array<{ id: string; name: string; children?: unknown[] }> | undefined
     return {
       id: category.id,
-      name: category.name.uk,
+      name: category.name,
       children: catChildren?.map((child) => {
-        const childChildren = child.children as Array<{ id: string; name: { uk: string } }> | undefined
+        const childChildren = child.children as Array<{ id: string; name: string }> | undefined
         return {
           id: child.id,
-          name: child.name.uk,
-          children: childChildren?.map((subChild) => ({ id: subChild.id, name: subChild.name.uk }))
+          name: child.name,
+          children: childChildren?.map((subChild) => ({ id: subChild.id, name: subChild.name }))
         }
       })
     }

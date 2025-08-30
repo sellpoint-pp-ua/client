@@ -47,7 +47,7 @@ export default function CategoryPageTemplate({
   title,
   description
 }: CategoryPageTemplateProps) {
-  const [categories, setCategories] = useState<Array<{ id: string; name: { uk: string } }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
@@ -76,8 +76,8 @@ export default function CategoryPageTemplate({
           while (currentId && guard < 20) {
             const r: Response = await fetch(`/api/categories/${currentId}`)
             if (!r.ok) break
-            const c: { name?: { uk?: string }, parentId?: string | null } = await r.json()
-            const nameUk: string = c?.name?.uk || 'Категорія'
+            const c: { name?: string, parentId?: string | null } = await r.json()
+            const nameUk: string = c?.name || 'Категорія'
             chain.push({ id: currentId, name: nameUk })
             currentId = (typeof c?.parentId === 'string' ? c.parentId : null)
             guard++
@@ -243,7 +243,7 @@ export default function CategoryPageTemplate({
                 categories.map((category) => (
                   <CategoryCard
                     key={category.id}
-                    title={category.name.uk}
+                    title={category.name}
                     count={0}
                     href={`/category/${category.id}`}
                     iconType="sparkles"
