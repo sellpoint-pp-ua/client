@@ -8,16 +8,15 @@ interface ApiBan {
   userId?: string
   adminId?: string
   reason?: string
-  banType?: string
-  createdAt?: string
-  expiresAt?: string
-  isActive?: boolean
+  bannedAt?: string
+  bannedUntil?: string
+  types?: string
 }
 
 export async function GET(request: Request) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
+    const url = new URL(request.url)
+    const userId = url.searchParams.get('userId')
 
     if (!userId) {
       return NextResponse.json(
@@ -29,9 +28,7 @@ export async function GET(request: Request) {
     // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
     
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    }
+    const headers: HeadersInit = {}
     
     // Додаємо токен авторизації якщо він є
     if (authHeader) {
@@ -40,13 +37,15 @@ export async function GET(request: Request) {
 
     const response = await fetch(`${API_BASE_URL}/api/User/GetAllByUserId?userId=${userId}`, {
       headers,
-      next: { revalidate: 3600 }
+      next: { revalidate: 0 }
     })
 
     if (!response.ok) {
       if (response.status === 404) {
         return NextResponse.json([])
       }
+      const errorText = await response.text()
+      console.error('Server error response:', errorText)
       throw new Error(`API responded with status: ${response.status}`)
     }
 
@@ -57,10 +56,7 @@ export async function GET(request: Request) {
       userId: ban.userId,
       adminId: ban.adminId,
       reason: ban.reason,
-      banType: ban.banType,
-      createdAt: ban.createdAt,
-      expiresAt: ban.expiresAt,
-      isActive: ban.isActive
+      bannedAt: ban.bannedAt
     })) : []
 
     return NextResponse.json(normalizedBans)

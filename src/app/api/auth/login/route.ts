@@ -59,11 +59,53 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(typeof data === 'string' ? { message: data } : data as object, { status: res.status })
     }
     
-    console.log('Login API: Returning success response')
-    if (typeof data === 'string') {
-      return NextResponse.json({ token: data })
+    console.log('Login API: Login successful, checking for bans')
+    
+    // Якщо логін успішний, перевіряємо чи користувач заблокований
+    if (typeof data === 'string' || (typeof data === 'object' && data && 'token' in data)) {
+      const token = typeof data === 'string' ? data : (data as { token: string }).token
+      
+      console.log('Login API: Got token, checking ban status...')
+      
+      try {
+        // Перевіряємо чи користувач заблокований через новий API роут
+        const checkResponse = await fetch(`${request.nextUrl.origin}/api/auth/check-ban`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+          cache: 'no-store',
+        })
+        
+        console.log('Login API: Ban check response status:', checkResponse.status)
+        
+        // Якщо отримали 403, це означає що користувач заблокований
+        if (checkResponse.status === 403) {
+          const banData = await checkResponse.json()
+          console.log('Login API: User is banned, ban data:', banData)
+          return NextResponse.json({ 
+            message: banData.message || 'Нам шкода, але ваш акаунт було заблоковано адміністратором системи. Якщо ви вважаєте, що це помилка, зверніться до адміністратора для розблокування.',
+            isBanned: true
+          }, { status: 403 })
+        }
+        
+        // Якщо перевірка пройшла успішно, повертаємо токен
+        console.log('Login API: User is not banned, returning token')
+        if (typeof data === 'string') {
+          return NextResponse.json({ token: data })
+        }
+        return NextResponse.json(data)
+        
+      } catch (banCheckError) {
+        console.error('Login API: Error checking ban status:', banCheckError)
+        // Якщо не вдалося перевірити бан, все одно повертаємо токен
+        console.log('Login API: Ban check failed, returning token anyway')
+        if (typeof data === 'string') {
+          return NextResponse.json({ token: data })
+        }
+        return NextResponse.json(data)
+      }
     }
-    return NextResponse.json(data)
   } catch (error) {
     console.error('Login API: Error:', error)
     return NextResponse.json({ message: 'Failed to login' }, { status: 500 })

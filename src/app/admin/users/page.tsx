@@ -10,7 +10,8 @@ import {
   ExclamationTriangleIcon,
   XMarkIcon,
   EyeIcon,
-  FunnelIcon
+  FunnelIcon,
+  XCircleIcon
 } from '@heroicons/react/24/outline'
 import Image from 'next/image'
 
@@ -37,10 +38,7 @@ type UserBan = {
   userId: string
   adminId: string
   reason: string
-  banType: string
-  createdAt: string
-  expiresAt?: string
-  isActive: boolean
+  bannedAt: string
 }
 
 type FilterType = 'all' | 'admin' | 'moderator' | 'user' | 'seller'
@@ -57,10 +55,72 @@ export default function UsersPage() {
   const [isLoadingBans, setIsLoadingBans] = useState(false)
   const [roleFilter, setRoleFilter] = useState<FilterType>('all')
   const [emailFilter, setEmailFilter] = useState<EmailFilterType>('all')
+  const [isBlockModalOpen, setIsBlockModalOpen] = useState(false)
+  const [userToBlock, setUserToBlock] = useState<User | null>(null)
+  const [blockReason, setBlockReason] = useState('')
+  const [isBlocking, setIsBlocking] = useState(false)
+  const [currentUser, setCurrentUser] = useState<User | null>(null)
 
   useEffect(() => {
     fetchUsers()
+    fetchCurrentUser()
   }, [])
+
+  useEffect(() => {
+    if (users.length > 0) {
+      // Завантажуємо блокування для всіх користувачів
+      fetchAllUserBans()
+    }
+  }, [users])
+
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      const response = await fetch('/api/users/current', {
+        headers
+      })
+
+      if (response.ok) {
+        const user = await response.json()
+        setCurrentUser(user)
+      }
+    } catch (err) {
+      console.error('Error fetching current user:', err)
+    }
+  }
+
+  const fetchAllUserBans = async () => {
+    try {
+      const token = localStorage.getItem('auth_token')
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      }
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+
+      // Отримуємо всі блокування
+      const response = await fetch('/api/users/all-bans', {
+        headers
+      })
+
+      if (response.ok) {
+        const allBans = await response.json()
+        setUserBans(allBans)
+      }
+    } catch (err) {
+      console.error('Error fetching all blocks:', err)
+    }
+  }
 
   const fetchUsers = async () => {
     try {
@@ -125,7 +185,7 @@ export default function UsersPage() {
         setUserBans(bans)
       }
     } catch (err) {
-      console.error('Error fetching user bans:', err)
+      console.error('Error fetching user blocks:', err)
     } finally {
       setIsLoadingBans(false)
     }
@@ -141,6 +201,96 @@ export default function UsersPage() {
     setSelectedUser(null)
     setIsModalOpen(false)
     setUserBans([])
+  }
+
+  const handleBlockUser = (user: User) => {
+    setUserToBlock(user)
+    setIsBlockModalOpen(true)
+  }
+
+  const closeBlockModal = () => {
+    setIsBlockModalOpen(false)
+    setUserToBlock(null)
+    setBlockReason('')
+  }
+
+  const submitBlock = async () => {
+    if (!userToBlock || !blockReason.trim()) return
+
+    try {
+      setIsBlocking(true)
+      
+      const token = localStorage.getItem('auth_token')
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${token}`,
+      }
+
+      const formData = new FormData()
+      formData.append('UserId', userToBlock.id)
+      formData.append('Reason', blockReason.trim())
+      formData.append('Types', '8') // Login block
+
+      const response = await fetch('https://api.sellpoint.pp.ua/api/User/BanUser', {
+        method: 'POST',
+        body: formData,
+        headers,
+      })
+
+      if (response.ok) {
+        // Оновлюємо список користувачів та блокувань
+        await fetchUsers()
+        await fetchAllUserBans()
+        closeBlockModal()
+        // Показуємо повідомлення про успіх
+        alert('Користувача успішно заблоковано')
+      } else {
+        const errorData = await response.json()
+        alert(`Помилка блокування: ${errorData.error || 'Невідома помилка'}`)
+      }
+    } catch (err) {
+      console.error('Error blocking user:', err)
+      alert('Помилка при блокуванні користувача')
+    } finally {
+      setIsBlocking(false)
+    }
+  }
+
+  const handleUnbanUser = async (user: User) => {
+    if (!confirm(`Ви дійсно хочете розблокувати користувача ${user.username}?`)) {
+      return
+    }
+
+    try {
+      const token = localStorage.getItem('auth_token')
+      const headers: HeadersInit = {
+        'Authorization': `Bearer ${token}`,
+      }
+
+      // Знаходимо активне блокування користувача
+      const activeBan = userBans.find(ban => ban.userId === user.id)
+      if (!activeBan) {
+        alert('Активне блокування не знайдено')
+        return
+      }
+
+      const response = await fetch(`https://api.sellpoint.pp.ua/api/User/UnbanUser?banId=${activeBan.id}`, {
+        method: 'POST',
+        headers,
+      })
+
+      if (response.ok) {
+        // Оновлюємо список користувачів та блокувань
+        await fetchUsers()
+        await fetchAllUserBans()
+        alert('Користувача успішно розблоковано')
+      } else {
+        const errorData = await response.json()
+        alert(`Помилка розблокування: ${errorData.error || 'Невідома помилка'}`)
+      }
+    } catch (err) {
+      console.error('Error unblocking user:', err)
+      alert('Помилка при розблокуванні користувача')
+    }
   }
 
   const filteredUsers = users.filter(user => {
@@ -190,7 +340,7 @@ export default function UsersPage() {
   const getRoleBadgeColor = (roles: string[]) => {
     if (!roles || roles.length === 0) return 'bg-gray-100 text-gray-800'
     
-    if (roles.includes('admin')) return 'bg-red-100 text-red-800'
+    if (roles.includes('admin')) return 'bg-purple-100 text-purple-800'
     if (roles.includes('moderator')) return 'bg-yellow-100 text-yellow-800'
     if (roles.includes('seller')) return 'bg-blue-100 text-blue-800'
     return 'bg-green-100 text-green-800'
@@ -344,6 +494,8 @@ export default function UsersPage() {
               </div>
             </div>
           </div>
+
+
         </div>
 
         {/* Список користувачів */}
@@ -388,13 +540,16 @@ export default function UsersPage() {
                       Дата реєстрації
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Статус
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Дії
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50">
+                    <tr key={user.id} className={`hover:bg-gray-50 ${currentUser?.id === user.id ? 'bg-blue-50 border-l-4 border-blue-500' : ''}`}>
                       <td className="px-4 py-3">
                         <div className="flex items-center">
                           <div className="flex-shrink-0 h-8 w-8">
@@ -415,6 +570,11 @@ export default function UsersPage() {
                           <div className="ml-3">
                             <div className="text-sm font-medium text-gray-900 truncate max-w-32">
                               {user.username}
+                              {currentUser?.id === user.id && (
+                                <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  Ви
+                                </span>
+                              )}
                             </div>
                             <div className="text-xs text-gray-500 truncate max-w-32">
                               ID: {user.id}
@@ -465,14 +625,42 @@ export default function UsersPage() {
                         </div>
                       </td>
 
+                      <td className="px-4 py-3">
+                        <div className="flex items-center">
+                          {userBans.some(ban => ban.userId === user.id) ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              Заблокований
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Активний
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
                       <td className="px-4 py-3 text-sm font-medium">
-                        <button
-                          onClick={() => openUserModal(user)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center"
-                        >
-                          <EyeIcon className="h-4 w-4 mr-1" />
-                          Деталі
-                        </button>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => openUserModal(user)}
+                            className="text-blue-600 hover:text-blue-900 flex items-center"
+                          >
+                            <EyeIcon className="h-4 w-4 mr-1" />
+                            Деталі
+                          </button>
+                          
+                                                    {/* Кнопка блокування тільки для активних не-адміністраторів */}
+                          {!user.roles?.includes('admin') && !userBans.some(ban => ban.userId === user.id) && (
+                            <button
+                              onClick={() => handleBlockUser(user)}
+                              className="text-red-600 hover:text-red-900 flex items-center"
+                              title="Заблокувати користувача"
+                            >
+                              <XCircleIcon className="h-4 w-4 mr-1" />
+                              Заблокувати
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -519,7 +707,14 @@ export default function UsersPage() {
                     )}
                   </div>
                   <div>
-                    <h4 className="text-xl font-semibold text-gray-900">{selectedUser.username}</h4>
+                    <h4 className="text-xl font-semibold text-gray-900">
+                      {selectedUser.username}
+                      {currentUser?.id === selectedUser.id && (
+                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          Ви
+                        </span>
+                      )}
+                    </h4>
                     <p className="text-sm text-gray-500">ID: {selectedUser.id}</p>
                     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(selectedUser.roles)}`}>
                       {getRoleDisplay(selectedUser.roles)}
@@ -584,9 +779,9 @@ export default function UsersPage() {
                   </div>
                 </div>
 
-                {/* Історія банів */}
+                {/* Історія блокувань */}
                 <div>
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">Історія банів</h5>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Історія блокувань</h5>
                   {isLoadingBans ? (
                     <div className="text-center py-4">
                       <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
@@ -597,31 +792,101 @@ export default function UsersPage() {
                       {userBans.map((ban) => (
                         <div key={ban.id} className="bg-red-50 border border-red-200 rounded-md p-3">
                           <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-medium text-red-800">Бан активний</p>
-                              <p className="text-sm text-red-600">{ban.reason}</p>
-                              <p className="text-xs text-red-500">Тип: {ban.banType}</p>
-                              <p className="text-xs text-red-500">Створено: {formatDate(ban.createdAt)}</p>
-                              {ban.expiresAt && (
-                                <p className="text-xs text-red-500">Закінчується: {formatDate(ban.expiresAt)}</p>
-                              )}
-                            </div>
+                                                          <div>
+                                <p className="text-sm font-medium text-red-800">Заблокований</p>
+                                <p className="text-sm text-red-600">{ban.reason}</p>
+                                <p className="text-xs text-red-500">Дата: {formatDate(ban.bannedAt)}</p>
+                              </div>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500">Історія банів відсутня</p>
+                    <p className="text-sm text-gray-500">Історія блокувань відсутня</p>
                   )}
                 </div>
               </div>
 
-              <div className="mt-6 flex justify-end">
+              <div className="mt-6 flex justify-end space-x-3">
+                {/* Кнопки дій тільки для заблокованих не-адміністраторів */}
+                {!selectedUser.roles?.includes('admin') && userBans.some(ban => ban.userId === selectedUser.id) && (
+                  <button
+                    onClick={() => handleUnbanUser(selectedUser)}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    Розблокувати
+                  </button>
+                )}
+                
                 <button
                   onClick={closeUserModal}
                   className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
                 >
                   Закрити
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальне вікно для блокування користувача */}
+      {isBlockModalOpen && userToBlock && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Блокування користувача
+                </h3>
+                <button
+                  onClick={closeBlockModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Ви дійсно хочете заблокувати користувача <strong>{userToBlock.username}</strong>?
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Цей користувач не зможе входити в систему.
+                  </p>
+                </div>
+
+                <div>
+                  <label htmlFor="blockReason" className="block text-sm font-medium text-gray-700 mb-2">
+                    Причина блокування *
+                  </label>
+                  <textarea
+                    id="blockReason"
+                    value={blockReason}
+                    onChange={(e) => setBlockReason(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    rows={3}
+                    placeholder="Вкажіть причину блокування..."
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={closeBlockModal}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  disabled={isBlocking}
+                >
+                  Скасувати
+                </button>
+                <button
+                  onClick={submitBlock}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                  disabled={isBlocking || !blockReason.trim()}
+                >
+                  {isBlocking ? 'Блокування...' : 'Заблокувати'}
                 </button>
               </div>
             </div>
