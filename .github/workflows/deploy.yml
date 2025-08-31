@@ -32,7 +32,8 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
-            docker stop app-client-container || true
-            docker rm app-client-container || true
-            docker pull pashhun/app-client-image
-            docker run -d -p 3000:3000 --restart=always --name app-client-container pashhun/app-client-image
+            podman stop app-client-container || true
+            podman rm app-client-container || true
+            podman pull docker.io/pashhun/app-client-image:latest
+            podman run -d -p 3000:3000 --restart=always --name app-client-container docker.io/pashhun/app-client-image:latest
+
