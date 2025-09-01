@@ -8,7 +8,7 @@ import type { LoginRequest, RegisterRequest } from '../types/auth';
 export const useAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => authService.isAuthenticated());
   const router = useRouter();
 
   const translateAuthError = useCallback((message: string): string => {
