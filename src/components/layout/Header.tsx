@@ -78,7 +78,12 @@ export default function Header() {
   const [isLoading, setIsLoading] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [displayName, setDisplayName] = useState<string | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('user_display_name') || 'Кабінет'
+    }
+    return null
+  })
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const { isAuthenticated, logout } = useAuth()
@@ -310,11 +315,11 @@ export default function Header() {
             <ShoppingCart className="h-6 w-6" />
             <span className="hidden text-[12px] xl:block">Кошик</span>
           </Link>
-          {isAuthenticated && displayName ? (
+          {isAuthenticated ? (
             <div className="flex items-center gap-5 -ml-3">
               <Link href="/cabinet" className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
                 <User className="h-6 w-6" />
-                <span className="hidden text-[12px] xl:block">{displayName}</span>
+                <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
               <div className=" flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
                 <button
