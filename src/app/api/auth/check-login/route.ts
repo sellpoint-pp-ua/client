@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
       method: 'GET',
       headers: {
         'Authorization': token,
-        'Accept': '*/*',
       },
       cache: 'no-store',
     })
@@ -22,11 +21,14 @@ export async function GET(request: NextRequest) {
 
     if (res.status === 200) {
       console.log('Check-login API: Authentication successful');
-      // If successful, return a proper response
       return NextResponse.json({ success: true }, { status: 200 })
+    } else if (res.status === 403) {
+      console.log('Check-login API: User is banned');
+      return NextResponse.json({ error: 'User is banned' }, { status: 403 })
     } else {
       console.log('Check-login API: Authentication failed');
-      // If not successful, return error
+      const errorText = await res.text()
+      console.error('Server error response:', errorText)
       return NextResponse.json({ error: 'Authentication failed' }, { status: res.status })
     }
   } catch (error) {

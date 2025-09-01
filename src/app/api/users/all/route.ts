@@ -28,9 +28,7 @@ export async function GET(request: NextRequest) {
     // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
     
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json',
-    }
+    const headers: HeadersInit = {}
     
     // Додаємо токен авторизації якщо він є
     if (authHeader) {
@@ -42,7 +40,7 @@ export async function GET(request: NextRequest) {
     
     const response = await fetch(`${API_BASE_URL}/api/User/GetAllUsers`, {
       headers,
-      next: { revalidate: 3600 }
+      next: { revalidate: 0 }
     })
 
     console.log('Response status:', response.status)
@@ -58,6 +56,8 @@ export async function GET(request: NextRequest) {
         )
       }
       
+      const errorText = await response.text()
+      console.error('Server error response:', errorText)
       throw new Error(`API responded with status: ${response.status}`)
     }
 
