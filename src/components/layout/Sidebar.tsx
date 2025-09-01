@@ -14,6 +14,7 @@ export default function Sidebar() {
   const COLLAPSED_MAX_HEIGHT = 380
   const SHADOW_HEIGHT_PX = 28
   const HOVER_SWITCH_DELAY_MS = 500
+  const EXPANDED_MAX_HEIGHT_VH = 60 
   const [categories, setCategories] = useState<MenuItem[]>([])
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -23,6 +24,8 @@ export default function Sidebar() {
   const expandedPanelRef = useRef<HTMLDivElement | null>(null)
   const [expandedPos, setExpandedPos] = useState<{ left: number; top: number }>({ left: 0, top: 0 })
   const [expandedHeightPx, setExpandedHeightPx] = useState<number>(0)
+  const [isHoveringSidebar, setIsHoveringSidebar] = useState(false)
+  const [isHoveringSubpanel, setIsHoveringSubpanel] = useState(false)
   const isHoveringSidebarRef = useRef(false)
   const isHoveringSubpanelRef = useRef(false)
   const closeTimeoutRef = useRef<number | null>(null)
@@ -34,9 +37,11 @@ export default function Sidebar() {
 
   const setSidebarHover = (v: boolean) => {
     isHoveringSidebarRef.current = v
+    setIsHoveringSidebar(v)
   }
   const setSubpanelHover = (v: boolean) => {
     isHoveringSubpanelRef.current = v
+    setIsHoveringSubpanel(v)
   }
   const scheduleClose = (delay: number = 100) => {
     if (closeTimeoutRef.current !== null) {
@@ -77,26 +82,20 @@ export default function Sidebar() {
       try {
         setIsLoading(true)
         setError(null)
-        const response = await fetch('/api/categories/full-tree')
+        const response = await fetch('/api/categories/full-tree', { cache: 'no-store' })
         if (!response.ok) {
           throw new Error('Failed to fetch categories')
         }
         const data = await response.json()
-  const menuItems = data.map((category: { id: string; name: string; children?: unknown[] }) => {
-    const catChildren = category.children as Array<{ id: string; name: string; children?: unknown[] }> | undefined
+  const mapNode = (node: { id?: string; name?: string; children?: unknown[] }): MenuItem => {
+    const rawChildren = Array.isArray(node?.children) ? (node.children as Array<any>) : []
     return {
-      id: category.id,
-      name: category.name,
-      children: catChildren?.map((child) => {
-        const childChildren = child.children as Array<{ id: string; name: string }> | undefined
-        return {
-          id: child.id,
-          name: child.name,
-          children: childChildren?.map((subChild) => ({ id: subChild.id, name: subChild.name }))
-        }
-      })
+      id: node?.id || '',
+      name: typeof node?.name === 'string' ? node.name : '',
+      children: rawChildren.map(mapNode)
     }
-  })
+  }
+  const menuItems = Array.isArray(data) ? data.map(mapNode).filter(n => n.id && n.name) : []
         setCategories(menuItems)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load categories')
@@ -107,6 +106,50 @@ export default function Sidebar() {
 
     fetchCategories()
   }, [])
+
+  useEffect(() => {
+    function measure() {
+      const el = expandedPanelRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setExpandedHeightPx(Math.max(0, Math.floor(rect.height)))
+    }
+    if (isExpanded) {
+      requestAnimationFrame(measure)
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+  }, [isExpanded, categories.length])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const htmlEl = document.documentElement
+    const bodyEl = document.body
+    if (isExpanded) {
+      prevBodyOverflowRef.current = bodyEl.style.overflow
+      prevHtmlOverflowRef.current = htmlEl.style.overflow
+      prevBodyPaddingRightRef.current = bodyEl.style.paddingRight
+      prevHtmlPaddingRightRef.current = htmlEl.style.paddingRight
+
+      const scrollbarWidth = window.innerWidth - htmlEl.clientWidth
+      if (scrollbarWidth > 0) {
+        bodyEl.style.paddingRight = `${scrollbarWidth}px`
+      }
+      bodyEl.style.overflow = 'hidden'
+      htmlEl.style.overflow = 'hidden'
+    } else {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+    return () => {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+  }, [isExpanded])
 
   useEffect(() => {
     function measure() {
@@ -219,7 +262,7 @@ export default function Sidebar() {
           {/* Expanded main sidebar showing full list */}
           <aside
             className="fixed z-[70] w-[320px] bg-white pl-4 mr-0 rounded-lg  overflow-auto"
-            style={{ left: expandedPos.left, top: expandedPos.top, maxHeight: '90vh' }}
+            style={{ left: expandedPos.left, top: expandedPos.top, maxHeight: `${EXPANDED_MAX_HEIGHT_VH}vh` }}
             onMouseEnter={() => setSidebarHover(true)}
             onMouseLeave={() => {
               setSidebarHover(false)
@@ -256,24 +299,24 @@ export default function Sidebar() {
             const left = expandedPos.left + (containerRef.current?.getBoundingClientRect().width || 320) - 6;
             const top = expandedPos.top;
             
-            const containerHeight = expandedHeightPx || Math.floor(window.innerHeight * 0.8);
+            const containerHeight = expandedHeightPx || Math.floor(window.innerHeight * (EXPANDED_MAX_HEIGHT_VH / 100));
             const approxItemHeight = 72; 
             
-            const bias = 1.2;              
-            const verticalPadding = 48;    
-            const hardCap = 3;             
-
+            const bias = 1.2;             
+            const verticalPadding = 48;   
+            const hardCap = 5;         
+            
             const usableHeight = Math.max(0, containerHeight - verticalPadding);
             const itemsPerColumnRaw = Math.floor(usableHeight / (approxItemHeight * bias));
             const itemsPerColumn = Math.min(hardCap, Math.max(1, itemsPerColumnRaw));
             
             const columns = Math.max(1, Math.ceil(items.length / itemsPerColumn));
-            const columnWidth = 370; 
-            const panelWidth = Math.min(columns, 5) * columnWidth + 32; 
+            const columnWidth = 380; 
+            const panelWidth = Math.min(columns, 5) * columnWidth + 32;
             
             return (
               <aside
-                className="fixed z-[80] bg-white rounded-r-lg  overflow-hidden"
+                className="fixed z-[80] bg-white rounded-r-lg  overflow-hidden ml-1"
                 style={{ left, top, height: containerHeight, width: panelWidth }}
                 onMouseEnter={() => setSubpanelHover(true)}
                 onMouseLeave={() => {
@@ -295,11 +338,22 @@ export default function Sidebar() {
                         </h3>
                         {subcategory.children && subcategory.children.length > 0 && (
                           <ul className="space-y-2">
-                            {subcategory.children.map((item) => (
+                            {subcategory.children.map((item: any) => (
                               <li key={item.id}>
                                 <Link href={`/category/${item.id}`} className="text-sm text-gray-600 hover:text-[#4563d1]">
                                   {item.name}
                                 </Link>
+                                {Array.isArray(item.children) && item.children.length > 0 && (
+                                  <ul className="ml-3 mt-1 space-y-1">
+                                    {item.children.map((g: any) => (
+                                      <li key={g.id}>
+                                        <Link href={`/category/${g.id}`} className="text-[13px] text-gray-600 hover:text-[#4563d1]">
+                                          {g.name}
+                                        </Link>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
                               </li>
                             ))}
                           </ul>

@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     const category = await response.json()
     
-    if (!category || !category.name) {
+    if (!category || !category.name || !category.name.uk) {
       return {
         title: 'Категорію не знайдено',
       }
@@ -53,7 +53,7 @@ export default async function CategoryPage({ params }: Props) {
 
     const category = await response.json()
     
-    if (!category || !category.name) {
+    if (!category || !category.name || !category.name.uk) {
       notFound()
     }
 

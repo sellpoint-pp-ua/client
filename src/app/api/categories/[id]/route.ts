@@ -16,22 +16,22 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/Category/${id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store'
-      }
-    )
+    const response = await fetch(`${API_BASE_URL}/api/Category/${id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store'
+    })
 
     if (!response.ok) {
       throw new Error(`API responded with status: ${response.status}`)
     }
 
-    const data = await response.json()
-    return NextResponse.json(data)
+    const c = await response.json()
+    const normalized = {
+      id: c?.id || '',
+      name: typeof c?.name === 'string' ? c.name : '',
+      parentId: typeof c?.parentId === 'string' ? c.parentId : null,
+    }
+    return NextResponse.json(normalized)
   } catch (error) {
     console.error('Error fetching category:', error)
     return NextResponse.json(

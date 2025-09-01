@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
       headers: {
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 3600 } 
+      cache: 'no-store'
     })
 
     if (!response.ok) {

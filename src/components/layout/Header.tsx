@@ -27,7 +27,11 @@ type ProductSearchResult = {
   categoryPath?: string[];
 }
 
-const cleanCategoryName = (name: string): string => {
+const cleanCategoryName = (name: string = ''): string => {
+  return name.replace(/\[|\]/g, '')
+}
+
+const cleanProductName = (name: string = ''): string => {
   return name.replace(/\[|\]/g, '')
 }
 
@@ -36,34 +40,33 @@ const highlightCategoryText = (text: string, searchQuery: string): React.JSX.Ele
   if (!searchQuery) return <span className="text-gray-500">{cleanText}</span>
   const regex = new RegExp(`(${searchQuery})`, 'gi')
   const parts = cleanText.split(regex)
-  
   return (
     <span>
-      {parts.map((part, index) => 
-        regex.test(part) ? (
+      {parts.map((part, index) => (
+        index % 2 === 1 ? (
           <strong key={index} className="font-bold">{part}</strong>
         ) : (
           <span key={index} className="text-gray-500">{part}</span>
         )
-      )}
+      ))}
     </span>
   )
 }
 
 const highlightProductText = (text: string, searchQuery: string): React.JSX.Element => {
-  if (!searchQuery) return <span className="text-gray-700">{text}</span>
+  const cleanText = cleanProductName(text)
+  if (!searchQuery) return <span className="text-gray-700">{cleanText}</span>
   const regex = new RegExp(`(${searchQuery})`, 'gi')
-  const parts = text.split(regex)
-  
+  const parts = cleanText.split(regex)
   return (
     <span>
-      {parts.map((part, index) => 
-        regex.test(part) ? (
+      {parts.map((part, index) => (
+        index % 2 === 1 ? (
           <strong key={index} className="font-bold">{part}</strong>
         ) : (
           <span key={index} className="text-gray-700">{part}</span>
         )
-      )}
+      ))}
     </span>
   )
 }
@@ -108,8 +111,8 @@ export default function Header() {
           console.log('Searching for:', searchQuery)
           
           const [categoryResponse, productResponse] = await Promise.all([
-            fetch(`/api/categories/search?name=${encodeURIComponent(searchQuery)}&languageCode=uk`),
-            fetch(`/api/products/search?name=${encodeURIComponent(searchQuery)}&languageCode=uk`)
+            fetch(`/api/categories/search?name=${encodeURIComponent(searchQuery)}`),
+            fetch(`/api/products/search?name=${encodeURIComponent(searchQuery)}`)
           ])
 
           const categoryData = categoryResponse.ok ? await categoryResponse.json() : []
@@ -215,7 +218,7 @@ export default function Header() {
               />
               <button 
                 type="submit"
-                className="flex  items-center rounded-r-lg bg-[#4563d1] px-3 py-2 h-8.5 text-white md:px-6 focus:outline-none hover:bg-[#364ea8] transition-colors duration-200 ease-out"
+                className="flex  items-center rounded-r-lg bg-[#4563d1] px-3 py-2 h-[34px] text-white md:px-6 focus:outline-none hover:bg-[#364ea8] transition-colors duration-200 ease-out"
               >
                 <Search className="mr-0 h-5 w-5" />
                 <span className="hidden md:inline">Знайти</span>
@@ -224,7 +227,7 @@ export default function Header() {
 
             {/* Search Results Dropdown */}
             {showDropdown && (
-              <div className="absolute z-1 left-0 right-0 top-10.5 pt-0 max-h-[400px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+              <div className="absolute z-[60] left-0 right-0 top-[42px] pt-0 max-h-[400px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
                 {isLoading ? (
                   <div className="p-4 text-center text-gray-500">
                     Пошук...
@@ -291,7 +294,7 @@ export default function Header() {
         </div>
 
         {/* Utility Icons */}
-<div className="flex shrink-0 items-center gap-6 ">
+<div className="flex shrink-0 items-center gap-6 mt-1">
           <Link href="/admin" className="max-h-[35px] shadow-md rounded-xl bg-[#4563d1] px-3 py-2 text-sm text-white hover:bg-[#364ea8] transition-colors duration-200 ease-out">
             Адмін панель
           </Link>

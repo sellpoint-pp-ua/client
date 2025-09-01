@@ -14,10 +14,12 @@ export async function POST(request: NextRequest) {
     if (payload.fullName) form.append('FullName', payload.fullName)
     if (payload.email) form.append('Email', payload.email)
     if (payload.password) form.append('Password', payload.password)
+    form.append('DeviceInfo', 'web')
 
     const res = await fetch(`${API_BASE_URL}/api/Auth/register`, {
       method: 'POST',
       body: form,
+      headers: { 'Accept': '*/*' },
       cache: 'no-store',
     })
 

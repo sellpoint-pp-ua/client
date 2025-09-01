@@ -8,17 +8,14 @@ type ServerFilter = {
   filters: Array<{ title: string; values: string[] }>
 }
 
-type StaticFilterOption = { title: string; options: string[] }
-type SortOption = { label: string; value: string }
-
 interface FilterSidebarProps {
   categoryId?: string
   onChange?: (selected: Record<string, string[]>) => void
-  filterOptions?: StaticFilterOption[]
-  sortOptions?: SortOption[]
+  filterOptions?: { title: string; options: string[] }[]
+  sortOptions?: { label: string; value: string }[]
 }
 
-export default function FilterSidebar({ categoryId, onChange, filterOptions, sortOptions }: FilterSidebarProps) {
+export default function FilterSidebar({ categoryId = '', onChange = () => {}, filterOptions }: FilterSidebarProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [serverFilters, setServerFilters] = useState<ServerFilter | null>(null)
@@ -35,7 +32,7 @@ export default function FilterSidebar({ categoryId, onChange, filterOptions, sor
         const data: ServerFilter[] = await res.json()
         if (!cancelled) {
           const entry = Array.isArray(data) ? (data[0] ?? null) : null
-          setServerFilters(entry ?? { id: '', categoryId: categoryId ?? '', filters: [] })
+          setServerFilters(entry ?? { id: '', categoryId, filters: [] })
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load filters')
@@ -48,7 +45,7 @@ export default function FilterSidebar({ categoryId, onChange, filterOptions, sor
   }, [categoryId])
 
   useEffect(() => {
-    if (onChange) onChange(selectedFilters)
+    onChange(selectedFilters)
   }, [selectedFilters, onChange])
 
   const handleFilterToggle = (title: string, value: string) => {
@@ -60,6 +57,8 @@ export default function FilterSidebar({ categoryId, onChange, filterOptions, sor
       return { ...prev, [title]: next }
     })
   }
+
+
 
   const content = useMemo(() => {
     if (loading) {
@@ -80,16 +79,6 @@ export default function FilterSidebar({ categoryId, onChange, filterOptions, sor
     }
     return (
       <div className="space-y-6">
-        {sortOptions && sortOptions.length > 0 && (
-          <div className="">
-            <label className="block text-sm text-gray-600 mb-2">Сортування</label>
-            <select className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm" onChange={() => { /* noop - presentational */ }}>
-              {sortOptions.map((s) => (
-                <option key={s.value} value={s.value}>{s.label}</option>
-              ))}
-            </select>
-          </div>
-        )}
         {filters.map((f) => (
           <div key={f.title}>
             <h2 className="mb-3 font-medium">{f.title}</h2>
@@ -110,7 +99,7 @@ export default function FilterSidebar({ categoryId, onChange, filterOptions, sor
         ))}
       </div>
     )
-  }, [loading, error, serverFilters, selectedFilters, filterOptions, sortOptions])
+  }, [loading, error, serverFilters, selectedFilters])
 
   return (
     <div className="space-y-6">

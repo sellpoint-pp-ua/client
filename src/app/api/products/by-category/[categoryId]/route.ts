@@ -31,36 +31,43 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         exclude: {},
         page: page,
         pageSize: pageSize,
-        language: "uk"
       }),
-      next: { revalidate: 3600 } 
+      cache: 'no-store'
     })
 
     if (!response.ok) {
       throw new Error(`API responded with status: ${response.status}`)
     }
 
-    const products = await response.json()
-    
-    const normalizedProducts = Array.isArray(products) ? products.map((product: { id?: string; productId?: string; _id?: string; name?: string; price?: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number; quantityStatus?: string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
-      id: product.id || product.productId || product._id || '',
-      name: product.name || 'Без назви',
-      price: product.price || 0,
-      discountPrice: product.discountPrice,
-      hasDiscount: product.hasDiscount || false,
-      finalPrice: product.finalPrice,
-      discountPercentage: product.discountPercentage,
-      quantityStatus: product.quantityStatus,
-      quantity: product.quantity,
-      productType: product.productType,
-      categoryPath: product.categoryPath || []
-    })) : []
+    const payload = await response.json()
+    const list = Array.isArray(payload?.products) ? payload.products : []
 
-    const validProducts = normalizedProducts.filter(product => 
-      product.id && product.name && product.name !== 'Без назви'
-    )
+    const normalizedProducts = list.map((product: any) => ({
+      id: product?.id || product?.productId || product?._id || '',
+      name: product?.name || 'Без назви',
+      price: Number(product?.price) || 0,
+      discountPrice: product?.discountPrice ?? null,
+      hasDiscount: Boolean(product?.hasDiscount),
+      finalPrice: (product?.finalPrice ?? (Number(product?.price) || 0)),
+      discountPercentage: product?.discountPercentage ?? null,
+      quantityStatus: product?.quantityStatus,
+      quantity: product?.quantity,
+      productType: product?.productType,
+      categoryPath: Array.isArray(product?.categoryPath) ? product.categoryPath : [],
+      paymentOptions: product?.paymentOptions ?? 0,
+      deliveryType: product?.deliveryType ?? 0,
+    }))
 
-    return NextResponse.json(validProducts)
+    const validProducts = normalizedProducts.filter((p: { id?: string; name?: string }) => p.id && p.name && p.name !== 'Без назви')
+
+    const meta = {
+      priceFrom: Number(payload?.priceFrom) || 0,
+      priceTo: Number(payload?.priceTo) || 0,
+      pages: Number(payload?.pages) || 0,
+      count: Number(payload?.count) || validProducts.length,
+    }
+
+    return NextResponse.json({ ...meta, products: validProducts })
   } catch (error) {
     console.error('Error fetching products:', error)
     return NextResponse.json(

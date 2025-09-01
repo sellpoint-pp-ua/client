@@ -8,6 +8,7 @@ import CategoryCard from '@/components/features/CategoryCard'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import FilterSidebar from '@/components/features/FilterSidebar'
 import { Search } from 'lucide-react'
+import { filterOptions, sortOptions } from '@/constants/sampleData'
 
 interface ProductFeatureItem {
   value: string | number | null
@@ -32,7 +33,7 @@ interface Product {
   finalPrice?: number
   discountPercentage?: number
   sellerId?: string
-  quantityStatus?: string
+  quantityStatus?: number | string
   quantity?: number
 }
 
@@ -69,6 +70,7 @@ export default function CategoryPageTemplate({
         }
         const data = await response.json()
         setCategories(data)
+        // Build breadcrumbs to current category
         try {
           const chain: Array<{ id: string; name: string }> = []
           let currentId: string | null = categoryId
@@ -77,8 +79,8 @@ export default function CategoryPageTemplate({
             const r: Response = await fetch(`/api/categories/${currentId}`)
             if (!r.ok) break
             const c: { name?: string, parentId?: string | null } = await r.json()
-            const nameUk: string = c?.name || 'Категорія'
-            chain.push({ id: currentId, name: nameUk })
+            const nameStr: string = typeof c?.name === 'string' ? c.name : 'Категорія'
+            chain.push({ id: currentId, name: nameStr })
             currentId = (typeof c?.parentId === 'string' ? c.parentId : null)
             guard++
           }
@@ -102,8 +104,9 @@ export default function CategoryPageTemplate({
           throw new Error('Failed to fetch products')
         }
         const productsData = await response.json()
-        
-        const validProducts = productsData.filter((product: { id?: string; name?: string }) => 
+        const list = Array.isArray(productsData?.products) ? productsData.products : Array.isArray(productsData) ? productsData : []
+
+        const validProducts = list.filter((product: { id?: string; name?: string }) => 
           product && product.id && product.name && product.name !== 'Без назви'
         )
         
@@ -122,9 +125,11 @@ export default function CategoryPageTemplate({
     fetchProducts()
   }, [categoryId])
 
+  // Фільтрація та сортування продуктів
   useEffect(() => {
     let result = [...products]
 
+    // Фільтрація по пошуковому запиту
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       result = result.filter(product => 
@@ -132,6 +137,7 @@ export default function CategoryPageTemplate({
       )
     }
 
+    // Сортування
     switch (sortBy) {
       case 'price-low':
         result.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price))
@@ -141,6 +147,7 @@ export default function CategoryPageTemplate({
         break
       case 'newest':
       default:
+        // Новинки: лишаємо початковий порядок як отримано з API
         break
     }
 
@@ -149,6 +156,7 @@ export default function CategoryPageTemplate({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
+    // Пошук вже реалізований через useEffect
   }
 
   const applyFiltersToServer = useCallback(async (selected: Record<string, string[]>) => {
@@ -156,10 +164,12 @@ export default function CategoryPageTemplate({
       setIsLoadingProducts(true)
       const active = Object.entries(selected).filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
       if (active.length === 0) {
+        // No filters selected: load base category products
         const res = await fetch(`/api/products/by-category/${categoryId}?pageSize=50`, { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to fetch products')
         const productsData = await res.json()
-        const validProducts = productsData.filter((product: { id?: string; name?: string }) => 
+        const list = Array.isArray(productsData?.products) ? productsData.products : Array.isArray(productsData) ? productsData : []
+        const validProducts = list.filter((product: { id?: string; name?: string }) => 
           product && product.id && product.name && product.name !== 'Без назви'
         )
         setProducts(validProducts)
@@ -173,7 +183,6 @@ export default function CategoryPageTemplate({
         exclude: {},
         page: 0,
         pageSize: 50,
-        language: 'uk',
       }
       const res = await fetch('/api/products/all', {
         method: 'POST',
@@ -182,7 +191,8 @@ export default function CategoryPageTemplate({
       })
       if (!res.ok) throw new Error('Failed to fetch filtered products')
       const data = await res.json()
-      const valid = data.filter((p: { id?: string; name?: string }) => p && p.id && p.name && p.name !== 'Без назви')
+      const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+      const valid = list.filter((p: { id?: string; name?: string }) => p && p.id && p.name && p.name !== 'Без назви')
       setProducts(valid)
       setFilteredProducts(valid)
     } catch (e) {

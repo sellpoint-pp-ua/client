@@ -13,7 +13,7 @@ interface ApiProductCardProps {
   hasDiscount?: boolean;
   finalPrice?: number;
   discountPercentage?: number;
-  quantityStatus?: string;
+  quantityStatus?: number | string;
   quantity?: number;
   imageUrl?: string; // optional hardcoded image for demo data
 }
@@ -34,12 +34,28 @@ export default function ApiProductCard({
   const [isLoading, setIsLoading] = useState(true)
 
   const title = name || 'Без назви'
-  const normalizedStatus = (quantityStatus || '').toLowerCase()
+  const normalizedStatus = typeof quantityStatus === 'string' ? quantityStatus.toLowerCase() : ''
   const isReadyToShip = normalizedStatus.includes('готов') || normalizedStatus.includes('ready')
 
   
   type StockState = 'in' | 'low' | 'out'
   const stockState: StockState = (() => {
+    if (typeof quantityStatus === 'number') {
+      switch (quantityStatus) {
+        case 3: return 'out' 
+        case 2: return 'low' 
+        case 1: return 'in'  
+        case 0:
+        default:
+          if (typeof quantity === 'number') {
+            if (quantity <= 0) return 'out'
+            if (quantity <= 3) return 'low'
+            return 'in'
+          }
+          return 'in'
+      }
+    }
+
     if (!quantityStatus) {
       if (typeof quantity === 'number') {
         if (quantity <= 0) return 'out'
@@ -48,17 +64,17 @@ export default function ApiProductCard({
       }
       return 'in'
     }
+
     if (normalizedStatus.includes('немає') || normalizedStatus.includes('відсут') || normalizedStatus.includes('out')) {
       return 'out'
     }
     if (
-      normalizedStatus.includes('зік') || 
+      normalizedStatus.includes('зік') ||
       normalizedStatus.includes('закінч') ||
       normalizedStatus.includes('low')
     ) {
       return 'low'
     }
-  
     return 'in'
   })()
 

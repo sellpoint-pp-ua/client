@@ -22,7 +22,7 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
     }
     const data = await res.json()
     return NextResponse.json(data)
-  } catch {
+  } catch (e) {
     return NextResponse.json({ error: 'Failed to fetch filters' }, { status: 500 })
   }
 }

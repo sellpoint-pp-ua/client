@@ -16,15 +16,10 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/Category/children/${id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        cache: 'no-store'
-      }
-    )
+    const response = await fetch(`${API_BASE_URL}/api/Category/children/${id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store'
+    })
 
     if (!response.ok) {
       if (response.status === 404) {
@@ -34,20 +29,16 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
 
     const data = await response.json()
-    
-    const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
-      id: category.id || category._id || '',
-      name: typeof category.name === 'object' && category.name ? 
-        (category.name as { uk?: string; en?: string }).uk || 'Без назви' : 
-        (category.name as string) || 'Без назви',
-      parentId: category.parentId || id
-    })) : []
-
-    const validCategories = normalizedCategories.filter(category => 
-      category.id && category.name && category.name !== 'Без назви'
-    )
-
-    return NextResponse.json(validCategories)
+    const normalized = Array.isArray(data)
+      ? data
+          .map((c: { id?: string; name?: string; parentId?: string }) => ({
+            id: c?.id || '',
+            name: typeof c?.name === 'string' ? c.name : '',
+            parentId: typeof c?.parentId === 'string' ? c.parentId : id,
+          }))
+          .filter((c) => c.id && c.name)
+      : []
+    return NextResponse.json(normalized)
   } catch (error) {
     console.error('Error fetching category children:', error)
     return NextResponse.json([])
