@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
         pageSize: pageSize,
       }),
       cache: 'no-store'
-      cache: 'no-store'
     })
 
     if (!response.ok) {
