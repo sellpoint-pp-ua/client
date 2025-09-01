@@ -54,7 +54,6 @@ function SearchPageContent() {
       const data = await response.json()
       console.log('Search results:', data)
       
-      // Фільтруємо продукти, щоб переконатися, що вони мають всі необхідні поля
       const validProducts = data.filter((product: Product) => 
         product && product.id && product.name && product.name !== 'Без назви'
       )
@@ -62,7 +61,6 @@ function SearchPageContent() {
       console.log('Valid products:', validProducts)
       setProducts(validProducts)
       
-      // Якщо знайдено тільки один товар, автоматично перенаправляємо на його сторінку
       if (validProducts.length === 1) {
         const product = validProducts[0]
         console.log('Found single product, redirecting to:', product.id)
@@ -94,7 +92,6 @@ function SearchPageContent() {
         break
       case 'relevance':
       default:
-        // Залишаємо оригінальний порядок (релевантність)
         break
     }
     

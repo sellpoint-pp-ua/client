@@ -12,38 +12,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/Category/search?name=${encodeURIComponent(name)}&languageCode=${languageCode}`,
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        next: { revalidate: 3600 } 
-      }
-    )
+    const response = await fetch(`${API_BASE_URL}/api/Category/search?name=${encodeURIComponent(name)}`, {
+      headers: { 'Content-Type': 'application/json' },
+      cache: 'no-store'
+    })
 
     if (!response.ok) {
       throw new Error(`API responded with status: ${response.status}`)
     }
 
     const data = await response.json()
-    
-    // Нормалізуємо дані категорій
-    const normalizedCategories = Array.isArray(data) ? data.map((category: { id?: string; _id?: string; name?: { uk?: string; en?: string } | string; parentId?: string }) => ({
-      id: category.id || category._id || '',
-      name: {
-        uk: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).uk || 'Без назви' : (category.name as string) || 'Без назви',
-        en: typeof category.name === 'object' && category.name ? (category.name as { uk?: string; en?: string }).en || 'No name' : (category.name as string) || 'No name'
-      },
-      parentId: category.parentId || null
-    })) : []
-
-    // Фільтруємо категорії без ID або назви
-    const validCategories = normalizedCategories.filter(category => 
-      category.id && category.name.uk && category.name.uk !== 'Без назви'
-    )
-
-    return NextResponse.json(validCategories)
+    const normalized = Array.isArray(data)
+      ? data
+          .map((c: { id?: string; name?: string; parentId?: string | null }) => ({
+            id: c?.id || '',
+            name: typeof c?.name === 'string' ? c.name : '',
+            parentId: typeof c?.parentId === 'string' ? c.parentId : null,
+          }))
+          .filter((c) => c.id && c.name)
+      : []
+    return NextResponse.json(normalized)
   } catch (error) {
     console.error('Error fetching category search results:', error)
     return NextResponse.json(

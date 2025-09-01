@@ -34,7 +34,7 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                     cache: 'no-store',
                 })
                 const data = await res.json() 
-                if (!res.ok || !data.isAdmin) { // Adjust based on your API's response structure
+                if (!res.ok || !data.isAdmin) { 
                     router.push(redirectTo)
                 }
                 setIsLoading(false)

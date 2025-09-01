@@ -6,16 +6,16 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import Image from 'next/image'
 
 const homepageProducts = [
-  { id: '1001', name: 'Смартфон Samsung Galaxy A54 6/128GB', price: 13999, hasDiscount: true, finalPrice: 12499, discountPercentage: 11, quantityStatus: 'В наявності', quantity: 7, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png' },
-  { id: '1002', name: 'Навушники JBL Tune 510BT', price: 1999, hasDiscount: true, finalPrice: 1599, discountPercentage: 20, quantityStatus: 'В наявності', quantity: 15, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/avtozap.png' },
-  { id: '1003', name: 'Ноутбук ASUS VivoBook 15', price: 25999, hasDiscount: false, quantityStatus: 'Закінчується', quantity: 2, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/dim_i_sad.png' },
-  { id: '1004', name: 'Електросамокат Xiaomi Mi Scooter 3', price: 16999, hasDiscount: true, finalPrice: 14999, discountPercentage: 12, quantityStatus: 'В наявності', quantity: 9, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/kuhna.png' },
-  { id: '1005', name: 'Робот-пилосос Roborock S7', price: 22999, hasDiscount: true, finalPrice: 19999, discountPercentage: 13, quantityStatus: 'В наявності', quantity: 4, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/odyag.png' },
-  { id: '1006', name: 'Смарт-годинник Apple Watch SE 44mm', price: 11999, hasDiscount: false, quantityStatus: 'В наявності', quantity: 6, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/ribalka.png' },
-  { id: '1007', name: 'Монітор LG 27" 27GN800-B', price: 11999, hasDiscount: true, finalPrice: 10499, discountPercentage: 13, quantityStatus: 'В наявності', quantity: 10, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/rukzaki.png' },
-  { id: '1008', name: 'Ігрова миша Logitech G502 Hero', price: 1799, hasDiscount: false, quantityStatus: 'В наявності', quantity: 12, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/shkola.png' },
-  { id: '1009', name: 'Портативна колонка Marshall Emberton II', price: 7499, hasDiscount: true, finalPrice: 6799, discountPercentage: 9, quantityStatus: 'Закінчується', quantity: 3, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/computeri.png' },
-  { id: '1010', name: 'Кавомашина DeLonghi Magnifica S', price: 16999, hasDiscount: true, finalPrice: 14999, discountPercentage: 12, quantityStatus: 'В наявності', quantity: 5, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/zdorovia.png' },
+  { id: '1001', name: 'Смартфон Samsung Galaxy A54 6/128GB', price: 13999, hasDiscount: true, finalPrice: 12499, discountPercentage: 11, quantityStatus: 'В наявності', quantity: 7, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
+  { id: '1002', name: 'Навушники JBL Tune 510BT', price: 1999, hasDiscount: true, finalPrice: 1599, discountPercentage: 20, quantityStatus: 'В наявності', quantity: 15, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/avtozap.webp' },
+  { id: '1003', name: 'Ноутбук ASUS VivoBook 15', price: 25999, hasDiscount: false, quantityStatus: 'Закінчується', quantity: 2, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/dim_i_sad.webp' },
+  { id: '1004', name: 'Електросамокат Xiaomi Mi Scooter 3', price: 16999, hasDiscount: true, finalPrice: 14999, discountPercentage: 12, quantityStatus: 'В наявності', quantity: 9, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/kuhna.webp' },
+  { id: '1005', name: 'Робот-пилосос Roborock S7', price: 22999, hasDiscount: true, finalPrice: 19999, discountPercentage: 13, quantityStatus: 'В наявності', quantity: 4, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/odyag.webp' },
+  { id: '1006', name: 'Смарт-годинник Apple Watch SE 44mm', price: 11999, hasDiscount: false, quantityStatus: 'В наявності', quantity: 6, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/ribalka.webp' },
+  { id: '1007', name: 'Монітор LG 27" 27GN800-B', price: 11999, hasDiscount: true, finalPrice: 10499, discountPercentage: 13, quantityStatus: 'В наявності', quantity: 10, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
+  { id: '1008', name: 'Ігрова миша Logitech G502 Hero', price: 1799, hasDiscount: false, quantityStatus: 'В наявності', quantity: 12, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/shkola.webp' },
+  { id: '1009', name: 'Портативна колонка Marshall Emberton II', price: 7499, hasDiscount: true, finalPrice: 6799, discountPercentage: 9, quantityStatus: 'Закінчується', quantity: 3, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp' },
+  { id: '1010', name: 'Кавомашина DeLonghi Magnifica S', price: 16999, hasDiscount: true, finalPrice: 14999, discountPercentage: 12, quantityStatus: 'В наявності', quantity: 5, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
 ]
 
 export default function Home() {
@@ -27,7 +27,7 @@ export default function Home() {
         {/* Full-bleed top container */}
         <div className="w-full bg-white">
           <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-16">
-            <div className="flex flex-col lg:flex-row gap-6 py-4 sm:py-6 lg:py-8">
+            <div className="flex flex-col lg:flex-row gap-6 py-4 sm:py-6 lg:py-5">
               <div className="hidden lg:block lg:w-[300px] lg:flex-shrink-0">
                 <Sidebar />
               </div>
@@ -78,16 +78,16 @@ export default function Home() {
               <h2 className="mb-4 text-xl font-semibold text-gray-900">Найкращі категорії</h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
                 {[
-                  { title: 'Смартфони', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png' },
-                  { title: 'Одяг', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/odyag.png' },
-                  { title: 'Здоров\'я', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/zdorovia.png' },
-                  { title: 'Рюкзаки', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/rukzaki.png' },
-                  { title: 'Комп\'ютери', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/computeri.png' },
-                  { title: 'Дім і сад', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/dim_i_sad.png' },
-                  { title: 'Кухня', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/kuhna.png' },
-                  { title: 'Автозапчастини', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/avtozap.png' },
-                  { title: 'Рибалка', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/ribalka.png' },
-                  { title: 'Для школи', img: 'https://cloud.sellpoint.pp.ua/media/products-photos/shkola.png' },
+                  { title: 'Смартфони', img: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
+                  { title: 'Одяг', img: 'https://cloud.sellpoint.pp.ua/media/products-images/odyag.webp' },
+                  { title: 'Здоров\'я', img: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
+                  { title: 'Рюкзаки', img: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
+                  { title: 'Комп\'ютери', img: 'https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp' },
+                  { title: 'Дім і сад', img: 'https://cloud.sellpoint.pp.ua/media/products-images/dim_i_sad.webp' },
+                  { title: 'Кухня', img: 'https://cloud.sellpoint.pp.ua/media/products-images/kuhna.webp' },
+                  { title: 'Автозапчастини', img: 'https://cloud.sellpoint.pp.ua/media/products-images/avtozap.webp' },
+                  { title: 'Рибалка', img: 'https://cloud.sellpoint.pp.ua/media/products-images/ribalka.webp' },
+                  { title: 'Для школи', img: 'https://cloud.sellpoint.pp.ua/media/products-images/shkola.webp' },
                 ].map((c, idx) => (
                   <div key={idx} className="flex flex-col items-center">
                     <div className="w-full rounded-lg border border-gray-300 bg-white p-1 hover:shadow-md transition-shadow">

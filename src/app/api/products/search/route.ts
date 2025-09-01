@@ -6,9 +6,7 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const name = searchParams.get('name')
   const categoryId = searchParams.get('categoryId')
-  const languageCode = searchParams.get('languageCode') || 'uk'
-
-  console.log('Product search API called with:', { name, categoryId, languageCode })
+  console.log('Product search API called with:', { name, categoryId })
 
   if (!name) {
     return NextResponse.json({ error: 'Name parameter is required' }, { status: 400 })
@@ -16,10 +14,9 @@ export async function GET(request: NextRequest) {
 
   try {
     let apiUrl: string
-    let requestBody: { categoryId: string; include: Record<string, never>; exclude: Record<string, never>; page: number; pageSize: number; language: string } | undefined
+    let requestBody: { categoryId: string; include: Record<string, never>; exclude: Record<string, never>; page: number; pageSize: number } | undefined
 
     if (categoryId) {
-      // Якщо вказана категорія, шукаємо в ній
       apiUrl = `${API_BASE_URL}/api/Product/get-all`
       requestBody = {
         categoryId: categoryId,
@@ -27,12 +24,10 @@ export async function GET(request: NextRequest) {
         exclude: {},
         page: 0,
         pageSize: 50,
-        language: languageCode
       }
       console.log('Searching in category:', categoryId)
     } else {
-      // Якщо категорія не вказана, шукаємо по всіх продуктах
-      apiUrl = `${API_BASE_URL}/api/Product/search?name=${encodeURIComponent(name)}&languageCode=${languageCode}`
+      apiUrl = `${API_BASE_URL}/api/Product/search?name=${encodeURIComponent(name)}`
       console.log('Searching in all products')
     }
 
@@ -47,17 +42,24 @@ export async function GET(request: NextRequest) {
         'Content-Type': 'application/json',
       },
       body: categoryId ? JSON.stringify(requestBody) : undefined,
-      next: { revalidate: 3600 }
+      cache: 'no-store'
     })
 
     if (!response.ok) {
       throw new Error(`API responded with status: ${response.status}`)
     }
 
-    let data = await response.json()
+    const text = await response.text()
+    let data: any = []
+    if (text) {
+      try {
+        data = JSON.parse(text)
+      } catch {
+        data = []
+      }
+    }
     console.log('Raw API response:', data)
 
-    // Якщо шукали по категорії, фільтруємо результати по назві
     if (categoryId && Array.isArray(data)) {
       const searchTerm = name.toLowerCase()
       data = data.filter((product: { name?: string }) => 
@@ -68,19 +70,19 @@ export async function GET(request: NextRequest) {
       console.log('Filtered by name:', data)
     }
 
-    // Переконуємося, що всі продукти мають необхідні поля
-    const normalizedData = Array.isArray(data) ? data.map((product: { id?: string; productId?: string; _id?: string; name?: string; highlighted?: string; price?: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number; quantityStatus?: string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
-      id: product.id || product.productId || product._id || '',
-      name: product.name || product.highlighted || 'Без назви',
-      price: product.price || 0,
-      discountPrice: product.discountPrice,
-      hasDiscount: product.hasDiscount || false,
-      finalPrice: product.finalPrice,
-      discountPercentage: product.discountPercentage,
-      quantityStatus: product.quantityStatus,
-      quantity: product.quantity,
-      productType: product.productType,
-      categoryPath: product.categoryPath || []
+    const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+    const normalizedData = Array.isArray(list) ? list.map((product: { id?: string; productId?: string; _id?: string; name?: string; highlighted?: string; price?: number; discountPrice?: number | null; hasDiscount?: boolean; finalPrice?: number; discountPercentage?: number | null; quantityStatus?: number | string; quantity?: number; productType?: string; categoryPath?: string[] }) => ({
+      id: product?.id || product?.productId || product?._id || '',
+      name: product?.name || product?.highlighted || 'Без назви',
+      price: Number(product?.price) || 0,
+      discountPrice: product?.discountPrice ?? null,
+      hasDiscount: Boolean(product?.hasDiscount),
+      finalPrice: product?.finalPrice ?? (Number(product?.price) || 0),
+      discountPercentage: product?.discountPercentage ?? null,
+      quantityStatus: product?.quantityStatus,
+      quantity: product?.quantity,
+      productType: product?.productType,
+      categoryPath: Array.isArray(product?.categoryPath) ? product.categoryPath : []
     })) : []
 
     console.log('Normalized data:', normalizedData)

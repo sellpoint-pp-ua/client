@@ -27,7 +27,6 @@ type Seller = {
     lastName?: string
     phoneNumber?: string
   }
-  // Додаткові поля для продавців
   productCount?: number
   totalRevenue?: number
 }
@@ -54,11 +53,9 @@ export default function SellersPage() {
       
       const data = await response.json()
       
-      // Додаємо додаткову інформацію про продавців
       const sellersWithStats = await Promise.all(
         data.map(async (seller: Seller) => {
           try {
-            // Отримуємо кількість продуктів продавця
             const productsResponse = await fetch(`/api/products/all?pageSize=1000`)
             if (productsResponse.ok) {
               const products = await productsResponse.json()

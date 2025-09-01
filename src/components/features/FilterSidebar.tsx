@@ -1,95 +1,107 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowDownAZ } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
-interface FilterOption {
-  title: string
-  options: string[]
-}
-
-interface SortOption {
-  label: string
-  value: string
+type ServerFilter = {
+  id: string
+  categoryId: string
+  filters: Array<{ title: string; values: string[] }>
 }
 
 interface FilterSidebarProps {
-  filterOptions: FilterOption[]
-  sortOptions: SortOption[]
+  categoryId?: string
+  onChange?: (selected: Record<string, string[]>) => void
+  filterOptions?: { title: string; options: string[] }[]
+  sortOptions?: { label: string; value: string }[]
 }
 
-export default function FilterSidebar({ filterOptions, sortOptions }: FilterSidebarProps) {
-  const [selectedSort, setSelectedSort] = useState(sortOptions[0]?.value)
+export default function FilterSidebar({ categoryId = '', onChange = () => {}, filterOptions }: FilterSidebarProps) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [serverFilters, setServerFilters] = useState<ServerFilter | null>(null)
   const [selectedFilters, setSelectedFilters] = useState<Record<string, string[]>>({})
 
-  const handleSortChange = (value: string) => {
-    setSelectedSort(value)
-  }
-
-  const handleFilterChange = (category: string, value: string) => {
-    setSelectedFilters(prev => {
-      const currentFilters = prev[category] || []
-      const newFilters = currentFilters.includes(value)
-        ? currentFilters.filter(v => v !== value)
-        : [...currentFilters, value]
-      
-      return {
-        ...prev,
-        [category]: newFilters
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        setLoading(true)
+        setError(null)
+        const res = await fetch(`/api/categories/${categoryId}/available-filters`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to fetch filters')
+        const data: ServerFilter[] = await res.json()
+        if (!cancelled) {
+          const entry = Array.isArray(data) ? (data[0] ?? null) : null
+          setServerFilters(entry ?? { id: '', categoryId, filters: [] })
+        }
+      } catch (e) {
+        if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load filters')
+      } finally {
+        if (!cancelled) setLoading(false)
       }
+    }
+    if (categoryId) load()
+    return () => { cancelled = true }
+  }, [categoryId])
+
+  useEffect(() => {
+    onChange(selectedFilters)
+  }, [selectedFilters, onChange])
+
+  const handleFilterToggle = (title: string, value: string) => {
+    setSelectedFilters(prev => {
+      const current = prev[title] || []
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value]
+      return { ...prev, [title]: next }
     })
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Sort Section */}
-      <div>
-        <div className="mb-4 flex items-center gap-2">
-          <ArrowDownAZ className="h-5 w-5" />
-          <h2 className="font-medium">Сортування</h2>
-        </div>
-        <div className="space-y-2">
-          {sortOptions.map((option) => (
-            <label
-              key={option.value}
-              className="flex items-center gap-2"
-            >
-              <input
-                type="radio"
-                name="sort"
-                value={option.value}
-                checked={selectedSort === option.value}
-                onChange={(e) => handleSortChange(e.target.value)}
-                className="text-[#4563d1] focus:ring-[#4563d1]"
-              />
-              <span className="text-sm">{option.label}</span>
-            </label>
+  const content = useMemo(() => {
+    if (loading) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-6 animate-pulse rounded bg-gray-200" />
           ))}
         </div>
-      </div>
-
-      {/* Filters Section */}
-      {filterOptions.map((filter) => (
-        <div key={filter.title}>
-          <h2 className="mb-3 font-medium">{filter.title}</h2>
-          <div className="space-y-2">
-            {filter.options.map((option) => (
-              <label
-                key={option}
-                className="flex items-center gap-2"
-              >
-                <input
-                  type="checkbox"
-                  checked={selectedFilters[filter.title]?.includes(option) || false}
-                  onChange={() => handleFilterChange(filter.title, option)}
-                  className="rounded text-[#4563d1] focus:ring-[#4563d1]"
-                />
-                <span className="text-sm">{option}</span>
-              </label>
-            ))}
+      )
+    }
+    if (error) {
+      return <p className="text-sm text-red-500">{error}</p>
+    }
+  const filters = serverFilters?.filters || (filterOptions ? filterOptions.map(f => ({ title: f.title, values: f.options })) : [])
+    if (!filters.length) {
+      return <p className="text-sm text-gray-500">Фільтри відсутні</p>
+    }
+    return (
+      <div className="space-y-6">
+        {filters.map((f) => (
+          <div key={f.title}>
+            <h2 className="mb-3 font-medium">{f.title}</h2>
+            <div className="space-y-2">
+              {f.values.map((v) => (
+                <label key={v} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={Boolean(selectedFilters[f.title]?.includes(v))}
+                    onChange={() => handleFilterToggle(f.title, v)}
+                    className="rounded text-[#4563d1] focus:ring-[#4563d1]"
+                  />
+                  <span className="text-sm">{v}</span>
+                </label>
+              ))}
+            </div>
           </div>
-        </div>
-      ))}
+        ))}
+      </div>
+    )
+  }, [loading, error, serverFilters, selectedFilters])
+
+  return (
+    <div className="space-y-6">
+      {content}
     </div>
   )
-} 
+}

@@ -8,7 +8,7 @@ export async function GET() {
       headers: {
         'Content-Type': 'application/json',
       },
-      next: { revalidate: 3600 } 
+      cache: 'no-store'
     });
 
     if (response.status === 204) {
@@ -19,13 +19,14 @@ export async function GET() {
       throw new Error(`API error: ${response.status}`);
     }
 
-    let data: unknown
-    try {
-      data = await response.json();
-    } catch {
-      data = []
-    }
-    return NextResponse.json(data);
+    const data = await response.json();
+    const mapNode = (n: { id?: string; name?: string; children?: unknown[] }): { id: string; name: string; children: any[] } => ({
+      id: n?.id || '',
+      name: typeof n?.name === 'string' ? n.name : '',
+      children: Array.isArray(n?.children) ? (n!.children as Array<any>).map(mapNode).filter((x) => x.id && x.name) : [],
+    });
+    const normalized = Array.isArray(data) ? data.map(mapNode).filter((x) => x.id && x.name) : []
+    return NextResponse.json(normalized);
   } catch (error) {
     console.error('Error fetching category tree:', error);
     return NextResponse.json(

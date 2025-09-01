@@ -1,6 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import CategoryCard from '@/components/features/CategoryCard'
 import ApiProductCard from '@/components/features/ApiProductCard'
@@ -31,7 +33,7 @@ interface Product {
   finalPrice?: number
   discountPercentage?: number
   sellerId?: string
-  quantityStatus?: string
+  quantityStatus?: number | string
   quantity?: number
 }
 
@@ -46,14 +48,15 @@ export default function CategoryPageTemplate({
   title,
   description
 }: CategoryPageTemplateProps) {
-  const [categories, setCategories] = useState<Array<{ id: string; name: { uk: string } }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
-  const [sortBy, setSortBy] = useState('relevance')
+  const [sortBy, setSortBy] = useState('newest')
+  const [crumbs, setCrumbs] = useState<Array<{ id: string; name: string }>>([])
 
   useEffect(() => {
     async function fetchCategoryData() {
@@ -67,6 +70,23 @@ export default function CategoryPageTemplate({
         }
         const data = await response.json()
         setCategories(data)
+        try {
+          const chain: Array<{ id: string; name: string }> = []
+          let currentId: string | null = categoryId
+          let guard = 0
+          while (currentId && guard < 20) {
+            const r: Response = await fetch(`/api/categories/${currentId}`)
+            if (!r.ok) break
+            const c: { name?: string, parentId?: string | null } = await r.json()
+            const nameStr: string = typeof c?.name === 'string' ? c.name : 'Категорія'
+            chain.push({ id: currentId, name: nameStr })
+            currentId = (typeof c?.parentId === 'string' ? c.parentId : null)
+            guard++
+          }
+          setCrumbs(chain.reverse())
+        } catch {
+          setCrumbs([])
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load category data')
       } finally {
@@ -83,9 +103,9 @@ export default function CategoryPageTemplate({
           throw new Error('Failed to fetch products')
         }
         const productsData = await response.json()
-        
-        // Переконуємося, що всі продукти мають необхідні поля
-        const validProducts = productsData.filter((product: { id?: string; name?: string }) => 
+        const list = Array.isArray(productsData?.products) ? productsData.products : Array.isArray(productsData) ? productsData : []
+
+        const validProducts = list.filter((product: { id?: string; name?: string }) => 
           product && product.id && product.name && product.name !== 'Без назви'
         )
         
@@ -104,11 +124,9 @@ export default function CategoryPageTemplate({
     fetchProducts()
   }, [categoryId])
 
-  // Фільтрація та сортування продуктів
   useEffect(() => {
     let result = [...products]
 
-    // Фільтрація по пошуковому запиту
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       result = result.filter(product => 
@@ -116,7 +134,6 @@ export default function CategoryPageTemplate({
       )
     }
 
-    // Сортування
     switch (sortBy) {
       case 'price-low':
         result.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price))
@@ -124,12 +141,8 @@ export default function CategoryPageTemplate({
       case 'price-high':
         result.sort((a, b) => (b.finalPrice || b.price) - (a.finalPrice || a.price))
         break
-      case 'name':
-        result.sort((a, b) => a.name.localeCompare(b.name, 'uk'))
-        break
-      case 'relevance':
+      case 'newest':
       default:
-        // Залишаємо оригінальний порядок
         break
     }
 
@@ -138,14 +151,70 @@ export default function CategoryPageTemplate({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Пошук вже реалізований через useEffect
   }
+
+  const applyFiltersToServer = useCallback(async (selected: Record<string, string[]>) => {
+    try {
+      setIsLoadingProducts(true)
+      const active = Object.entries(selected).filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
+      if (active.length === 0) {
+        const res = await fetch(`/api/products/by-category/${categoryId}?pageSize=50`, { cache: 'no-store' })
+        if (!res.ok) throw new Error('Failed to fetch products')
+        const productsData = await res.json()
+        const list = Array.isArray(productsData?.products) ? productsData.products : Array.isArray(productsData) ? productsData : []
+        const validProducts = list.filter((product: { id?: string; name?: string }) => 
+          product && product.id && product.name && product.name !== 'Без назви'
+        )
+        setProducts(validProducts)
+        setFilteredProducts(validProducts)
+        return
+      }
+
+      const body = {
+        categoryId,
+        include: Object.fromEntries(active.map(([k, v]) => [k, v[0]])),
+        exclude: {},
+        page: 0,
+        pageSize: 50,
+      }
+      const res = await fetch('/api/products/all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) throw new Error('Failed to fetch filtered products')
+      const data = await res.json()
+      const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+      const valid = list.filter((p: { id?: string; name?: string }) => p && p.id && p.name && p.name !== 'Без назви')
+      setProducts(valid)
+      setFilteredProducts(valid)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoadingProducts(false)
+    }
+  }, [categoryId])
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
       <main className="mx-auto max-w-[1500px] px-4 py-6">
+        {/* Breadcrumbs */}
+        <nav className="mb-4 text-sm text-gray-500">
+          <ol className="flex flex-wrap items-center gap-1">
+            <li>
+              <Link href="/" className="text-[#4563d1] hover:underline cursor-pointer mr-2">Каталог товарів</Link>
+            </li>
+            {crumbs.map((c, idx) => (
+              <li key={`${c.id}-${idx}`} className="flex items-center gap-1">
+                <span className="text-xl"><ChevronRight className="h-5 w-5" /></span>
+                <Link href={`/category/${c.id}`} className="text-[#4563d1] hover:underline cursor-pointer mr-2 ml-2">{c.name}</Link>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             {title}
@@ -177,7 +246,7 @@ export default function CategoryPageTemplate({
                 categories.map((category) => (
                   <CategoryCard
                     key={category.id}
-                    title={category.name.uk}
+                    title={category.name}
                     count={0}
                     href={`/category/${category.id}`}
                     iconType="sparkles"
@@ -194,23 +263,10 @@ export default function CategoryPageTemplate({
             <h2 className="text-xl font-semibold text-gray-900">
               {filteredProducts.length > 0 ? `Товари (${filteredProducts.length})` : 'Товари'}
             </h2>
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">Сортувати:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30"
-              >
-                <option value="relevance">За релевантністю</option>
-                <option value="price-low">Ціна: від дешевих</option>
-                <option value="price-high">Ціна: від дорогих</option>
-                <option value="name">За назвою</option>
-              </select>
-            </div>
           </div>
 
           {/* Search Bar */}
-          <div className="mb-6">
+          <div className="mb-4">
             <form onSubmit={handleSearch} className="max-w-md">
               <div className="relative">
                 <input
@@ -225,11 +281,38 @@ export default function CategoryPageTemplate({
             </form>
           </div>
 
+          {/* Sort buttons */}
+          <div className="mb-6">
+            <div className="inline-flex items-stretch overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm divide-x divide-gray-200">
+              <button
+                type="button"
+                onClick={() => setSortBy('newest')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'newest' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Новинки
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('price-low')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'price-low' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Дешевше
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('price-high')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'price-high' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Дорожче
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-6">
             <div className="w-64 flex-shrink-0">
               <FilterSidebar 
-                filterOptions={filterOptions}
-                sortOptions={sortOptions}
+                categoryId={categoryId}
+                onChange={applyFiltersToServer}
               />
             </div>
             

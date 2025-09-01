@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const category = await response.json()
+  const c = await response.json()
+  const name: string = typeof c?.name === 'string' ? c.name : 'Категорія'
   return {
-    title: `${category.name.uk} | Інтернет-магазин`,
-    description: `Купити ${category.name.uk.toLowerCase()} в інтернет-магазині`,
+    title: `${name} | Інтернет-магазин`,
+    description: `Купити ${name.toLowerCase()} в інтернет-магазині`,
   }
 }
 
@@ -35,13 +36,14 @@ export default async function CategoryPage({ params }: Props) {
     notFound()
   }
 
-  const category = await response.json()
+  const c = await response.json()
+  const name: string = typeof c?.name === 'string' ? c.name : 'Категорія'
 
   return (
     <CategoryPageTemplate
       categoryId={id}
-      title={category.name.uk}
-      description={`Купити ${category.name.uk.toLowerCase()} в інтернет-магазині`}
+      title={name}
+      description={`Купити ${name.toLowerCase()} в інтернет-магазині`}
     />
   )
 }

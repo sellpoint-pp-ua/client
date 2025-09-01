@@ -24,23 +24,18 @@ export default function SearchPage() {
   const [isSearching, setIsSearching] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
 
-  // Функція для отримання назви категорії з урахуванням локалізації
   const getCategoryName = (category: Category): string => {
     if (typeof category.name === 'string') {
       return category.name
     }
     
-    // Якщо name є об'єктом з локалізованими назвами
     if (typeof category.name === 'object' && category.name !== null) {
-      // Спочатку намагаємось знайти українську назву
       if (category.name.uk) {
         return category.name.uk
       }
-      // Потім англійську
       if (category.name.en) {
         return category.name.en
       }
-      // Якщо нічого не знайдено, беремо першу доступну назву
       const firstValue = Object.values(category.name)[0]
       return firstValue || 'Без назви'
     }
@@ -61,7 +56,6 @@ export default function SearchPage() {
     try {
       let results: Category[] = []
       
-      // Пошук за назвою
       try {
         const nameResponse = await fetch(`/api/categories/search?name=${encodeURIComponent(query)}&languageCode=uk`)
         if (nameResponse.ok) {
@@ -76,21 +70,18 @@ export default function SearchPage() {
         console.warn('Error in name search:', error)
       }
 
-      // Пошук за ID (якщо query виглядає як ID)
       if (/^[a-zA-Z0-9-_]+$/.test(query) && query.length > 2) {
         try {
           const idResponse = await fetch(`/api/categories/${query}`)
           if (idResponse.ok) {
             const category = await idResponse.json()
             if (category && category.id) {
-              // Перевіряємо, чи не додали ми вже цю категорію
               if (!results.find(r => r.id === category.id)) {
                 results.unshift(category)
               }
             }
           }
         } catch (error) {
-          // Ігноруємо помилки пошуку за ID
           console.warn('Error in ID search:', error)
         }
       }
@@ -122,7 +113,6 @@ export default function SearchPage() {
     try {
       let results: Product[] = []
       
-      // Пошук за назвою продукту
       if (query.trim()) {
         try {
           const nameResponse = await fetch(`/api/products/search?name=${encodeURIComponent(query)}&languageCode=uk`)
@@ -137,14 +127,12 @@ export default function SearchPage() {
         }
       }
 
-      // Пошук за ID категорії
       if (categoryId && categoryId.trim()) {
         try {
           const categoryResponse = await fetch(`/api/products/all?categoryId=${encodeURIComponent(categoryId)}&pageSize=50`)
           if (categoryResponse.ok) {
             const categoryResults = await categoryResponse.json()
             if (Array.isArray(categoryResults)) {
-              // Додаємо результати, уникаючи дублікатів
               categoryResults.forEach((product: Product) => {
                 if (!results.find(r => r.id === product.id)) {
                   results.push(product)
@@ -305,7 +293,6 @@ export default function SearchPage() {
           </h2>
           
           {activeTab === 'categories' ? (
-            // Пошук категорій
             <div className="space-y-4">
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -324,7 +311,6 @@ export default function SearchPage() {
               </div>
             </div>
           ) : (
-            // Пошук продуктів
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="relative">

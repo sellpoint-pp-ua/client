@@ -7,18 +7,18 @@ import ApiProductCard from '@/components/features/ApiProductCard'
 import WishlistCard from '@/components/favorites/WishlistCard'
 
 const favoriteProductsA = [
-	{ id: '2001', name: 'Регульований столик для ноутбука ColerPad E-Table LD09', price: 438, hasDiscount: true, finalPrice: 438, discountPercentage: 36, quantityStatus: 'В наявності', quantity: 10, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/rukzaki.png' },
-	{ id: '2002', name: 'Скло захисне протиударне для Redmi note 11/11s', price: 90, hasDiscount: false, quantityStatus: 'В наявності', quantity: 100, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png' },
-	{ id: '2003', name: 'Підставка столик для ноутбука з кулером T8', price: 1656, hasDiscount: true, finalPrice: 828, discountPercentage: 50, quantityStatus: 'В наявності', quantity: 12, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/computeri.png' },
-	{ id: '2004', name: 'Power Bank Dudao wireless power', price: 550, hasDiscount: false, quantityStatus: 'В наявності', quantity: 25, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/zdorovia.png' },
-	{ id: '2005', name: 'Рюкзак для тренувань Nike Brasilia', price: 1790, hasDiscount: false, quantityStatus: 'В наявності', quantity: 6, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/rukzaki.png' },
-	{ id: '2006', name: 'Зовнішній акумулятор HOCO J102A', price: 699, hasDiscount: false, quantityStatus: 'В наявності', quantity: 20, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/avtozap.png' },
-	{ id: '2007', name: 'Смартфон iPhone 11 4/256GB', price: 14999, hasDiscount: false, quantityStatus: 'В наявності', quantity: 4, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png' },
-	{ id: '2008', name: 'Power Bank 10 000 mAh Carga', price: 199, hasDiscount: true, finalPrice: 199, discountPercentage: 71, quantityStatus: 'В наявності', quantity: 30, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/zdorovia.png' },
-	{ id: '2009', name: 'Зовнішній акумулятор Trusmi Ultra', price: 959, hasDiscount: false, quantityStatus: 'В наявності', quantity: 18, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/avtozap.png' },
-	{ id: '2010', name: 'MacBook Pro 16, M3', price: 159499, hasDiscount: true, finalPrice: 148348, discountPercentage: 7, quantityStatus: 'В наявності', quantity: 2, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/computeri.png' },
-	{ id: '2011', name: 'Кава розчинна Jacobs Monarch', price: 349, hasDiscount: true, finalPrice: 219, discountPercentage: 37, quantityStatus: 'В наявності', quantity: 40, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/kuhna.png' },
-	{ id: '2012', name: 'Набір глянцевих стікерів Домашні Котики', price: 155, hasDiscount: true, finalPrice: 55, discountPercentage: 64, quantityStatus: 'В наявності', quantity: 100, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-photos/dim_i_sad.png' },
+	{ id: '2001', name: 'Регульований столик для ноутбука ColerPad E-Table LD09', price: 438, hasDiscount: true, finalPrice: 438, discountPercentage: 36, quantityStatus: 'В наявності', quantity: 10, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
+	{ id: '2002', name: 'Скло захисне протиударне для Redmi note 11/11s', price: 90, hasDiscount: false, quantityStatus: 'В наявності', quantity: 100, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
+	{ id: '2003', name: 'Підставка столик для ноутбука з кулером T8', price: 1656, hasDiscount: true, finalPrice: 828, discountPercentage: 50, quantityStatus: 'В наявності', quantity: 12, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp' },
+	{ id: '2004', name: 'Power Bank Dudao wireless power', price: 550, hasDiscount: false, quantityStatus: 'В наявності', quantity: 25, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
+	{ id: '2005', name: 'Рюкзак для тренувань Nike Brasilia', price: 1790, hasDiscount: false, quantityStatus: 'В наявності', quantity: 6, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
+	{ id: '2006', name: 'Зовнішній акумулятор HOCO J102A', price: 699, hasDiscount: false, quantityStatus: 'В наявності', quantity: 20, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/avtozap.webp' },
+	{ id: '2007', name: 'Смартфон iPhone 11 4/256GB', price: 14999, hasDiscount: false, quantityStatus: 'В наявності', quantity: 4, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
+	{ id: '2008', name: 'Power Bank 10 000 mAh Carga', price: 199, hasDiscount: true, finalPrice: 199, discountPercentage: 71, quantityStatus: 'В наявності', quantity: 30, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
+	{ id: '2009', name: 'Зовнішній акумулятор Trusmi Ultra', price: 959, hasDiscount: false, quantityStatus: 'В наявності', quantity: 18, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/avtozap.webp' },
+	{ id: '2010', name: 'MacBook Pro 16, M3', price: 159499, hasDiscount: true, finalPrice: 148348, discountPercentage: 7, quantityStatus: 'В наявності', quantity: 2, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp' },
+	{ id: '2011', name: 'Кава розчинна Jacobs Monarch', price: 349, hasDiscount: true, finalPrice: 219, discountPercentage: 37, quantityStatus: 'В наявності', quantity: 40, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/kuhna.webp' },
+	{ id: '2012', name: 'Набір глянцевих стікерів Домашні Котики', price: 155, hasDiscount: true, finalPrice: 55, discountPercentage: 64, quantityStatus: 'В наявності', quantity: 100, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/dim_i_sad.webp' },
 ]
 
 const favoriteProductsB = [...favoriteProductsA].reverse()
@@ -61,8 +61,8 @@ export default function FavoritesPage() {
 							{/* Content area */}
 							{activeTab === 'wishlists' ? (
 								<div className="mt-4 space-y-4">
-									<WishlistCard title="Техніка" countLabel="15 товарів" imageUrl="https://cloud.sellpoint.pp.ua/media/products-photos/smartfony.png" />
-									<WishlistCard title="Підставка" countLabel="4 товари" imageUrl="https://cloud.sellpoint.pp.ua/media/products-photos/computeri.png" />
+									<WishlistCard title="Техніка" countLabel="15 товарів" imageUrl="https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp" />
+									<WishlistCard title="Підставка" countLabel="4 товари" imageUrl="https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp" />
 								</div>
 							) : (
 								<div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
