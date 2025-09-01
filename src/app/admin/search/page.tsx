@@ -5,7 +5,7 @@ import { MagnifyingGlassIcon, FolderIcon, CubeIcon } from '@heroicons/react/24/o
 
 type Category = {
   id: string
-  name: string | { uk: string; en: string }
+  name: string
   parentId?: string | null
 }
 
@@ -25,22 +25,7 @@ export default function SearchPage() {
   const [searchError, setSearchError] = useState<string | null>(null)
 
   const getCategoryName = (category: Category): string => {
-    if (typeof category.name === 'string') {
-      return category.name
-    }
-    
-    if (typeof category.name === 'object' && category.name !== null) {
-      if (category.name.uk) {
-        return category.name.uk
-      }
-      if (category.name.en) {
-        return category.name.en
-      }
-      const firstValue = Object.values(category.name)[0]
-      return firstValue || 'Без назви'
-    }
-    
-    return 'Без назви'
+    return category.name || 'Без назви'
   }
 
   const searchCategories = async (query: string) => {

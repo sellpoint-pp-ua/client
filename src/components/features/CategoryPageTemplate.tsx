@@ -3,12 +3,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import Header from '@/components/layout/Header'
 import CategoryCard from '@/components/features/CategoryCard'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import FilterSidebar from '@/components/features/FilterSidebar'
 import { Search } from 'lucide-react'
-import { filterOptions, sortOptions } from '@/constants/sampleData'
 
 interface ProductFeatureItem {
   value: string | number | null
@@ -49,12 +51,15 @@ export default function CategoryPageTemplate({
   description
 }: CategoryPageTemplateProps) {
   const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
   const [products, setProducts] = useState<Product[]>([])
   const [isLoadingCategories, setIsLoadingCategories] = useState(true)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
+  const [sortBy, setSortBy] = useState('newest')
+  const [crumbs, setCrumbs] = useState<Array<{ id: string; name: string }>>([])
   const [sortBy, setSortBy] = useState('newest')
   const [crumbs, setCrumbs] = useState<Array<{ id: string; name: string }>>([])
 
@@ -142,6 +147,7 @@ export default function CategoryPageTemplate({
         result.sort((a, b) => (b.finalPrice || b.price) - (a.finalPrice || a.price))
         break
       case 'newest':
+      case 'newest':
       default:
         break
     }
@@ -215,6 +221,21 @@ export default function CategoryPageTemplate({
           </ol>
         </nav>
 
+        {/* Breadcrumbs */}
+        <nav className="mb-4 text-sm text-gray-500">
+          <ol className="flex flex-wrap items-center gap-1">
+            <li>
+              <Link href="/" className="text-[#4563d1] hover:underline cursor-pointer mr-2">Каталог товарів</Link>
+            </li>
+            {crumbs.map((c, idx) => (
+              <li key={`${c.id}-${idx}`} className="flex items-center gap-1">
+                <span className="text-xl"><ChevronRight className="h-5 w-5" /></span>
+                <Link href={`/category/${c.id}`} className="text-[#4563d1] hover:underline cursor-pointer mr-2 ml-2">{c.name}</Link>
+              </li>
+            ))}
+          </ol>
+        </nav>
+
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             {title}
@@ -247,6 +268,7 @@ export default function CategoryPageTemplate({
                   <CategoryCard
                     key={category.id}
                     title={category.name}
+                    title={category.name}
                     count={0}
                     href={`/category/${category.id}`}
                     iconType="sparkles"
@@ -266,6 +288,7 @@ export default function CategoryPageTemplate({
           </div>
 
           {/* Search Bar */}
+          <div className="mb-4">
           <div className="mb-4">
             <form onSubmit={handleSearch} className="max-w-md">
               <div className="relative">
@@ -308,9 +331,38 @@ export default function CategoryPageTemplate({
             </div>
           </div>
 
+          {/* Sort buttons */}
+          <div className="mb-6">
+            <div className="inline-flex items-stretch overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm divide-x divide-gray-200">
+              <button
+                type="button"
+                onClick={() => setSortBy('newest')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'newest' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Новинки
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('price-low')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'price-low' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Дешевше
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortBy('price-high')}
+                className={`px-4 py-2 text-sm font-medium focus:outline-none ${sortBy === 'price-high' ? 'bg-[#4563d1] text-white' : 'text-gray-700 hover:bg-gray-50'}`}
+              >
+                Дорожче
+              </button>
+            </div>
+          </div>
+
           <div className="flex gap-6">
             <div className="w-64 flex-shrink-0">
               <FilterSidebar 
+                categoryId={categoryId}
+                onChange={applyFiltersToServer}
                 categoryId={categoryId}
                 onChange={applyFiltersToServer}
               />

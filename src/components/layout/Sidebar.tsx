@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 
@@ -106,6 +107,50 @@ export default function Sidebar() {
 
     fetchCategories()
   }, [])
+
+  useEffect(() => {
+    function measure() {
+      const el = expandedPanelRef.current
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      setExpandedHeightPx(Math.max(0, Math.floor(rect.height)))
+    }
+    if (isExpanded) {
+      requestAnimationFrame(measure)
+      window.addEventListener('resize', measure)
+      return () => window.removeEventListener('resize', measure)
+    }
+  }, [isExpanded, categories.length])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const htmlEl = document.documentElement
+    const bodyEl = document.body
+    if (isExpanded) {
+      prevBodyOverflowRef.current = bodyEl.style.overflow
+      prevHtmlOverflowRef.current = htmlEl.style.overflow
+      prevBodyPaddingRightRef.current = bodyEl.style.paddingRight
+      prevHtmlPaddingRightRef.current = htmlEl.style.paddingRight
+
+      const scrollbarWidth = window.innerWidth - htmlEl.clientWidth
+      if (scrollbarWidth > 0) {
+        bodyEl.style.paddingRight = `${scrollbarWidth}px`
+      }
+      bodyEl.style.overflow = 'hidden'
+      htmlEl.style.overflow = 'hidden'
+    } else {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+    return () => {
+      bodyEl.style.overflow = prevBodyOverflowRef.current
+      htmlEl.style.overflow = prevHtmlOverflowRef.current
+      bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
+      htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
+    }
+  }, [isExpanded])
 
   useEffect(() => {
     function measure() {

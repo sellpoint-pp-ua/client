@@ -64,6 +64,20 @@ export default function FilterSidebar({ categoryId = '', onChange = () => {}, fi
         <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-6 animate-pulse rounded bg-gray-200" />
+      const current = prev[title] || []
+      const next = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value]
+      return { ...prev, [title]: next }
+    })
+  }
+
+  const content = useMemo(() => {
+    if (loading) {
+      return (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-6 animate-pulse rounded bg-gray-200" />
           ))}
         </div>
       )
@@ -104,4 +118,5 @@ export default function FilterSidebar({ categoryId = '', onChange = () => {}, fi
       {content}
     </div>
   )
+}
 }
