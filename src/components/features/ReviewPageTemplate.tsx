@@ -6,6 +6,9 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight, Star, ThumbsUp, ThumbsDown, Store } from 'lucide-react'
+import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
+import { useAuth } from '@/hooks/useAuth'
+import { useRouter } from 'next/navigation'
 
 type Product = {
   id: string
@@ -25,6 +28,9 @@ type Review = {
   userId: string
   comment: string
   createdAt: string
+  reactions?: Record<string, boolean>
+  positiveCount?: number
+  negativeCount?: number
 }
 
 interface Props {
@@ -63,6 +69,10 @@ export default function ReviewPageTemplate({ productId }: Props) {
   const [showAll, setShowAll] = useState(false)
   const [sellerName, setSellerName] = useState<string>('')
   const [thumbUrl, setThumbUrl] = useState<string | null>(null)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const { addToCart, isInCart, openCart } = useCartDrawer()
+  const { isAuthenticated } = useAuth()
+  const router = useRouter()
   
   const normalizedStatus = typeof product?.quantityStatus === 'string' ? product.quantityStatus.toLowerCase() : ''
   const stockState: 'in' | 'low' | 'out' = (() => {
@@ -175,6 +185,31 @@ export default function ReviewPageTemplate({ productId }: Props) {
     return () => { cancelled = true }
   }, [productId])
 
+  // Load current user id for reaction highlighting
+  useEffect(() => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+    if (!token) { setCurrentUserId(null); return }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const res = await fetch('/api/users/current', {
+          headers: { 'Authorization': `Bearer ${token}` },
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const u = await res.json()
+        const uid = (u && (u.id || u.userId || u.Id || u.ID || u._id)) ? String(u.id || u.userId || u.Id || u.ID || u._id) : null
+        if (!cancelled) {
+          setCurrentUserId(uid)
+          if (uid && typeof window !== 'undefined') {
+            localStorage.setItem('current_user_id', uid)
+          }
+        }
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [])
+
   const total = reviews.length
   const visibleReviews = showAll ? reviews : reviews.slice(0, 10)
 
@@ -230,14 +265,43 @@ export default function ReviewPageTemplate({ productId }: Props) {
             ) : visibleReviews.length === 0 ? (
               <div className="rounded-lg bg-white p-4 text-sm text-gray-500">Відгуки поки що відсутні.</div>
             ) : (
-              visibleReviews.map((rev, idx) => <ReviewCard key={idx} review={rev} productId={productId} />)
+              visibleReviews.map((rev, idx) => {
+                const likesCount = typeof rev.positiveCount === 'number'
+                  ? rev.positiveCount
+                  : (rev.reactions ? Object.values(rev.reactions).filter(v => v === true).length : 0)
+                const dislikesCount = typeof rev.negativeCount === 'number'
+                  ? rev.negativeCount
+                  : (rev.reactions ? Object.values(rev.reactions).filter(v => v === false).length : 0)
+                const uid = currentUserId || (typeof window !== 'undefined' ? localStorage.getItem('current_user_id') : null)
+                let myReaction: null | 'like' | 'dislike' = null
+                if (uid && rev.reactions) {
+                  const match = Object.keys(rev.reactions).find(k => String(k) === String(uid))
+                  if (match) myReaction = rev.reactions[match] ? 'like' : 'dislike'
+                }
+                const reactionKey = `${productId}:${rev.userId}:${rev.createdAt}`
+                if (!myReaction && typeof window !== 'undefined') {
+                  const local = localStorage.getItem(`review_reaction_${reactionKey}`)
+                  if (local === 'like' || local === 'dislike') myReaction = local as 'like' | 'dislike'
+                }
+                return (
+                  <ReviewCard
+                    key={idx}
+                    review={rev}
+                    productId={productId}
+                    initialLikeCount={likesCount}
+                    initialDislikeCount={dislikesCount}
+                    initialMyReaction={myReaction}
+                    reactionKey={reactionKey}
+                  />
+                )
+              })
             )}
 
             {total > 10 && (
               <div className="mt-6 flex justify-center">
                 <button
                   onClick={() => setShowAll(v => !v)}
-                  className="rounded-xl border-2 border-[#6282f5] px-6 py-1.5 text-[#4563d1] font-semibold hover:bg-[#4563d1]/10 transition-colors w-full mx-auto"
+                  className="rounded-xl hover:cursor-pointer border-2 border-[#6282f5] px-6 py-1.5 text-[#4563d1] font-semibold hover:bg-[#4563d1]/10 transition-colors w-full mx-auto"
                 >
                   {showAll ? 'Показати менше' : 'Показати ще'}
                 </button>
@@ -285,7 +349,18 @@ export default function ReviewPageTemplate({ productId }: Props) {
                 </div>
               </div>
               <div className="mt-3">
-                <button className="w-full rounded-full bg-[#4563d1] py-2 text-sm text-white hover:bg-[#364ea8]">Купити</button>
+                <button
+                  disabled={stockBadge.text === 'Немає в наявності'}
+                  onClick={() => {
+                    if (stockBadge.text === 'Немає в наявності') return
+                    if (isInCart(productId)) { openCart(); return }
+                    if (!isAuthenticated) { router.push('/auth/login'); return }
+                    addToCart(productId, 1)
+                  }}
+                  className={`w-full hover:cursor-pointer rounded-full py-2 text-sm ${isInCart(productId) ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
+                >
+                  {isInCart(productId) ? 'У кошику' : 'Купити'}
+                </button>
               </div>
             </div>
 
@@ -324,15 +399,21 @@ export default function ReviewPageTemplate({ productId }: Props) {
   )
 }
 
-function ReviewCard({ review, productId }: { review: Review; productId: string }) {
+function ReviewCard({ review, productId, initialLikeCount, initialDislikeCount, initialMyReaction, reactionKey }: { review: Review; productId: string; initialLikeCount?: number; initialDislikeCount?: number; initialMyReaction?: null | 'like' | 'dislike'; reactionKey: string }) {
   const [expanded, setExpanded] = useState(false)
   const textRef = useRef<HTMLDivElement | null>(null)
   const [isOverflowing, setIsOverflowing] = useState(false)
   const [userName, setUserName] = useState<string>('Користувач')
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
-  const [likeCount, setLikeCount] = useState<number>(0)
-  const [dislikeCount, setDislikeCount] = useState<number>(0)
-  const [myReaction, setMyReaction] = useState<null | 'like' | 'dislike'>(null)
+  const [likeCount, setLikeCount] = useState<number>(initialLikeCount ?? 0)
+  const [dislikeCount, setDislikeCount] = useState<number>(initialDislikeCount ?? 0)
+  const [myReaction, setMyReaction] = useState<null | 'like' | 'dislike'>(initialMyReaction ?? null)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && myReaction) {
+      localStorage.setItem(`review_reaction_${reactionKey}`, myReaction)
+    }
+  }, [myReaction, reactionKey])
 
   useEffect(() => {
     const el = textRef.current
@@ -380,6 +461,7 @@ function ReviewCard({ review, productId }: { review: Review; productId: string }
           if (reaction) setLikeCount(v => Math.max(0, v - 1))
           else setDislikeCount(v => Math.max(0, v - 1))
           setMyReaction(null)
+          if (typeof window !== 'undefined') localStorage.removeItem(`review_reaction_${reactionKey}`)
         }
         return
       }
@@ -393,6 +475,7 @@ function ReviewCard({ review, productId }: { review: Review; productId: string }
           if (myReaction === 'like') setLikeCount(v => Math.max(0, v - 1))
           if (myReaction === 'dislike') setDislikeCount(v => Math.max(0, v - 1))
           setMyReaction(null)
+          if (typeof window !== 'undefined') localStorage.removeItem(`review_reaction_${reactionKey}`)
         }
       }
 
@@ -450,11 +533,11 @@ function ReviewCard({ review, productId }: { review: Review; productId: string }
       <div className="mt-3 flex items-center justify-between">
         <div>
           {!expanded && isOverflowing ? (
-            <button className="text-sm text-[#4563d1] hover:underline" onClick={() => setExpanded(true)}>
+            <button className="text-sm hover:cursor-pointer text-[#4563d1] hover:underline" onClick={() => setExpanded(true)}>
               Детальніше
             </button>
           ) : expanded ? (
-            <button className="text-sm text-[#4563d1] hover:underline" onClick={() => setExpanded(false)}>
+            <button className="text-sm hover:cursor-pointer text-[#4563d1] hover:underline" onClick={() => setExpanded(false)}>
               Згорнути
             </button>
           ) : null}
