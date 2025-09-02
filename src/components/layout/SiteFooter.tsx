@@ -26,7 +26,7 @@ export default function SiteFooter() {
 						{searchChips.map((label, idx) => (
 							<button
 								key={idx}
-								className="whitespace-nowrap rounded-lg bg-white px-3.5 py-1.5 text-sm hover:border-[#4563d1]  hover:underline transition-colors text-[#4563d1]"
+								className="whitespace-nowrap hover:cursor-pointer rounded-lg bg-white px-3.5 py-1.5 text-sm hover:border-[#4563d1]  hover:underline transition-colors text-[#4563d1]"
 								type="button"
 							>
 								{label}
@@ -50,7 +50,7 @@ export default function SiteFooter() {
 							</p>
 
 							<div className="mt-4">
-								<button className="rounded-xl bg-[#3A63F1] px-5 py-2.5 w-full mx-auto text-white  hover:bg-[#3358d8] transition-colors">
+								<button className="rounded-xl bg-[#3A63F1] hover:cursor-pointer px-5 py-2.5 w-full mx-auto text-white  hover:bg-[#3358d8] transition-colors">
 									Зареєструватися
 								</button>
 							</div>

@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Heart, ShoppingCart } from 'lucide-react'
+import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
+import { useAuth } from '@/hooks/useAuth'
 
 interface ApiProductCardProps {
   id: string;
@@ -32,6 +34,8 @@ export default function ApiProductCard({
 }: ApiProductCardProps) {
   const [resolvedImageUrl, setResolvedImageUrl] = useState<string>('')
   const [isLoading, setIsLoading] = useState(true)
+  const { addToCart, isInCart, openCart } = useCartDrawer()
+  const { isAuthenticated } = useAuth()
 
   const title = name || 'Без назви'
   const normalizedStatus = typeof quantityStatus === 'string' ? quantityStatus.toLowerCase() : ''
@@ -125,7 +129,7 @@ export default function ApiProductCard({
   return (
     <div className="group relative rounded-lg bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
       <button
-        className="absolute right-4 top-4 z-10 rounded-full bg-white p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-[#4563d1] group-hover:opacity-100"
+        className="absolute right-4 hover:cursor-pointer top-4 z-10 rounded-full bg-white p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-[#4563d1] group-hover:opacity-100"
         aria-label="Add to favorites"
       >
         <Heart className="h-5 w-5" />
@@ -187,16 +191,18 @@ export default function ApiProductCard({
       </Link>
       
       <button 
-        className="w-full rounded-full bg-[#4563d1] px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-[#364ea8] disabled:bg-gray-300"
+        className={`w-full hover:cursor-pointer rounded-full px-2 py-1.5 text-sm font-medium transition-colors ${isInCart(id) ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'} disabled:bg-gray-300`}
         disabled={!isAvailable}
         onClick={(e) => {
           e.preventDefault()
-          console.log('Add to cart:', id)
+          if (isInCart(id)) { openCart(); return }
+          if (!isAuthenticated) { window.location.href = '/auth/login'; return }
+          addToCart(id, 1)
         }}
       >
         <div className="flex items-center justify-center gap-2">
           <ShoppingCart className="h-4 w-4" />
-          В кошик
+          {isInCart(id) ? 'У кошику' : 'В кошик'}
         </div>
       </button>
     </div>

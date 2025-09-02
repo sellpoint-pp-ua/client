@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, Bell, Heart, ShoppingCart, LogOut } from 'lucide-react'
+import { Search, User, Bell, Heart, ShieldUser, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
+import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
 
 type CategorySearchResult = {
   id: string;
@@ -84,9 +85,11 @@ export default function Header() {
     }
     return null
   })
+  const [mounted, setMounted] = useState(false)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const { isAuthenticated, logout } = useAuth()
+  const { openCart, cartCount } = useCartDrawer()
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -106,6 +109,20 @@ export default function Header() {
       setDisplayName(token ? (name || 'Кабінет') : null)
     }
   }, [isAuthenticated])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const handleProtectedClick = (e: React.MouseEvent, href: string) => {
+    if (!isAuthenticated) {
+      e.preventDefault()
+      router.push('/auth/login')
+      return
+    }
+    e.preventDefault()
+    router.push(href)
+  }
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -300,47 +317,44 @@ export default function Header() {
 
         {/* Utility Icons */}
 <div className="flex shrink-0 items-center gap-6 mt-1">
-          <Link href="/admin" className="max-h-[35px] shadow-md rounded-xl bg-[#4563d1] px-3 py-2 text-sm text-white hover:bg-[#364ea8] transition-colors duration-200 ease-out">
-            Адмін панель
+          <Link href="/admin" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+            <ShieldUser className="h-6 w-6" />
+            <span className="hidden text-[12px] xl:block">Адмін панель</span>
           </Link>
-          <Link href="/notifications" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
-            <Bell className="h-6 w-6" />
-            <span className="hidden text-[12px] xl:block">Сповіщення</span>
-          </Link>
-          <Link href="/favorites" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
-            <Heart className="h-6 w-6" />
-            <span className="text-[12px] xl:block">Обране</span>
-          </Link>
-          <Link href="/cart" className=" pr-4 flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
-            <ShoppingCart className="h-6 w-6" />
-            <span className="hidden text-[12px] xl:block">Кошик</span>
-          </Link>
-          {isAuthenticated ? (
-            <div className="flex items-center gap-5 -ml-3">
-              <Link href="/cabinet" className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
+          {mounted && (isAuthenticated ? (
+              <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
                 <User className="h-6 w-6" />
                 <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
-              <div className=" flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
-                <button
-                  onClick={() => { logout() }}
-                  className="h-6 w-6"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
-                <span className="hidden text-[12px] xl:block">Вийти</span>
-              </div>
-            </div>
           ) : (
             <>
-              <Link href="/auth/login" className="max-h-[35px] shadow-md rounded-xl bg-[#4563d1] px-3 py-2 text-sm text-white hover:bg-[#364ea8] transition-colors duration-200 ease-out">
-                Увійти
-              </Link>
-              <Link href="/auth/register" className="max-h-[35px] shadow-md rounded-xl bg-[white] px-3 py-2 text-sm text-gray-900">
-                Зареєструватися
+              <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
+              <User className="h-6 w-6" />
+              <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
             </>
-          )}
+          ))}
+          <Link href="/notifications" onClick={(e) => handleProtectedClick(e, '/notifications')} className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+            <Bell className="h-6 w-6" />
+            <span className="hidden text-[12px] xl:block">Сповіщення</span>
+          </Link>
+          <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+            <Heart className="h-6 w-6" />
+            <span className="hidden text-[12px] xl:block">Обране</span>
+          </Link>
+          <button onClick={() => {
+            if (!isAuthenticated) { router.push('/auth/login'); return }
+            openCart()
+          }} className="relative hover:cursor-pointer flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+            <ShoppingCart className="h-6 w-6" />
+            {isAuthenticated && cartCount > 0 && (
+              <span className="absolute -right-2 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-semibold text-white">
+                {cartCount}
+              </span>
+            )}
+            <span className="hidden text-[12px] xl:block">Кошик</span>
+          </button>
+        
         </div>
       </div>
     </header>

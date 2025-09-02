@@ -1,17 +1,74 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { Package, Truck, Heart, MessageSquare, Wallet, BadgePercent, Store, Settings, Headphones, HelpCircle, LogOut } from 'lucide-react'
+import { authService } from '@/services/authService'
 
 export default function AccountSidebar() {
+	const [userName, setUserName] = useState<string>('')
+	const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+	const router = useRouter()
+
+	useEffect(() => {
+		const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+		if (!token) {
+			setUserName('')
+			setAvatarUrl(null)
+			return
+		}
+		let cancelled = false
+		async function loadCurrentUser() {
+			try {
+				const res = await fetch('/api/users/current', {
+					headers: { 'Authorization': `Bearer ${token}` },
+					cache: 'no-store',
+				})
+				if (!res.ok) return
+				const u = await res.json()
+				if (cancelled) return
+				const name: string = typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || '')
+				const avatar: string | null = typeof u?.avatarUrl === 'string' ? u.avatarUrl : null
+				setUserName(name)
+				setAvatarUrl(avatar)
+			} catch {}
+		}
+		loadCurrentUser()
+		return () => { cancelled = true }
+	}, [])
+
+	const initials = useMemo(() => {
+		if (!userName) return '—'
+		const parts = userName.trim().split(/\s+/)
+		const first = parts[0]?.[0] || ''
+		const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+		return (first + last).toUpperCase() || first.toUpperCase() || '—'
+	}, [userName])
+
+	const handleLogout = useCallback(async () => {
+		try {
+			await authService.serverLogout()
+		} finally {
+			router.push('/')
+		}
+	}, [router])
+
 	return (
 		<aside className="rounded-xl bg-white shadow-sm">
 			{/* Profile header */}
 			<div className="flex items-center gap-3 border-b border-gray-200 p-4">
-				<div className="flex h-10 w-10 aspect-square items-center justify-center rounded-full bg-[#4563d1] text-white font-semibold">IP</div>
+				<div className="relative h-10 w-10 overflow-hidden rounded-full bg-gray-200 flex-shrink-0">
+					{avatarUrl ? (
+						<Image src={avatarUrl} alt={userName || 'User'} fill className="object-cover" />
+					) : (
+						<div className="flex h-full w-full items-center justify-center bg-[#4563d1] text-white font-semibold">{initials}</div>
+					)}
+				</div>
 				<div>
-					<p className="text-sm font-medium text-gray-900">Ім&#39;я Призвище</p>
-					<p className="text-xs text-gray-500">+0970000001</p>
+					<p className="text-sm font-medium text-gray-900">{userName || 'Кабінет'}</p>
+					<p className="text-xs text-gray-500">&nbsp;</p>
 				</div>
 			</div>
 
@@ -72,20 +129,14 @@ export default function AccountSidebar() {
 							<span>Sell point-підтримка</span>
 						</Link>
 					</li>
-					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
-							<HelpCircle className="h-5 w-5" />
-							<span>Довідка</span>
-						</Link>
-					</li>
 					<li className="h-px bg-gray-200 my-1">
 
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100  ">
+						<button onClick={handleLogout} className="w-full hover:cursor-pointer text-left flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
 							<LogOut className="h-5 w-5" />
 							<span>Вийти</span>
-						</Link>
+						</button>
 					</li>
 				</ul>
 			</nav>

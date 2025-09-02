@@ -7,6 +7,9 @@ import ApiProductCard from '@/components/features/ApiProductCard'
 import Image from 'next/image'
 import Link from 'next/link'
 import { Star, Truck, Package, CreditCard, ShieldCheck, Store, ChevronRight, ChevronLeft } from 'lucide-react'
+import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/hooks/useAuth'
 
 
 type MediaItem = { url?: string; secondaryUrl?: string; order?: number; type?: 'image' | 'video' }
@@ -49,6 +52,9 @@ export default function ProductPageTemplate({ productId }: Props) {
   const [usernames, setUsernames] = useState<Record<string, string>>({})
   const [currentSlide, setCurrentSlide] = useState(0)
   const sliderRef = useRef<HTMLDivElement | null>(null)
+  const { addToCart, isInCart, openCart } = useCartDrawer()
+  const router = useRouter()
+  const { isAuthenticated } = useAuth()
 
   useEffect(() => {
     let cancelled = false
@@ -328,7 +334,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                       type="button"
                       key={i}
                       onClick={() => setActiveIdx(i)}
-                      className={`relative aspect-[4/3] overflow-hidden rounded border ${activeIdx === i ? 'border-[#4563d1]' : 'border-transparent'} bg-gray-100`}
+                      className={`relative aspect-[4/3] overflow-hidden hover:cursor-pointer rounded border ${activeIdx === i ? 'border-[#4563d1]' : 'border-transparent'} bg-gray-100`}
                     >
                       {img.type === 'video' ? (
                         <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-700 bg-gray-200">Відео</div>
@@ -345,7 +351,7 @@ export default function ProductPageTemplate({ productId }: Props) {
             <section className="mt-4 rounded-lg bg-white p-4 shadow-sm">
               <div className="mb-3 flex items-center justify-between">
                 <h3 className="text-lg font-semibold text-gray-900">Характеристики та опис</h3>
-                <button className="text-sm text-[#4563d1] hover:underline" onClick={() => setIsExpanded(v => !v)}>
+                <button className="text-sm hover:cursor-pointer text-[#4563d1] hover:underline" onClick={() => setIsExpanded(v => !v)}>
                   {isExpanded ? 'Приховати опис та характеристики' : 'Показати опис та характеристики'}
                 </button>
               </div>
@@ -377,7 +383,7 @@ export default function ProductPageTemplate({ productId }: Props) {
               {!isExpanded && (
                 <div className="mt-4 flex w-full">
                   <button
-                    className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
+                    className="flex-1 rounded-lg border hover:cursor-pointer border-gray-300 px-4 py-2 text-sm hover:bg-gray-50"
                     onClick={() => setIsExpanded(true)}
                   >
                     Розгорнути
@@ -388,7 +394,7 @@ export default function ProductPageTemplate({ productId }: Props) {
               {isExpanded && (
                 <div className="mt-4 flex w-full">
                 <button
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm hover:bg-gray-50" onClick={() => setIsExpanded(false)}>
+                  className="flex-1 rounded-lg border hover:cursor-pointer border-gray-300 px-4 py-2 text-sm hover:bg-gray-50" onClick={() => setIsExpanded(false)}>
                     Згорнути
                   </button>
                 </div>
@@ -433,8 +439,19 @@ export default function ProductPageTemplate({ productId }: Props) {
               </div>
 
               <div className="grid grid-cols-2 gap-15">
-                <button className="rounded-full bg-[#4563d1] px-1 py-2 text-sm text-white hover:bg-[#364ea8]">Купити</button>
-                <button className="rounded-full border border-[#4563d1] px-1 py-2 text-sm border-2 text-[#4563d1] hover:bg-[#4563d1]/5">Купити зараз</button>
+                <button
+                  disabled={stockBadge.text === 'Немає в наявності'}
+                  onClick={() => {
+                    if (stockBadge.text === 'Немає в наявності') return
+                    if (isInCart(productId)) { openCart(); return }
+                    if (!isAuthenticated) { router.push('/auth/login'); return }
+                    addToCart(productId, 1)
+                  }}
+                  className={`rounded-full hover:cursor-pointer px-1 py-2 text-sm ${isInCart(productId) ? 'bg-white border hover:cursor-pointer border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'text-white bg-[#4563d1] hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
+                >
+                  {isInCart(productId) ? 'У кошику' : 'Купити'}
+                </button>
+                <button className="rounded-full border hover:cursor-pointer border-[#4563d1] px-1 py-2 text-sm border-2 text-[#4563d1] hover:bg-[#4563d1]/5">Купити зараз</button>
               </div>
             </div>
 
@@ -544,7 +561,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                           if (el) el.scrollBy({ left: -340, behavior: 'smooth' })
                           setCurrentSlide(s => Math.max(0, s - 1))
                         }}
-                        className="pointer-events-none opacity-0 group-hover/reviews:pointer-events-auto group-hover/reviews:opacity-100 transition-opacity duration-200 ease-out absolute -left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/100 p-1 shadow-md border border-gray-200 hover:bg-white"
+                        className="pointer-events-none hover:cursor-pointer opacity-0 group-hover/reviews:pointer-events-auto group-hover/reviews:opacity-100 transition-opacity duration-200 ease-out absolute -left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/100 p-1 shadow-md border border-gray-200 hover:bg-white"
                       >
                         <ChevronLeft className="h-5 w-5 text-gray-700" />
                       </button>
@@ -556,7 +573,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                           if (el) el.scrollBy({ left: 340, behavior: 'smooth' })
                           setCurrentSlide(s => s + 1)
                         }}
-                        className="pointer-events-none opacity-0 group-hover/reviews:pointer-events-auto group-hover/reviews:opacity-100 transition-opacity duration-200 ease-out absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/100 p-1 shadow-md border border-gray-200 p-1 shadow hover:bg-white"
+                        className="pointer-events-none hover:cursor-pointer opacity-0 group-hover/reviews:pointer-events-auto group-hover/reviews:opacity-100 transition-opacity duration-200 ease-out absolute -right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/100 p-1 shadow-md border border-gray-200 p-1 shadow hover:bg-white"
                       >
                         <ChevronRight className="h-5 w-5 text-gray-700" />
                       </button>

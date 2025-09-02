@@ -58,7 +58,7 @@ export default function Home() {
                         </p>
                       </div>
                       <button
-                        className="mt-4 mb-1 w-70 rounded-xl bg-[#3A63F1] py-2 text-[18px]  text-white hover:bg-[#3358d8] transition-colors"
+                        className="mt-4 mb-1 w-70 hover:cursor-pointer rounded-xl bg-[#3A63F1] py-2 text-[18px]  text-white hover:bg-[#3358d8] transition-colors"
                         type="button"
                       >
                         Зареєструватись
@@ -127,7 +127,7 @@ export default function Home() {
                 ))}
               </div>
               <div className="mt-6 flex justify-center">
-                <button className="rounded-xl border-2 border-[#6282f5] px-6 py-1.5 text-[#4563d1] font-semibold hover:bg-[#4563d1]/10 transition-colors w-full mx-auto">
+                <button className="rounded-xl hover:cursor-pointer border-2 border-[#6282f5] px-6 py-1.5 text-[#4563d1] font-semibold hover:bg-[#4563d1]/10 transition-colors w-full mx-auto">
                   Показати ще
                 </button>
               </div>
