@@ -51,6 +51,7 @@ export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [userBans, setUserBans] = useState<UserBan[]>([])
+  const [bannedUserIds, setBannedUserIds] = useState<Set<string>>(new Set())
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isLoadingBans, setIsLoadingBans] = useState(false)
   const [roleFilter, setRoleFilter] = useState<FilterType>('all')
@@ -68,8 +69,9 @@ export default function UsersPage() {
 
   useEffect(() => {
     if (users.length > 0) {
-      // Завантажуємо блокування для всіх користувачів
-      fetchAllUserBans()
+      computeBannedUsers(users)
+    } else {
+      setBannedUserIds(new Set())
     }
   }, [users])
 
@@ -97,28 +99,36 @@ export default function UsersPage() {
     }
   }
 
-  const fetchAllUserBans = async () => {
+  const computeBannedUsers = async (usersList: User[]) => {
     try {
       const token = localStorage.getItem('auth_token')
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
-      
+
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
 
-      // Отримуємо всі блокування
-      const response = await fetch('/api/users/all-bans', {
-        headers
-      })
+      const results = await Promise.all(
+        usersList.map(async (u) => {
+          try {
+            const res = await fetch(`/api/users/bans?userId=${u.id}`, { headers })
+            if (!res.ok) return { id: u.id, banned: false }
+            const bans: UserBan[] = await res.json()
+            return { id: u.id, banned: Array.isArray(bans) && bans.length > 0 }
+          } catch {
+            return { id: u.id, banned: false }
+          }
+        })
+      )
 
-      if (response.ok) {
-        const allBans = await response.json()
-        setUserBans(allBans)
-      }
+      const bannedSet = new Set<string>()
+      results.forEach(r => { if (r.banned) bannedSet.add(r.id) })
+      setBannedUserIds(bannedSet)
     } catch (err) {
-      console.error('Error fetching all blocks:', err)
+      console.error('Error computing banned users:', err)
+      setBannedUserIds(new Set())
     }
   }
 
@@ -237,11 +247,10 @@ export default function UsersPage() {
       })
 
       if (response.ok) {
-        // Оновлюємо список користувачів та блокувань
+        
         await fetchUsers()
-        await fetchAllUserBans()
         closeBlockModal()
-        // Показуємо повідомлення про успіх
+        
         alert('Користувача успішно заблоковано')
       } else {
         const errorData = await response.json()
@@ -266,7 +275,7 @@ export default function UsersPage() {
         'Authorization': `Bearer ${token}`,
       }
 
-      // Знаходимо активне блокування користувача
+      
       const activeBan = userBans.find(ban => ban.userId === user.id)
       if (!activeBan) {
         alert('Активне блокування не знайдено')
@@ -279,9 +288,8 @@ export default function UsersPage() {
       })
 
       if (response.ok) {
-        // Оновлюємо список користувачів та блокувань
+        
         await fetchUsers()
-        await fetchAllUserBans()
         alert('Користувача успішно розблоковано')
       } else {
         const errorData = await response.json()
@@ -294,7 +302,7 @@ export default function UsersPage() {
   }
 
   const filteredUsers = users.filter(user => {
-    // Пошук за текстом
+    
     const matchesSearch = 
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -302,11 +310,11 @@ export default function UsersPage() {
       user.additionalInfo?.lastName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.additionalInfo?.phoneNumber?.includes(searchQuery)
 
-    // Фільтр за ролями
+    
     const matchesRole = roleFilter === 'all' || 
       (user.roles && user.roles.includes(roleFilter))
 
-    // Фільтр за email
+    
     const matchesEmail = emailFilter === 'all' ||
       (emailFilter === 'confirmed' && user.emailConfirmed) ||
       (emailFilter === 'unconfirmed' && !user.emailConfirmed)
@@ -627,7 +635,7 @@ export default function UsersPage() {
 
                       <td className="px-4 py-3">
                         <div className="flex items-center">
-                          {userBans.some(ban => ban.userId === user.id) ? (
+                          {bannedUserIds.has(user.id) ? (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               Заблокований
                             </span>
@@ -650,7 +658,7 @@ export default function UsersPage() {
                           </button>
                           
                                                     {/* Кнопка блокування тільки для активних не-адміністраторів */}
-                          {!user.roles?.includes('admin') && !userBans.some(ban => ban.userId === user.id) && (
+                          {!user.roles?.includes('admin') && !bannedUserIds.has(user.id) && (
                             <button
                               onClick={() => handleBlockUser(user)}
                               className="text-red-600 hover:text-red-900 flex items-center"
