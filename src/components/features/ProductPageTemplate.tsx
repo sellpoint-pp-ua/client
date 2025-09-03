@@ -447,7 +447,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                     if (!isAuthenticated) { router.push('/auth/login'); return }
                     addToCart(productId, 1)
                   }}
-                  className={`rounded-full hover:cursor-pointer px-1 py-2 text-sm ${isInCart(productId) ? 'bg-white border hover:cursor-pointer border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'text-white bg-[#4563d1] hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
+                  className={`rounded-full px-1 py-2 text-sm ${isInCart(productId) ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'text-white bg-[#4563d1] hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
                 >
                   {isInCart(productId) ? 'У кошику' : 'Купити'}
                 </button>

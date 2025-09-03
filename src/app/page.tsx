@@ -4,6 +4,7 @@ import Carousel from '@/components/features/Carousel'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const homepageProducts = [
   { id: '1001', name: 'Смартфон Samsung Galaxy A54 6/128GB', price: 13999, hasDiscount: true, finalPrice: 12499, discountPercentage: 11, quantityStatus: 'В наявності', quantity: 7, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
@@ -57,12 +58,12 @@ export default function Home() {
                           <br /> надійних покупців
                         </p>
                       </div>
-                      <button
-                        className="mt-4 mb-1 w-70 hover:cursor-pointer rounded-xl bg-[#3A63F1] py-2 text-[18px]  text-white hover:bg-[#3358d8] transition-colors"
-                        type="button"
+                      <Link
+                        href="/seller/register"
+                        className="mt-4 mb-1 w-70 text-center hover:cursor-pointer rounded-xl bg-[#3A63F1] py-2 text-[18px]  text-white hover:bg-[#3358d8] transition-colors"
                       >
                         Зареєструватись
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>

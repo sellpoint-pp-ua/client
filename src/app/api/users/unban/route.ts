@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
+import logger from '../../../../lib/logger'
 
 const API_BASE_URL = 'https://api.sellpoint.pp.ua'
-
 export async function POST(request: Request) {
   try {
     const url = new URL(request.url)
@@ -14,12 +14,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
 
     const headers: HeadersInit = {}
-    
-    // Додаємо токен авторизації якщо він є
+
     if (authHeader) {
       headers['Authorization'] = authHeader
     }
@@ -30,14 +28,14 @@ export async function POST(request: Request) {
     })
 
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('Server error response:', errorText)
+  const errorText = await response.text()
+  logger.error('Server error response:', errorText)
       throw new Error(`API responded with status: ${response.status}`)
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Error unbanning user:', error)
+    logger.error('Error unbanning user:', error)
     return NextResponse.json(
       { error: 'Failed to unban user' },
       { status: 500 }

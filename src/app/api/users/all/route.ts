@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import logger from '../../../../lib/logger'
 
 const API_BASE_URL = 'https://api.sellpoint.pp.ua'
 
@@ -23,19 +24,18 @@ interface ApiUser {
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Fetching all users from:', `${API_BASE_URL}/api/User/GetAllUsers`)
+  logger.info('Fetching all users from:', `${API_BASE_URL}/api/User/GetAllUsers`)
     
-    // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
     
     const headers: HeadersInit = {}
     
-    // Додаємо токен авторизації якщо він є
+
     if (authHeader) {
-      headers['Authorization'] = authHeader
-      console.log('Authorization header present:', authHeader.substring(0, 20) + '...')
+  headers['Authorization'] = authHeader
+  logger.info('Authorization header present:', authHeader.substring(0, 20) + '...')
     } else {
-      console.log('No authorization header found')
+  logger.info('No authorization header found')
     }
     
     const response = await fetch(`${API_BASE_URL}/api/User/GetAllUsers`, {
@@ -43,12 +43,11 @@ export async function GET(request: NextRequest) {
       next: { revalidate: 0 }
     })
 
-    console.log('Response status:', response.status)
+  logger.info('Response status:', response.status)
 
     if (!response.ok) {
-      console.error('API error:', response.status, response.statusText)
+  logger.error('API error:', response.status, response.statusText)
       
-      // Якщо 401 - потрібна авторизація
       if (response.status === 401) {
         return NextResponse.json(
           { error: 'Unauthorized - Admin access required' },
@@ -57,12 +56,12 @@ export async function GET(request: NextRequest) {
       }
       
       const errorText = await response.text()
-      console.error('Server error response:', errorText)
+  logger.error('Server error response:', errorText)
       throw new Error(`API responded with status: ${response.status}`)
     }
 
     const users = await response.json()
-    console.log('Fetched users count:', Array.isArray(users) ? users.length : 'Not an array')
+  logger.info('Fetched users count:', Array.isArray(users) ? users.length : 'Not an array')
     
     const normalizedUsers = Array.isArray(users) ? users.map((user: ApiUser) => ({
       id: user.id || user._id || '',
@@ -75,10 +74,10 @@ export async function GET(request: NextRequest) {
       additionalInfo: user.additionalInfo
     })) : []
 
-    console.log('Normalized users count:', normalizedUsers.length)
+  logger.info('Normalized users count:', normalizedUsers.length)
     return NextResponse.json(normalizedUsers)
   } catch (error) {
-    console.error('Error fetching all users:', error)
+  logger.error('Error fetching all users:', error)
     return NextResponse.json(
       { error: 'Failed to fetch users', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
