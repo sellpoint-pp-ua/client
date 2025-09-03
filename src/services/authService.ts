@@ -1,4 +1,5 @@
 import { LoginRequest, RegisterRequest, AuthResponse, AuthError } from '@/types/auth';
+import logger from '../lib/logger'
 const API_BASE_URL = '/api';
 
 class AuthService {
@@ -8,15 +9,15 @@ class AuthService {
   ): Promise<T> {
     const url = `${API_BASE_URL}/auth/${endpoint}`;
     
-    console.log('AuthService: Making request to:', url);
-    console.log('AuthService: Request options:', {
+    logger.info('AuthService: Making request to:', url)
+    logger.info('AuthService: Request options:', {
       method: options.method || 'GET',
       headers: options.headers,
       body: options.body ? 'Present' : 'None'
-    });
+    })
     
     if (options.body) {
-      console.log('AuthService: Request body:', options.body);
+      logger.info('AuthService: Request body:', options.body)
     }
     
     const response = await fetch(url, {
@@ -27,12 +28,12 @@ class AuthService {
       ...options,
     });
 
-    console.log('AuthService: Response status:', response.status);
-    console.log('AuthService: Response headers:', Object.fromEntries(response.headers.entries()));
+  logger.info('AuthService: Response status:', response.status)
+  logger.info('AuthService: Response headers:', Object.fromEntries(response.headers.entries()))
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('AuthService: Error response body:', errorText);
+  logger.error('AuthService: Error response body:', errorText)
       
       let errorData: AuthError;
       try {
@@ -41,7 +42,7 @@ class AuthService {
         errorData = { message: 'Network error' };
       }
       
-      console.error('AuthService: Parsed error data:', errorData);
+  logger.error('AuthService: Parsed error data:', errorData)
       
       // Handle validation errors specifically
       if (errorData.errors && typeof errorData.errors === 'object') {
@@ -64,7 +65,7 @@ class AuthService {
     }
 
     const text = await response.text();
-    console.log('AuthService: Success response body:', text);
+  logger.info('AuthService: Success response body:', text)
     
     try {
       return JSON.parse(text) as T;
@@ -74,34 +75,34 @@ class AuthService {
   }
 
   private normalizeAuthResponse(result: AuthResponse): { token: string } {
-    console.log('AuthService: Normalizing auth response:', result);
+  logger.info('AuthService: Normalizing auth response:', result)
     
     if (typeof result === 'string') {
-      console.log('AuthService: Result is string, using as token');
+  logger.info('AuthService: Result is string, using as token')
       return { token: result };
     }
     if (result && typeof result === 'object' && 'token' in result) {
-      console.log('AuthService: Result has token property');
+  logger.info('AuthService: Result has token property')
       return { token: (result as { token: string }).token };
     }
-    console.error('AuthService: Invalid auth response format:', result);
+  logger.error('AuthService: Invalid auth response format:', result)
     throw new Error('Invalid auth response');
   }
 
   async login(credentials: LoginRequest): Promise<{ token: string }> {
-    console.log('AuthService: Attempting login with credentials:', { 
+    logger.info('AuthService: Attempting login with credentials:', { 
       login: credentials.login, 
       passwordLength: credentials.password?.length || 0 
-    });
+    })
     
     const result = await this.makeRequest<AuthResponse>('login', {
       method: 'POST',
       body: JSON.stringify({ Login: credentials.login, Password: credentials.password }),
     });
     
-    console.log('AuthService: Login successful, result:', result);
+  logger.info('AuthService: Login successful, result:', result)
     const normalizedResult = this.normalizeAuthResponse(result);
-    console.log('AuthService: Normalized result:', { tokenLength: normalizedResult.token.length });
+  logger.info('AuthService: Normalized result:', { tokenLength: normalizedResult.token.length })
     return normalizedResult;
   }
 
@@ -116,11 +117,11 @@ class AuthService {
   async checkAuth(): Promise<boolean> {
     const token = this.getToken();
     if (!token) {
-      console.log('AuthService: No token for auth check');
+  logger.info('AuthService: No token for auth check')
       return false;
     }
     
-    console.log('AuthService: Checking auth with token length:', token.length);
+  logger.info('AuthService: Checking auth with token length:', token.length)
     
     try {
       const response = await fetch('/api/auth/check-login', {
@@ -132,28 +133,28 @@ class AuthService {
         cache: 'no-store',
       });
 
-      console.log('AuthService: Auth check response status:', response.status);
+  logger.info('AuthService: Auth check response status:', response.status)
 
       if (response.status === 401) {
-        console.log('AuthService: Auth check unauthorized, clearing token');
+  logger.info('AuthService: Auth check unauthorized, clearing token')
         this.logout(); // Clear invalid token
         return false;
       }
 
       if (!response.ok) {
-        console.log('AuthService: Auth check failed with status:', response.status);
+  logger.info('AuthService: Auth check failed with status:', response.status)
         return false;
       }
 
       const data = await response.json();
-      console.log('AuthService: Auth check response data:', data);
+  logger.info('AuthService: Auth check response data:', data)
       
       const isAuthenticated = data && typeof data === 'object' && data.success === true;
-      console.log('AuthService: Auth check result:', isAuthenticated);
+  logger.info('AuthService: Auth check result:', isAuthenticated)
       
       return isAuthenticated;
     } catch (error) {
-      console.error('AuthService: Auth check error:', error);
+  logger.error('AuthService: Auth check error:', error)
       // Clear invalid token
       this.logout();
       return false;
@@ -163,12 +164,12 @@ class AuthService {
   async checkAdminStatus(): Promise<boolean> {
     const token = this.getToken();
     if (!token) {
-      console.log('AuthService: No token available for admin check')
-      return false;
+      logger.info('AuthService: No token available for admin check')
+      return false
     }
     
-    console.log('AuthService: Starting admin status check')
-    console.log('AuthService: Token length:', token.length)
+    logger.info('AuthService: Starting admin status check')
+    logger.info('AuthService: Token length:', token.length)
     
     try {
       const response = await fetch('/api/auth/check-admin', {
@@ -180,26 +181,26 @@ class AuthService {
         cache: 'no-store',
       });
 
-      console.log('AuthService: Admin check response status:', response.status)
+  logger.info('AuthService: Admin check response status:', response.status)
 
       if (response.status === 401) {
-        console.log('AuthService: Unauthorized - clearing token')
+        logger.info('AuthService: Unauthorized - clearing token')
         this.logout(); // Clear invalid token
-        return false;
+        return false
       }
 
       if (!response.ok) {
-        console.log('AuthService: Admin check failed with status:', response.status)
-        return false;
+        logger.info('AuthService: Admin check failed with status:', response.status)
+        return false
       }
 
-      const data = await response.json();
-      console.log('AuthService: Admin check response data:', data)
+      const data = await response.json()
+      logger.info('AuthService: Admin check response data:', data)
       
-      const isAdmin = data && typeof data === 'object' && data.isAdmin === true;
-      console.log('AuthService: Is admin result:', isAdmin)
+      const isAdmin = data && typeof data === 'object' && data.isAdmin === true
+      logger.info('AuthService: Is admin result:', isAdmin)
       
-      return isAdmin;
+      return isAdmin
     } catch (error) {
       console.error('AuthService: Admin check error:', error)
       return false;
@@ -208,34 +209,34 @@ class AuthService {
 
   setToken(token: string): void {
     if (typeof window !== 'undefined') {
-      console.log('AuthService: Setting token, length:', token.length);
-      localStorage.setItem('auth_token', token);
-      console.log('AuthService: Token saved to localStorage');
+      logger.info('AuthService: Setting token, length:', token.length)
+      localStorage.setItem('auth_token', token)
+      logger.info('AuthService: Token saved to localStorage')
     }
   }
 
   getToken(): string | null {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('auth_token');
-      console.log('AuthService: Getting token, present:', !!token, 'length:', token?.length);
-      return token;
+      const token = localStorage.getItem('auth_token')
+      logger.info('AuthService: Getting token, present:', !!token, 'length:', token?.length)
+      return token
     }
     return null;
   }
 
   logout(): void {
     if (typeof window !== 'undefined') {
-      console.log('AuthService: Logging out, clearing localStorage');
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_display_name');
-      console.log('AuthService: Logout completed');
+      logger.info('AuthService: Logging out, clearing localStorage')
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('user_display_name')
+      logger.info('AuthService: Logout completed')
     }
   }
 
   isAuthenticated(): boolean {
-    const hasToken = !!this.getToken();
-    console.log('AuthService: isAuthenticated check:', hasToken);
-    return hasToken;
+  const hasToken = !!this.getToken()
+  logger.info('AuthService: isAuthenticated check:', hasToken)
+  return hasToken
   }
 
   async sendVerificationCode(language: string = 'uk'): Promise<void> {
