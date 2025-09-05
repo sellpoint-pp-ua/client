@@ -1,10 +1,11 @@
 "use client"
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Header from '@/components/layout/Header'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AccountSidebar from '@/components/account/AccountSidebar'
 import ApiProductCard from '@/components/features/ApiProductCard'
 import WishlistCard from '@/components/favorites/WishlistCard'
+import { authService } from '@/services/authService'
 
 const favoriteProductsA = [
 	{ id: '2001', name: 'Регульований столик для ноутбука ColerPad E-Table LD09', price: 438, hasDiscount: true, finalPrice: 438, discountPercentage: 36, quantityStatus: 'В наявності', quantity: 10, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
@@ -25,8 +26,8 @@ const favoriteProductsB = [...favoriteProductsA].reverse()
 const favoriteProductsC = [...favoriteProductsA].slice(4).concat(favoriteProductsA.slice(0,4))
 
 export default function FavoritesPage() {
-	const [activeTab, setActiveTab] = useState<'products' | 'wishlists' | 'shops'>('products')
-	const products = activeTab === 'products' ? favoriteProductsA : activeTab === 'wishlists' ? favoriteProductsB : favoriteProductsC
+	const [activeTab, setActiveTab] = useState<'products' | 'wishlists'>('products')
+	const products = activeTab === 'products' ? favoriteProductsA : favoriteProductsB
 	return (
 		<div className="flex min-h-screen flex-col">
 			<Header />
@@ -48,7 +49,6 @@ export default function FavoritesPage() {
 										<div className="flex items-center gap-6">
 										<button onClick={() => setActiveTab('products')} className={`hover:cursor-pointer rounded-xl px-5 py-2 text-sm ${activeTab==='products' ? 'bg-[#4563d1] text-white' : 'bg-white text-gray-700 border-2 border-gray-300'}`}>Товари</button>
 										<button onClick={() => setActiveTab('wishlists')} className={`rounded-xl hover:cursor-pointer px-5 py-2 text-sm ${activeTab==='wishlists' ? 'bg-[#4563d1] text-white' : 'bg-white text-gray-700 border-2 border-gray-300'}`}>Списки бажань</button>
-										<button onClick={() => setActiveTab('shops')} className={`rounded-xl hover:cursor-pointer px-5 py-2 text-sm ${activeTab==='shops' ? 'bg-[#4563d1] text-white' : 'bg-white text-gray-700 border-2 border-gray-300'}`}>Магазини</button>
 										</div>
 										<button className="hover:cursor-pointer inline-flex items-center gap-2 rounded-xl border-2 border-[#4563d1] px-4 py-2 text-sm text-[#3046b4] hover:bg-[#4563d1]/10">
 											<span className="text-lg leading-none text-black">+</span>
