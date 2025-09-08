@@ -27,14 +27,15 @@ class StoreService {
       const errorText = await response.text();
       logger.error('StoreService: Error response body:', errorText);
       
-      let errorData: { message: string };
+      // Prefer server-provided JSON message; otherwise fall back to raw text or status text
       try {
-        errorData = JSON.parse(errorText);
+        const parsed = JSON.parse(errorText);
+        const message = (parsed && parsed.message) ? parsed.message : response.statusText || 'Request failed';
+        throw new Error(message);
       } catch {
-        errorData = { message: 'Network error' };
+        const message = errorText?.trim().length ? errorText : (response.statusText || 'Request failed');
+        throw new Error(message);
       }
-      
-      throw new Error(errorData.message || 'Something went wrong');
     }
 
     const text = await response.text();
@@ -86,7 +87,7 @@ class StoreService {
 
 
   async deleteStore(storeId: string): Promise<StoreResponse> {
-    return this.makeRequest<StoreResponse>(`/api/Store/DeleteStore/${storeId}`, {
+    return this.makeRequest<StoreResponse>(`/api/Store/DeleteStore?storeId=${storeId}`, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });

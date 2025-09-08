@@ -214,16 +214,27 @@ export default function StoreRequestsList({ onRequestUpdated }: StoreRequestsLis
                 );
               } else if (requestStatus === 'approved') {
                 return (
-                  <div className="text-center">
-                    <p className="text-sm text-green-700 mb-2">
+                  <div className="text-center space-y-3">
+                    <p className="text-sm text-green-700">
                       Ваш магазин було успішно створено та схвалено адміністратором.
                     </p>
-                    <button
-                      onClick={() => window.location.href = '/store'}
-                      className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2 text-sm hover:bg-green-700 transition-colors"
-                    >
-                      <span>Управляти магазином</span>
-                    </button>
+                    <div className="flex justify-center gap-2">
+                      <button
+                        onClick={() => window.location.href = '/store'}
+                        className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2 text-sm hover:bg-green-700 transition-colors"
+                      >
+                        <span>Управляти магазином</span>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteRequest(request.id)}
+                        className="inline-flex items-center gap-2 rounded-xl border-2 border-red-600 text-red-700 px-4 py-2 text-sm hover:bg-red-100 transition-colors"
+                      >
+                        <span>Видалити заявку</span>
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      Після видалення заявки ви зможете створити нову.
+                    </p>
                   </div>
                 );
               } else if (requestStatus === 'rejected') {
