@@ -112,7 +112,7 @@ export default function AccountSidebar() {
 						</Link>
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+						<Link href="/requests" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
 							<Store className="h-5 w-5" />
 							<span>Створити магазин на sell point</span>
 						</Link>

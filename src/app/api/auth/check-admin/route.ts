@@ -28,6 +28,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    if (response.status === 403) {
+      console.log('Check-admin API: Forbidden - user is not admin');
+      return NextResponse.json({ isAdmin: false });
+    }
+
     if (!response.ok) {
       console.log('Check-admin API: Server error:', response.status);
       return NextResponse.json({ error: 'Admin check failed' }, { status: response.status });
