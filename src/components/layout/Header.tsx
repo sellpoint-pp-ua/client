@@ -322,13 +322,13 @@ export default function Header() {
             <span className="hidden text-[12px] xl:block">Адмін панель</span>
           </Link>
           {mounted && (isAuthenticated ? (
-              <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
+              <Link href="/orders" onClick={(e) => handleProtectedClick(e, '/orders')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
                 <User className="h-6 w-6" />
                 <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
           ) : (
             <>
-              <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
+              <Link href="/orders" onClick={(e) => handleProtectedClick(e, '/orders')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
               <User className="h-6 w-6" />
               <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>

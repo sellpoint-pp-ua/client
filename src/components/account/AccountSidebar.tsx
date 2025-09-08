@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useEffect, useMemo, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { Package, Truck, Heart, MessageSquare, Wallet, BadgePercent, Store, Settings, Headphones, HelpCircle, LogOut } from 'lucide-react'
 import { authService } from '@/services/authService'
 
@@ -11,6 +11,7 @@ export default function AccountSidebar() {
 	const [userName, setUserName] = useState<string>('')
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 	const router = useRouter()
+	const pathname = usePathname()
 
 	useEffect(() => {
 		const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
@@ -76,19 +77,19 @@ export default function AccountSidebar() {
 			<nav className="p-2 text-sm">
 				<ul className="space-y-1">
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+						<Link href="/orders" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/orders' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
 							<Package className="h-5 w-5" />
 							<span>Мої замовлення</span>
 						</Link>
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+						<Link href="/orders/track" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
 							<Truck className="h-5 w-5" />
 							<span>Відстеження замовлення</span>
 						</Link>
 					</li>
 					<li>
-						<Link href="/favorites" className="flex items-center gap-3 rounded-lg px-3 py-2 text-[#4563d1] bg-[#4563d1]/10">
+						<Link href="/favorites" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/favorites' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
 							<Heart className="h-5 w-5" />
 							<span>Обране</span>
 						</Link>

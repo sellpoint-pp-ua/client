@@ -93,6 +93,7 @@ export default function LoginPage() {
     viewBox="0 0 234 51"
     xmlns="http://www.w3.org/2000/svg"
     className="w-[300px] h-auto"
+    overflow="visible"
     aria-hidden
   >
     <defs>
@@ -104,7 +105,7 @@ export default function LoginPage() {
     </linearGradient>
 
 
-         <filter id="blur1" x="-20%" y="-20%" width="150%" height="150%">
+         <filter id="blur1" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="0.3" />
         </filter> 
     </defs>

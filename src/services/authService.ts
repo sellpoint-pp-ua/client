@@ -180,8 +180,7 @@ class AuthService {
         },
         cache: 'no-store',
       });
-
-  logger.info('AuthService: Admin check response status:', response.status)
+      logger.info('AuthService: Admin check response status:', response.status)
 
       if (response.status === 401) {
         logger.info('AuthService: Unauthorized - clearing token')
@@ -202,8 +201,8 @@ class AuthService {
       
       return isAdmin
     } catch (error) {
-      console.error('AuthService: Admin check error:', error)
-      return false;
+      logger.error('AuthService: Admin check error:', error)
+      return false
     }
   }
 

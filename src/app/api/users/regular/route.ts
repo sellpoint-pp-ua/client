@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
-import logger from '../../../../lib/logger'
 
 const API_BASE_URL = 'https://api.sellpoint.pp.ua'
+
 export async function GET() {
   try {
     const response = await fetch(`${API_BASE_URL}/api/User/get-regular-users`, {
@@ -28,7 +28,7 @@ export async function GET() {
 
     return NextResponse.json(normalizedUsers)
   } catch (error) {
-  logger.error('Error fetching regular users:', error)
+    console.error('Error fetching regular users:', error)
     return NextResponse.json(
       { error: 'Failed to fetch users' },
       { status: 500 }

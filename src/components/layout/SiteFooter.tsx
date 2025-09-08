@@ -17,7 +17,7 @@ const searchChips: string[] = [
 
 export default function SiteFooter() {
 	return (
-		<footer className="bg-gray-100">
+		<footer className="bg-gray-100 pt-6">
 			<div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-30 py-8 sm:py-10 2xl:pt-0">
 				{/* What people search */}
 				<div className="mb-6 sm:mb-8">
