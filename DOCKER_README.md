@@ -78,19 +78,19 @@ docker system prune -a
 
 ### Порт 3000 зайнятий
 ```bash
-# Змініть порт в docker-compose.yml
+
 ports:
   - "3001:3000"
 ```
 
 ### Проблеми з правами доступу
 ```bash
-# Очистіть Docker кеш
+
 docker system prune
 ```
 
 ### Повільна збірка
 ```bash
-# Використовуйте кеш
+
 docker build --cache-from front-app .
 ``` 

@@ -13,7 +13,6 @@ export async function GET(request: NextRequest) {
     console.log('Test-ban API: Testing ban functionality');
     console.log('Test-ban API: Token length:', token.length);
     
-    // Тестуємо отримання інформації про користувача
     console.log('Test-ban API: Testing GetUserByMyId...');
     const userResponse = await fetch(`${API_BASE_URL}/api/User/GetUserByMyId`, {
       method: 'GET',

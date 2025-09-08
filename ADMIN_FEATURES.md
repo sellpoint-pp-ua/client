@@ -65,7 +65,7 @@ New category name structure:
 ```typescript
 {
   id: string;
-  name: string; // Simple string instead of an object with languages
+  name: string; 
   parentId?: string | null;
 }
 ```

@@ -6,7 +6,8 @@ import Image from "next/image"
 import AnimatedLogo from "@/components/shared/AnimatedLogo"
 import { Settings } from 'lucide-react';
 import { HardDrive } from 'lucide-react';
-import { File, Laptop, Smartphone, Notebook, Waypoints, Package2, CreditCard, BaggageClaim, Wallet } from 'lucide-react';
+import { File, Laptop, Smartphone, Notebook, Waypoints, Package2, CreditCard, BaggageClaim, Wallet, Rocket, Share2, Home, BarChart3, ChevronDown } from 'lucide-react';
+import SiteFooter from '@/components/layout/SiteFooter'
 export default function SellerRegisterBannerPage() {
   const [isContactOpen, setIsContactOpen] = useState(false)
 
@@ -580,6 +581,201 @@ export default function SellerRegisterBannerPage() {
             </p>
         </div>
       </section>
+
+
+
+
+      {/* Section: Sell across categories + commission CTA */}
+      <section className="w-full bg-white">
+        <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-40 py-14">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-0 ml-14">
+            {/* Left: big headline */}
+            <div className="lg:col-span-4">
+              <h2 className="leading-[1.20] tracking-[-0.5px] text-[26px] sm:text-[36px] lg:text-[38px] font-bold text-gray-900">
+                Продавайте на Sell
+                <br /> Point товари у різних
+                <br /> категоріях
+              </h2>
+            </div>
+
+            {/* Center: collage image */}
+            <div className="lg:col-span-4 flex justify-center ml-10">
+              <Image
+                src="/photo-banner-1/banner3.png"
+                alt="Категорії товарів"
+                width={694}
+                height={599}
+                className="w-full h-auto max-w-[290px]"
+                priority
+              />
+            </div>
+
+            {/* Right: commission info */}
+            <div className="lg:col-span-4 pl-8 ">
+              <h3 className="text-gray-900 font-bold leading-tight text-[22px] sm:text-[28px] lg:text-[28px]">
+                Сплачуйте комісію
+              </h3>
+              <p className="mt-3 text-gray-900 text-[17px] leading-[1.2]">
+                від <span className="text-[26px] font-bold">5%</span> до
+                <span className="text-[26px] font-bold"> 16%</span> від вартості товару,
+                <br /> в залежності від категорії товару
+              </p>
+              <div className="mt-5">
+                <Link
+                  href="#"
+                  className="inline-block rounded-xl bg-[#FFB800] hover:bg-[#E3A600] text-black font-semibold px-20 py-2 transition-colors"
+                >
+                  Переглянути комісію
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+        {/* Extension container with background and feature cards */}
+        <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-40 pt-3 pb-12 overflow-hidden">
+          {/* Title over background */}
+          <div className="relative">
+            <h3 className="relative z-10 text-center text-[26px] sm:text-[32px] lg:text-[36px] font-bold text-gray-900">
+              Продавайте на власному сайті, створеному на платформі Sell Point
+            </h3>
+            <div className="pointer-events-none absolute left-1/2 top-13/2 -z-0 w-[1150px] max-w-full -translate-x-1/2 -translate-y-1/2 ml-3 mt-3">
+              <Image src="/photo-banner-1/background.png" alt="" width={1200} height={300} className="w-full h-auto opacity-90" />
+            </div>
+          </div>
+
+          {/* Cards overlaid on background - 2 centered rows (3 on first, 2 on second) */}
+          <div className="relative z-10 mt-20 flex flex-col items-center gap-10">
+            {/* Row 1: 3 cards */}
+            <div className="flex flex-wrap justify-center gap-8">
+              {[
+                {
+                  iconBg: '#FFF2CC',
+                  iconColor: '#f59e0b',
+                  Icon: Rocket,
+                  title: 'Швидкий старт',
+                  text: 'Отримайте готовий інтернет-магазин з вашими товарами в декілька кліків',
+                },
+                {
+                  iconBg: '#F3E8FF',
+                  iconColor: '#7c3aed',
+                  Icon: Share2,
+                  title: 'Готові інтеграції',
+                  text: 'Підключайте сервіси оплати, доставки, видачі чеків за декілька кліків',
+                },
+                {
+                  iconBg: '#FFE4E6',
+                  iconColor: '#fb7185',
+                  Icon: Settings,
+                  title: 'Просте управління',
+                  text: 'Керуйте товарами, замовленнями та цінами в зручному кабінеті',
+                },
+              ].map(({ iconBg, iconColor, Icon, title, text }, idx) => (
+                <div key={idx} className="w-[310px] rounded-2xl bg-white shadow-[0_6px_18px_rgba(0,0,0,0.08)] p-5">
+                  <div className="flex items-start flex-col gap-4">
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: iconBg, color: iconColor }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[20px] font-semibold text-gray-900">{title}</p>
+                      <p className="mt-1 text-[17px] text-gray-700 leading-[1.45]">{text}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 2: 2 cards centered */}
+            <div className="flex flex-wrap justify-center gap-8">
+              {[
+                {
+                  iconBg: '#DBEAFE',
+                  iconColor: '#3b82f6',
+                  Icon: BarChart3,
+                  title: 'Рекламні модулі',
+                  text: 'Підключайте аналітику та рекламу в Google, Meta, TikTok',
+                },
+                {
+                  iconBg: '#FEF3C7',
+                  iconColor: '#f59e0b',
+                  Icon: Home,
+                  title: 'Свій домен',
+                  text: 'Отримуйте органічний трафік з Google, налаштування SEO, розвивайте бренд',
+                },
+              ].map(({ iconBg, iconColor, Icon, title, text }, idx) => (
+                <div key={idx} className="w-[320px] rounded-2xl bg-white shadow-[0_6px_18px_rgba(0,0,0,0.08)] p-5">
+                  <div className="flex items-start flex-col gap-4">
+                    <div className="h-10 w-10 rounded-full flex items-center justify-center" style={{ backgroundColor: iconBg, color: iconColor }}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-[20px] font-semibold text-gray-900">{title}</p>
+                      <p className="mt-1 text-[17px] text-gray-700 leading-[1.45]">{text}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative z-10 mt-30 flex justify-center">
+            <Link href="/auth/register" className="rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors">
+              Створити магазин
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ section */}
+      <section className="w-full bg-[#ffe9f0]">
+        <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-60 py-14">
+          <h2 className="text-center text-[28px] sm:text-[36px] lg:text-[40px] font-bold text-gray-900">Часті запитання</h2>
+
+          <div className="mt-8 space-y-4">
+            {[
+              'Як стати продавцем на Sell Point?',
+              'Скільки коштує продавати на Sell Point?',
+              'Де покупці будуть бачити мої товари/послуги?',
+              'Як імпортувати товари та послуги?',
+              'Яку максимальну кількість товарів я можу розвернути на Sell Point?',
+              'Що таке баланс для роботи на маркетплейсі?',
+              'Як просувати товари та послуги для збільшення продажів?',
+              'Скільки коштує просування товарів в каталозі Sell Point?',
+              'Яка комісія за замовлення на власному сайті на платформі Sell Point?',
+              'Які товари я можу продавати на Sell Point?',
+              'Що таке SP-оплата і як це працює?',
+              'Чи є на Sell Point тестовий період?',
+            ].map((q, idx) => (
+              <button key={idx} className="w-full text-left rounded-2xl bg-white px-5 py-4 text-[18px] sm:text-[20px] text-gray-900 shadow-sm flex items-center justify-between">
+                <span>{q}</span>
+                <ChevronDown className="h-5 w-5 text-gray-700" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Consultation CTA */}
+      <section className="w-full bg-white py-6">
+        <div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-30 py-10">
+          <div className="rounded-2xl bg-[#4563D1] text-white px-6 sm:px-10 pt-9 flex flex-col lg:flex-row items-center justify-between">
+            <div className="text-center lg:text-left mb-9 ml-2">
+              <h3 className="text-[30px] sm:text-[40px] font-bold">Залишились питання?</h3>
+              <p className="mt-1 text-[17px] opacity-90">Зателефонуємо та відповімо</p>
+            </div>
+
+            <div className="my-6 lg:my-0  -ml-80">
+              <Image src="/photo-banner-1/women.png" alt="" width={288} height={289} className="w-[180px] sm:w-[220px] lg:w-[125px] h-auto" />
+            </div>
+
+            <div>
+              <Link href="#" className="rounded-xl bg-white text-gray-900 px-7 py-3 font-semibold hover:bg-gray-100 transition-colors">Мені потрібна консультація</Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <SiteFooter />
+      
     </div>
   )
 }

@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import logger from '../../../../lib/logger'
 
 const API_BASE_URL = 'https://api.sellpoint.pp.ua'
 
@@ -37,7 +36,7 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     }
     return NextResponse.json(normalized)
   } catch (error) {
-    logger.error('Error fetching user by id:', error)
+    console.error('Error fetching user by id:', error)
     return NextResponse.json({ error: 'Failed to fetch user' }, { status: 500 })
   }
 }
