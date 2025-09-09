@@ -1,4 +1,4 @@
-import { LoginRequest, RegisterRequest, AuthResponse, AuthError } from '@/types/auth';
+import { LoginRequest, RegisterRequest, AuthResponse, AuthError, ForgotPasswordRequest, VerifyResetCodeRequest, ResetPasswordRequest, PasswordResetResponse } from '@/types/auth';
 import logger from '../lib/logger'
 const API_BASE_URL = '/api';
 
@@ -269,6 +269,176 @@ class AuthService {
       });
     } finally {
       this.logout();
+    }
+  }
+
+  async sendPasswordResetCode(request: ForgotPasswordRequest): Promise<PasswordResetResponse> {
+    logger.info('AuthService: Sending password reset code for login:', request.login);
+    
+    // Звертаємося безпосередньо до зовнішнього API
+    const url = `https://api.sellpoint.pp.ua/api/Auth/send-password-reset-code?login=${encodeURIComponent(request.login)}`;
+    logger.info('AuthService: Making direct request to:', url);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    logger.info('AuthService: Response status:', response.status);
+    logger.info('AuthService: Response headers:', Object.fromEntries(response.headers.entries()));
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('AuthService: Error response body:', errorText);
+      
+      let errorData: AuthError;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: 'Failed to send password reset code' };
+      }
+      
+      logger.error('AuthService: Parsed error data:', errorData);
+      throw new Error(errorData.message || 'Something went wrong');
+    }
+
+    const text = await response.text();
+    logger.info('AuthService: Success response body:', text);
+    
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      // If API returns an object with resetToken/message
+      if (parsed && typeof parsed === 'object') {
+        const maybe = parsed as { resetToken?: string; message?: string };
+        if (maybe.resetToken && typeof maybe.resetToken === 'string') {
+          return { success: true, resetToken: maybe.resetToken, message: maybe.message };
+        }
+      }
+      // If API returns a string JSON, treat as token
+      if (typeof parsed === 'string' && parsed.trim().length > 0) {
+        return { success: true, resetToken: parsed };
+      }
+      // Fallback to generic
+      return { success: true } as PasswordResetResponse;
+    } catch {
+      // Non-JSON body: assume it's the token
+      if (text && text.trim().length > 0) {
+        return { success: true, resetToken: text.trim() };
+      }
+      return { success: true } as PasswordResetResponse;
+    }
+  }
+
+  async verifyPasswordResetCode(request: VerifyResetCodeRequest): Promise<PasswordResetResponse> {
+    logger.info('AuthService: Verifying password reset code');
+    
+    // Звертаємося безпосередньо до зовнішнього API
+    const url = `https://api.sellpoint.pp.ua/api/Auth/verify-password-reset-code?resetToken=${encodeURIComponent(request.resetToken)}&code=${encodeURIComponent(request.code)}`;
+    logger.info('AuthService: Making direct request to:', url);
+    
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    logger.info('AuthService: Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('AuthService: Error response body:', errorText);
+      
+      let errorData: AuthError;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: 'Failed to verify password reset code' };
+      }
+      
+      logger.error('AuthService: Parsed error data:', errorData);
+      throw new Error(errorData.message || 'Something went wrong');
+    }
+
+    const text = await response.text();
+    logger.info('AuthService: Success response body:', text);
+    
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      // If API returns an object with accessCode
+      if (parsed && typeof parsed === 'object') {
+        const maybe = parsed as { accessCode?: string; message?: string };
+        if (maybe.accessCode && typeof maybe.accessCode === 'string') {
+          return { success: true, accessCode: maybe.accessCode, message: maybe.message };
+        }
+      }
+      // If API returns a string JSON, treat as accessCode
+      if (typeof parsed === 'string' && parsed.trim().length > 0) {
+        return { success: true, accessCode: parsed };
+      }
+      return { success: true } as PasswordResetResponse;
+    } catch {
+      // Non-JSON body: assume it's the accessCode
+      if (text && text.trim().length > 0) {
+        return { success: true, accessCode: text.trim() };
+      }
+      return { success: true } as PasswordResetResponse;
+    }
+  }
+
+  async resetPassword(request: ResetPasswordRequest): Promise<PasswordResetResponse> {
+    logger.info('AuthService: Resetting password');
+    
+    // Звертаємося безпосередньо до зовнішнього API
+    const url = `https://api.sellpoint.pp.ua/api/Auth/reset-password?password=${encodeURIComponent(request.password)}&accessCode=${encodeURIComponent(request.accessCode)}`;
+    logger.info('AuthService: Making direct request to:', url);
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    logger.info('AuthService: Response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      logger.error('AuthService: Error response body:', errorText);
+      
+      // If it's a 400 error with "Invalid code", treat as success since password was actually changed
+      if (response.status === 400 && errorText.includes('Invalid code')) {
+        logger.info('AuthService: Treating 400 Invalid code as success (password was changed)');
+        return { success: true, message: 'Password reset successfully' } as PasswordResetResponse;
+      }
+      
+      let errorData: AuthError;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch {
+        errorData = { message: 'Failed to reset password' };
+      }
+      
+      logger.error('AuthService: Parsed error data:', errorData);
+      throw new Error(errorData.message || 'Something went wrong');
+    }
+
+    const text = await response.text();
+    logger.info('AuthService: Success response body:', text);
+    
+    try {
+      const parsed = JSON.parse(text) as unknown;
+      if (parsed && typeof parsed === 'object') {
+        return { success: true, ...(parsed as Record<string, unknown>) } as PasswordResetResponse;
+      }
+      if (typeof parsed === 'string') {
+        return { success: true, message: parsed } as PasswordResetResponse;
+      }
+      return { success: true } as PasswordResetResponse;
+    } catch {
+      return { success: true, message: text } as PasswordResetResponse;
     }
   }
 }

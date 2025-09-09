@@ -18,4 +18,25 @@ export interface AuthError {
   title?: string;
   status?: number;
   traceId?: string;
+}
+
+export interface ForgotPasswordRequest {
+  login: string;
+}
+
+export interface VerifyResetCodeRequest {
+  resetToken: string;
+  code: string;
+}
+
+export interface ResetPasswordRequest {
+  password: string;
+  accessCode: string;
+}
+
+export interface PasswordResetResponse {
+  success: boolean;
+  message?: string;
+  resetToken?: string;
+  accessCode?: string;
 } 

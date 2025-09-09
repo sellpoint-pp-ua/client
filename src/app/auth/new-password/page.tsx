@@ -3,28 +3,31 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { usePasswordReset } from '@/hooks/usePasswordReset'
 import { Eye, EyeOff } from 'lucide-react'
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 
-export default function ForgotPasswordPage() {
-  const { isLoading, error, success, resetToken, accessCode, sendResetCode, verifyResetCode, resetPassword, clearError, clearSuccess, clearTokens, clearAll } = usePasswordReset();
+export default function NewPasswordPage() {
+  const { isLoading, error, success, resetPassword, clearError, clearSuccess } = usePasswordReset();
   const [formData, setFormData] = useState({
-    login: '',
-    code: '',
     password: '',
     confirmPassword: ''
   });
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetToken = searchParams.get('token');
+  const code = searchParams.get('code');
+  const accessCode = searchParams.get('accessCode');
 
-  // Clear tokens on page load to always start from email input
   useEffect(() => {
-    clearTokens();
-  }, [clearTokens]);
+    if (!resetToken || (!code && !accessCode)) {
+      router.push('/auth/forgot-password');
+    }
+  }, [resetToken, code, accessCode, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -54,33 +57,16 @@ export default function ForgotPasswordPage() {
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (!formData.login.trim()) {
-      errors.login = 'Email або логін обов\'язковий';
-    } else if (!formData.login.includes('@')) {
-      // If it doesn't contain @, it's a username, which is fine
-    } else {
-      // Basic email validation
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(formData.login)) {
-        errors.login = 'Введіть коректний email';
-      }
+    if (!formData.password) {
+      errors.password = 'Пароль обов\'язковий';
+    } else if (formData.password.length < 6) {
+      errors.password = 'Пароль повинен містити мінімум 6 символів';
     }
 
-    if (resetToken && !formData.code.trim()) {
-      errors.code = 'Код підтвердження обов\'язковий';
-    }
-
-    if (accessCode) {
-      if (!formData.password) {
-        errors.password = 'Пароль обов\'язковий';
-      } else if (formData.password.length < 6) {
-        errors.password = 'Мінімум 6 символів';
-      }
-      if (!formData.confirmPassword) {
-        errors.confirmPassword = 'Підтвердження пароля обов\'язкове';
-      } else if (formData.password !== formData.confirmPassword) {
-        errors.confirmPassword = 'Паролі не співпадають';
-      }
+    if (!formData.confirmPassword) {
+      errors.confirmPassword = 'Підтвердження пароля обов\'язкове';
+    } else if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Паролі не співпадають';
     }
 
     setValidationErrors(errors);
@@ -90,62 +76,23 @@ export default function ForgotPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) {
+    if (!validateForm() || !resetToken || (!code && !accessCode)) {
       return;
     }
 
     try {
-      await sendResetCode({ login: formData.login });
-    } catch (err) {
-      console.error('Send reset code failed:', err);
-    }
-  };
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!resetToken) return;
-    if (!formData.code.trim()) {
-      setValidationErrors(prev => ({ ...prev, code: 'Код підтвердження обов\'язковий' }));
-      return;
-    }
-    try {
-      await verifyResetCode({ resetToken, code: formData.code.trim() });
-    } catch (err) {
-      console.error('Verify reset code failed:', err);
-    }
-  };
-
-  const handleResetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const errors: Record<string, string> = {};
-    if (!formData.password) {
-      errors.password = 'Пароль обов\'язковий';
-    } else if (formData.password.length < 6) {
-      errors.password = 'Мінімум 6 символів';
-    }
-    if (!formData.confirmPassword) {
-      errors.confirmPassword = 'Підтвердження пароля обов\'язкове';
-    } else if (formData.password !== formData.confirmPassword) {
-      errors.confirmPassword = 'Паролі не співпадають';
-    }
-    setValidationErrors(errors);
-    if (Object.keys(errors).length > 0) return;
-
-    try {
-      let codeToUse = accessCode || null;
-      // If we don't have a fresh accessCode, try to re-verify with the provided code
-      if (!codeToUse && resetToken && formData.code.trim()) {
-        const verifyResp = await verifyResetCode({ resetToken, code: formData.code.trim() });
-        if (verifyResp && verifyResp.accessCode) {
-          codeToUse = verifyResp.accessCode;
-        }
-      }
-      if (!codeToUse) {
-        setValidationErrors(prev => ({ ...prev, code: 'Код недійсний або відсутній. Спробуйте ще раз.' }));
+      // Використовуємо accessCode якщо він є, інакше code
+      const finalAccessCode = accessCode || code || localStorage.getItem('password_reset_access_code');
+      
+      if (!finalAccessCode) {
+        setError('Не знайдено код доступу. Спробуйте знову.');
         return;
       }
-      await resetPassword({ password: formData.password, accessCode: codeToUse });
-      // On success, keep success message and show links/buttons to proceed or start over
+
+      await resetPassword({ 
+        password: formData.password,
+        accessCode: finalAccessCode
+      });
     } catch (err) {
       console.error('Reset password failed:', err);
     }
@@ -156,6 +103,22 @@ export default function ForgotPasswordPage() {
     const errorClass = validationErrors[fieldName] ? "border-red-300" : "border-gray-300";
     return `${baseClass} ${errorClass}`;
   };
+
+  if (!resetToken || (!code && !accessCode)) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-no-repeat bg-cover bg-center"
+        style={{ backgroundImage: 'url(/background.png)' }}
+      >
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold text-gray-900">Перенаправлення...</h2>
+            <p className="mt-2 text-sm text-gray-600">Повертаємо вас на сторінку відновлення пароля</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -168,9 +131,14 @@ export default function ForgotPasswordPage() {
             <AnimatedLogo className="w-[300px] h-auto" />
           </Link>
           <h2 className="mt-6 text-center font-semibold text-gray-900 max-w-[300px] mx-auto">
-            Не можете увійти?
+            Новий пароль
           </h2>
-          <p className="px-6 mt-2 text-center text-sm text-gray-600">Введіть email або логін, отримайте код, вставте його нижче і встановіть новий пароль — усе на цій сторінці.</p>
+          <p className="px-6 mt-2 text-center text-sm text-gray-600">
+            {success 
+              ? 'Пароль успішно змінено! Перенаправляємо вас на сторінку входу...'
+              : 'Введіть новий пароль для вашого акаунту.'
+            }
+          </p>
         </div>
         
         {error && (
@@ -213,70 +181,8 @@ export default function ForgotPasswordPage() {
           </div>
         )}
         
-        {!resetToken && (
+        {!success && (
           <form onSubmit={handleSubmit} className="-mt-2 space-y-6 max-w-[350px] mx-auto">
-            <div>
-              <input
-                id="login"
-                name="login"
-                type="text"
-                autoComplete="email"
-                required
-                value={formData.login}
-                onChange={handleInputChange}
-                className={getInputClassName('login')}
-                placeholder="Введіть ваш email або логін"
-              />
-              {validationErrors.login && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.login}</p>
-              )}
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
-              >
-                {isLoading ? 'Надсилання...' : 'Надіслати код'}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {resetToken && !accessCode && (
-          <form onSubmit={handleVerify} className="space-y-6 max-w-[350px] mx-auto">
-            <div>
-              <input
-                id="code"
-                name="code"
-                type="text"
-                autoComplete="one-time-code"
-                required
-                value={formData.code}
-                onChange={handleInputChange}
-                className={`${getInputClassName('code')} text-center tracking-widest`}
-                placeholder="Введіть код з пошти"
-              />
-              {validationErrors.code && (
-                <p className="mt-1 text-sm text-red-600">{validationErrors.code}</p>
-              )}
-            </div>
-
-            <div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
-              >
-                {isLoading ? 'Перевірка...' : 'Підтвердити код'}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {accessCode && (
-          <form onSubmit={handleResetPassword} className="space-y-6 max-w-[350px] mx-auto">
             <div className="space-y-4">
               <div>
                 <div className="relative">
@@ -305,7 +211,7 @@ export default function ForgotPasswordPage() {
                   <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
                 )}
               </div>
-
+              
               <div>
                 <div className="relative">
                   <input
@@ -347,27 +253,12 @@ export default function ForgotPasswordPage() {
           </form>
         )}
 
-
-        <div className="text-center space-y-2">
+        <div className="text-center">
           <Link href="/auth/login" className="font-medium text-sm text-[#4563d1] hover:text-[#364ea8]">
             Повернутися до входу
           </Link>
-          {(resetToken || accessCode) && (
-            <div>
-              <button
-                type="button"
-                onClick={() => {
-                  clearAll();
-                  setFormData({ login: '', code: '', password: '', confirmPassword: '' });
-                }}
-                className="font-medium text-sm text-gray-600 hover:text-gray-800"
-              >
-                Почати спочатку
-              </button>
-            </div>
-          )}
         </div>
       </div>
     </div>
   )
-} 
+}
