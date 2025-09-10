@@ -17,6 +17,7 @@ export default function NewPasswordPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null); // Add local error state
   const router = useRouter();
   const searchParams = useSearchParams();
   const resetToken = searchParams.get('token');
@@ -52,6 +53,9 @@ export default function NewPasswordPage() {
     if (success) {
       clearSuccess();
     }
+    if (localError) {
+      setLocalError(null);
+    }
   };
 
   const validateForm = (): boolean => {
@@ -81,11 +85,10 @@ export default function NewPasswordPage() {
     }
 
     try {
-      // Використовуємо accessCode якщо він є, інакше code
       const finalAccessCode = accessCode || code || localStorage.getItem('password_reset_access_code');
       
       if (!finalAccessCode) {
-        setError('Не знайдено код доступу. Спробуйте знову.');
+        setLocalError('Не знайдено код доступу. Спробуйте знову.');
         return;
       }
 
@@ -141,7 +144,7 @@ export default function NewPasswordPage() {
           </p>
         </div>
         
-        {error && (
+        { (localError || error) && (
           <div className="px-4 py-3 rounded-md bg-red-50 border border-red-200 text-red-700">
             <div className="flex items-start">
               <div className="flex-shrink-0">
@@ -154,7 +157,7 @@ export default function NewPasswordPage() {
                   Помилка
                 </h3>
                 <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
+                  <p>{localError || error}</p>
                 </div>
               </div>
             </div>
