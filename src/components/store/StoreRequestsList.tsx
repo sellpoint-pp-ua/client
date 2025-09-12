@@ -220,12 +220,6 @@ export default function StoreRequestsList({ onRequestUpdated }: StoreRequestsLis
                     </p>
                     <div className="flex justify-center gap-2">
                       <button
-                        onClick={() => window.location.href = '/store'}
-                        className="inline-flex items-center gap-2 rounded-xl bg-green-600 text-white px-4 py-2 text-sm hover:bg-green-700 transition-colors"
-                      >
-                        <span>Управляти магазином</span>
-                      </button>
-                      <button
                         onClick={() => handleDeleteRequest(request.id)}
                         className="inline-flex items-center gap-2 rounded-xl border-2 border-red-600 text-red-700 px-4 py-2 text-sm hover:bg-red-100 transition-colors"
                       >
