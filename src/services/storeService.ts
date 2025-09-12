@@ -201,7 +201,8 @@ class StoreService {
   }
 
   async getStoreById(storeId: string): Promise<StoreResponse> {
-    return this.makeRequest<StoreResponse>(`/api/Store/GetStoreById/${storeId}`, {
+    // API expects storeId as a query parameter, not as a path segment
+    return this.makeRequest<StoreResponse>(`/api/Store/GetStoreById?storeId=${encodeURIComponent(storeId)}`, {
       method: 'GET',
       headers: this.getAuthHeaders(),
     });
