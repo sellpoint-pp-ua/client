@@ -1,4 +1,4 @@
-import { Users, Package, ShoppingBag, Search } from 'lucide-react'
+import { Users, Package, ShoppingBag, Search, Store } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AdminPage() {
@@ -66,6 +66,21 @@ export default function AdminPage() {
                   </div>
                   <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
                     <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Stores Management */}
+            <Link href="/admin/stores/" className="group">
+              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Магазини</h3>
+                    <p className="text-sm text-gray-600">Управління магазинами</p>
+                  </div>
+                  <div className="p-3 bg-orange-100 rounded-lg group-hover:bg-orange-200 transition-colors">
+                    <Store className="h-6 w-6 text-orange-600" />
                   </div>
                 </div>
               </div>

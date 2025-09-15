@@ -129,7 +129,7 @@ export default function CartDrawerProvider({ children }: Props) {
       return
     }
     try {
-      const res = await fetch('https://api.sellpoint.pp.ua/Cart/GetByMyId', {
+      const res = await fetch('https://api.sellpoint.pp.ua/api/Cart/GetByMyId', {
         headers: { Authorization: `Bearer ${token}`, accept: 'text/plain' },
         cache: 'no-store',
       })
@@ -187,7 +187,7 @@ export default function CartDrawerProvider({ children }: Props) {
         const form = new FormData()
         form.append('ProductId', productId)
         form.append('Pcs', String(pcs))
-        await fetch('https://api.sellpoint.pp.ua/Cart/AddToCart', {
+        await fetch('https://api.sellpoint.pp.ua/api/Cart/AddToCart', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: form,
@@ -220,7 +220,7 @@ export default function CartDrawerProvider({ children }: Props) {
       }
       try {
         await fetch(
-          `https://api.sellpoint.pp.ua/Cart/ChangeCartPcs?id=${encodeURIComponent(
+          `https://api.sellpoint.pp.ua/api/Cart/ChangeCartPcs?id=${encodeURIComponent(
             cartItemId
           )}&pcs=${encodeURIComponent(String(pcs))}`,
           {
@@ -244,7 +244,7 @@ export default function CartDrawerProvider({ children }: Props) {
       }
       try {
         await fetch(
-          `https://api.sellpoint.pp.ua/Cart/DeleteFromCart?id=${encodeURIComponent(cartItemId)}`,
+          `https://api.sellpoint.pp.ua/api/Cart/DeleteFromCart?id=${encodeURIComponent(cartItemId)}`,
           {
             method: 'DELETE',
             headers: { Authorization: `Bearer ${token}` },

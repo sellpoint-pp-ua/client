@@ -52,7 +52,7 @@ export default function AdminProductsPage() {
       
       if (query.trim()) {
         try {
-          const nameResponse = await fetch(`/api/products/search?name=${encodeURIComponent(query)}&languageCode=uk`);
+          const nameResponse = await fetch(`https://api.sellpoint.pp.ua/api/Product/search?name=${encodeURIComponent(query)}`);
           if (nameResponse.ok) {
             const nameResults = await nameResponse.json();
             if (Array.isArray(nameResults)) {
@@ -66,16 +66,27 @@ export default function AdminProductsPage() {
 
       if (categoryId && categoryId.trim()) {
         try {
-          const categoryResponse = await fetch(`/api/products/all?categoryId=${encodeURIComponent(categoryId)}&pageSize=50`);
+          const categoryResponse = await fetch(`https://api.sellpoint.pp.ua/api/Product/get-all`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              categoryId: categoryId,
+              include: {},
+              exclude: {},
+              page: 0,
+              pageSize: 50,
+            }),
+          });
           if (categoryResponse.ok) {
-            const categoryResults = await categoryResponse.json();
-            if (Array.isArray(categoryResults)) {
-              categoryResults.forEach((product: SearchProduct) => {
-                if (!results.find(r => r.id === product.id)) {
-                  results.push(product);
-                }
-              });
-            }
+            const categoryData = await categoryResponse.json();
+            const categoryResults = Array.isArray(categoryData?.products) ? categoryData.products : Array.isArray(categoryData) ? categoryData : [];
+            categoryResults.forEach((product: SearchProduct) => {
+              if (!results.find(r => r.id === product.id)) {
+                results.push(product);
+              }
+            });
           }
         } catch (error) {
           console.warn('Error in category ID search:', error);
@@ -101,7 +112,7 @@ export default function AdminProductsPage() {
       try {
         setIsLoading(true);
         setError(null);
-        const treeRes = await fetch('/api/categories/full-tree', { cache: 'no-store' });
+        const treeRes = await fetch('https://api.sellpoint.pp.ua/api/Category/full-tree', { cache: 'no-store' });
         if (!treeRes.ok) throw new Error('Не вдалося завантажити категорії');
         const tree = await treeRes.json() as CategoryNode[];
 
@@ -152,10 +163,24 @@ export default function AdminProductsPage() {
     }
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/products/by-category/${catId}?pageSize=20`, { cache: 'no-store' });
+      const res = await fetch(`https://api.sellpoint.pp.ua/api/Product/get-all`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          categoryId: catId,
+          include: {},
+          exclude: {},
+          page: 0,
+          pageSize: 20,
+        }),
+        cache: 'no-store'
+      });
       if (res.ok) {
         const data = await res.json();
-        setProducts(Array.isArray(data) ? data : []);
+        const productsList = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
+        setProducts(productsList);
       } else {
         setProducts([]);
       }
