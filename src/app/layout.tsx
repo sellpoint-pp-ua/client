@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import CartDrawerProvider from "@/components/cart/CartDrawerProvider";
+import FavoritesProvider from "@/components/favorites/FavoritesProvider";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
@@ -20,7 +21,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="min-h-screen bg-gray-50">
           <CartDrawerProvider>
-            {children}
+            <FavoritesProvider>
+              {children}
+            </FavoritesProvider>
           </CartDrawerProvider>
         </div>
       </body>

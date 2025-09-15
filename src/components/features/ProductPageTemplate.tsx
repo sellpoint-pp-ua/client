@@ -55,6 +55,7 @@ export default function ProductPageTemplate({ productId }: Props) {
   const { addToCart, isInCart, openCart } = useCartDrawer()
   const router = useRouter()
   const { isAuthenticated } = useAuth()
+  const [sellerName, setSellerName] = useState<string>('')
 
   useEffect(() => {
     let cancelled = false
@@ -69,6 +70,17 @@ export default function ProductPageTemplate({ productId }: Props) {
           if (pRes.ok) {
             const prod = await pRes.json()
             setProduct(prod)
+            // fetch seller name once product is known
+            try {
+              const sid = typeof prod?.sellerId === 'string' ? prod.sellerId : ''
+              if (sid) {
+                const r = await fetch(`https://api.sellpoint.pp.ua/api/Store/GetStoreById?storeId=${encodeURIComponent(sid)}`)
+                if (r.ok) {
+                  const s = await r.json()
+                  if (!cancelled) setSellerName(typeof s?.name === 'string' ? s.name : '')
+                }
+              }
+            } catch {}
             const ids: string[] = Array.isArray(prod?.categoryPath) ? [...prod.categoryPath].reverse() : []
             if (ids.length) {
               try {
@@ -434,7 +446,7 @@ export default function ProductPageTemplate({ productId }: Props) {
                 <div className="flex items-center gap-1 text-gray-700 mt-2">
                   <Store className="h-4 w-4" />
                   <span>Продавець</span>
-                  <Link href="#" className="text-[#4563d1] hover:underline">Cosmetics_shop</Link>
+                  <span className="text-[#4563d1] font-semibold">{sellerName || 'Магазин'}</span>
                 </div>
               </div>
 
@@ -451,7 +463,18 @@ export default function ProductPageTemplate({ productId }: Props) {
                 >
                   {isInCart(productId) ? 'У кошику' : 'Купити'}
                 </button>
-                <button className="rounded-full border hover:cursor-pointer border-[#4563d1] px-1 py-2 text-sm border-2 text-[#4563d1] hover:bg-[#4563d1]/5">Купити зараз</button>
+                <button
+                  onClick={() => {
+                    if (stockBadge.text === 'Немає в наявності') return
+                    if (!isAuthenticated) { router.push('/auth/login'); return }
+                    const sid = typeof product?.sellerId === 'string' ? product.sellerId : ''
+                    if (!sid) return
+                    router.push(`/checkout/${encodeURIComponent(sid)}?productId=${encodeURIComponent(productId)}&pcs=1`)
+                  }}
+                  className="rounded-full border hover:cursor-pointer border-[#4563d1] px-1 py-2 text-sm border-2 text-[#4563d1] hover:bg-[#4563d1]/5"
+                >
+                  Купити зараз
+                </button>
               </div>
             </div>
 
@@ -588,7 +611,7 @@ export default function ProductPageTemplate({ productId }: Props) {
               <h3 className="mb-3 text-lg font-semibold text-gray-900">Продавець</h3>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium text-gray-900">Cosmetics_shop</p>
+                  <p className="font-medium text-gray-900">{sellerName || 'Магазин'}</p>
                   <p className="text-sm text-gray-500">94% позитивних відгуків</p>
                 </div>
                 <div className="flex items-center gap-2">

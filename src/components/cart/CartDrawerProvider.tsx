@@ -38,6 +38,12 @@ type MediaItem = {
   order?: number
 }
 
+type StoreInfo = {
+  id?: string
+  name?: string
+  avatar?: { sourceUrl?: string; compressedUrl?: string; sourceFileName?: string; compressedFileName?: string }
+}
+
 export type EnrichedCartItem = RawCartItem & {
   product?: ProductInfo
   imageUrl?: string | null
@@ -72,6 +78,7 @@ export default function CartDrawerProvider({ children }: Props) {
   const [items, setItems] = useState<EnrichedCartItem[]>([])
   const [showToast, setShowToast] = useState<null | { name: string; imageUrl?: string | null }>(null)
   const [limitReached, setLimitReached] = useState<Record<string, boolean>>({})
+  const [sellerInfos, setSellerInfos] = useState<Record<string, StoreInfo>>({})
   const router = useRouter()
 
   const openCart = useCallback(() => setIsOpen(true), [])
@@ -176,6 +183,43 @@ export default function CartDrawerProvider({ children }: Props) {
     }
     fetchCart()
   }, [token, fetchCart])
+
+  // Fetch seller store info (name, avatar) for all unique sellerIds in cart
+  useEffect(() => {
+    const uniqueSellerIds = Array.from(
+      new Set(items.map((it) => it.product?.sellerId).filter((s): s is string => Boolean(s)))
+    )
+    const toFetch = uniqueSellerIds.filter((sid) => !sellerInfos[sid])
+    if (toFetch.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const results = await Promise.all(
+          toFetch.map(async (sid) => {
+            try {
+              const r = await fetch(`https://api.sellpoint.pp.ua/api/Store/GetStoreById?storeId=${encodeURIComponent(sid)}`)
+              if (!r.ok) return [sid, undefined] as const
+              const data: StoreInfo = await r.json()
+              return [sid, data] as const
+            } catch {
+              return [sid, undefined] as const
+            }
+          })
+        )
+        if (cancelled) return
+        setSellerInfos((prev) => {
+          const next = { ...prev }
+          for (const [sid, info] of results) {
+            if (info) next[sid] = info
+          }
+          return next
+        })
+      } catch {}
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [items, sellerInfos])
 
   const addToCart = useCallback(
     async (productId: string, pcs: number = 1) => {
@@ -386,9 +430,13 @@ export default function CartDrawerProvider({ children }: Props) {
                   {/* Seller header */}
                   <div className="mx-0 mb-2 rounded-xl bg-white p-3 shadow-sm">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-gray-200" />
+                      <div className="relative h-10 w-10 rounded-full overflow-hidden bg-gray-200">
+                        {sellerInfos[sellerId]?.avatar?.sourceUrl ? (
+                          <Image src={sellerInfos[sellerId]!.avatar!.sourceUrl!} alt={sellerInfos[sellerId]?.name || 'store'} fill className="object-cover" />
+                        ) : null}
+                      </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-semibold text-gray-900">{sellerId}</div>
+                        <div className="text-sm font-semibold text-gray-900">{sellerInfos[sellerId]?.name || sellerId}</div>
                         <div className="flex items-center gap-1 text-xs text-gray-600">
                           <CheckCircle2 className="h-4 w-4 text-[#4563d1]" />
                           <span>100% позитивних відгуків</span>
@@ -519,7 +567,13 @@ export default function CartDrawerProvider({ children }: Props) {
 
                   {/* Group-level checkout button summing all items for this seller */}
                   <div className="mt-2">
-                    <button className="w-full rounded-xl bg-[#4563d1] text-sm hover:cursor-pointer py-2 text-white hover:bg-[#364ea8]">
+                    <button
+                      onClick={() => {
+                        closeCart()
+                        router.push(`/checkout/${encodeURIComponent(sellerId)}`)
+                      }}
+                      className="w-full rounded-xl bg-[#4563d1] text-sm hover:cursor-pointer py-2 text-white hover:bg-[#364ea8]"
+                    >
                       {`Замовити у продавця • ${groupTotal} ₴`}
                     </button>
                   </div>
