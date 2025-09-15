@@ -40,3 +40,30 @@ export async function GET(_request: NextRequest, { params }: RouteContext) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: RouteContext) {
+  const { id } = await params
+  if (!id) {
+    return NextResponse.json({ error: 'Category ID is required' }, { status: 400 })
+  }
+
+  try {
+    const token = request.headers.get('authorization') || ''
+    const res = await fetch(`${API_BASE_URL}/api/Category/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': token,
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!res.ok) {
+      const text = await res.text()
+      return NextResponse.json({ message: text || 'Failed to delete' }, { status: res.status })
+    }
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('Error deleting category:', error)
+    return NextResponse.json({ message: 'Failed to delete category' }, { status: 500 })
+  }
+}
