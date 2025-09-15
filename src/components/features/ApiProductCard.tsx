@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { Heart, ShoppingCart } from 'lucide-react'
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
 import { useAuth } from '@/hooks/useAuth'
+import { useFavorites } from '@/components/favorites/FavoritesProvider'
 
 interface ApiProductCardProps {
   id: string;
@@ -36,11 +37,11 @@ export default function ApiProductCard({
   const [isLoading, setIsLoading] = useState(true)
   const { addToCart, isInCart, openCart } = useCartDrawer()
   const { isAuthenticated } = useAuth()
+  const { lists, isInFavorites, toggleFavorite, openPicker, picker, productToListId, ui } = useFavorites()
 
   const title = name || 'Без назви'
   const normalizedStatus = typeof quantityStatus === 'string' ? quantityStatus.toLowerCase() : ''
   const isReadyToShip = normalizedStatus.includes('готов') || normalizedStatus.includes('ready')
-
   
   type StockState = 'in' | 'low' | 'out'
   const stockState: StockState = (() => {
@@ -92,7 +93,6 @@ export default function ApiProductCard({
     }
     return { text: 'Немає в наявності', classes: 'bg-red-100 text-red-800' }
   })()
-
  
   const primaryPrice = hasDiscount ? (finalPrice ?? discountPrice ?? price) : price
   const showOldPrice = Boolean(hasDiscount && price && primaryPrice && price > primaryPrice)
@@ -126,13 +126,21 @@ export default function ApiProductCard({
     fetchProductImage()
   }, [id, providedImageUrl])
 
+  const inFav = isInFavorites(id)
+
   return (
     <div className="group relative rounded-lg bg-white p-3 shadow-sm transition-shadow hover:shadow-md">
       <button
-        className="absolute right-4 hover:cursor-pointer top-4 z-10 rounded-full bg-white p-1.5 text-gray-400 opacity-0 transition-opacity hover:text-[#4563d1] group-hover:opacity-100"
-        aria-label="Add to favorites"
+        className={`absolute right-4 hover:cursor-pointer top-4 z-10 rounded-full p-1.5 ${inFav ? 'bg-[#4563d1]/10 text-[#4563d1]' : 'bg-white text-gray-400'} transition-colors hover:text-[#4563d1]`}
+        aria-label={inFav ? 'Remove from favorites' : 'Add to favorites'}
+        onClick={(e) => {
+          e.preventDefault()
+          if (!isAuthenticated) { window.location.href = '/auth/login'; return }
+          // First attempt toggle. If a picker is needed, FavoritesProvider will open it.
+          toggleFavorite(id)
+        }}
       >
-        <Heart className="h-5 w-5" />
+        <Heart className={`h-5 w-5 ${inFav ? 'fill-current' : ''}`} />
       </button>
       
       <Link href={`/product/${id}`}>
@@ -205,6 +213,8 @@ export default function ApiProductCard({
           {isInCart(id) ? 'У кошику' : 'В кошик'}
         </div>
       </button>
+
+      {/* Picker drawer & toast, rendered once globally; noop here */}
     </div>
   )
 }
