@@ -1,4 +1,4 @@
-import { Users, Package, ShoppingBag, Search, Store } from 'lucide-react'
+import { Users, Package, ShoppingBag, Search, Store, Filter } from 'lucide-react'
 import Link from 'next/link'
 
 export default function AdminPage() {
@@ -31,11 +31,11 @@ export default function AdminPage() {
               <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Товари</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">Продукти</h3>
                     <p className="text-sm text-gray-600">Управління товарами</p>
                   </div>
                   <div className="p-3 bg-green-100 rounded-lg group-hover:bg-green-200 transition-colors">
-                    <ShoppingBag className="h-6 w-6 text-green-600" />
+                    <Package className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
               </div>
@@ -66,6 +66,21 @@ export default function AdminPage() {
                   </div>
                   <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
                     <Users className="h-6 w-6 text-purple-600" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+
+            {/* Filters Management */}
+            <Link href="/admin/filter/" className="group">
+              <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Фільтри</h3>
+                    <p className="text-sm text-gray-600">Управління фільтрами категорій</p>
+                  </div>
+                  <div className="p-3 bg-purple-100 rounded-lg group-hover:bg-purple-200 transition-colors">
+                    <Filter className="h-6 w-6 text-purple-600" />
                   </div>
                 </div>
               </div>
