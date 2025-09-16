@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { MagnifyingGlassIcon } from '@heroicons/react/24/outline'
+import { authService } from '@/services/authService'
 
 type CategoryRow = {
   id: string
@@ -31,6 +32,11 @@ export default function AdminCategoriesPage() {
   const [searchError, setSearchError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [showSearchResults, setShowSearchResults] = useState(false)
+
+  const [createName, setCreateName] = useState('')
+  const [createParentId, setCreateParentId] = useState<string>('')
+  const [creating, setCreating] = useState(false)
+  const [createMsg, setCreateMsg] = useState<string | null>(null)
 
   const getCategoryName = (category: Category): string => {
     return category.name || 'Без назви'
@@ -95,30 +101,31 @@ export default function AdminCategoriesPage() {
     }
   }
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        setIsLoading(true)
-        setError(null)
-        const res = await fetch('/api/categories/full-tree', { cache: 'no-store' })
-        if (!res.ok) throw new Error('Не вдалося завантажити категорії')
-        const tree = await res.json() as CategoryNode[]
-        const flat: CategoryRow[] = []
-        const walk = (nodes: CategoryNode[], parentId?: string | null) => {
-          for (const n of nodes) {
-            flat.push({ id: n.id, name: n.name, parentId: parentId || null })
-            if (n.children?.length) walk(n.children, n.id)
-          }
+  const loadCategories = async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
+      const res = await fetch('/api/categories/full-tree', { cache: 'no-store' })
+      if (!res.ok) throw new Error('Не вдалося завантажити категорії')
+      const tree = await res.json() as CategoryNode[]
+      const flat: CategoryRow[] = []
+      const walk = (nodes: CategoryNode[], parentId?: string | null) => {
+        for (const n of nodes) {
+          flat.push({ id: n.id, name: n.name, parentId: parentId || null })
+          if (n.children?.length) walk(n.children, n.id)
         }
-        walk(tree)
-        setCategories(flat)
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Помилка')
-      } finally {
-        setIsLoading(false)
       }
+      walk(tree)
+      setCategories(flat)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setIsLoading(false)
     }
-    load()
+  }
+
+  useEffect(() => {
+    loadCategories()
   }, [])
 
   useEffect(() => {
@@ -150,6 +157,43 @@ export default function AdminCategoriesPage() {
     setSearchResults([])
     setSearchError(null)
     setShowSearchResults(false)
+  }
+
+  const createCategory = async () => {
+    setCreateMsg(null)
+    if (!createName.trim()) {
+      setCreateMsg('Вкажіть назву категорії')
+      return
+    }
+    const token = authService.getToken()
+    if (!token) {
+      setCreateMsg('Не авторизовано')
+      return
+    }
+    try {
+      setCreating(true)
+      const body = {
+        name: createName.trim(),
+        parentId: createParentId ? createParentId : null,
+      }
+      const res = await fetch('/api/categories/create', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg || 'Не вдалося створити')
+      }
+      setCreateMsg('Створено успішно')
+      setCreateName('')
+      setCreateParentId('')
+      await loadCategories()
+    } catch (e) {
+      setCreateMsg(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setCreating(false)
+    }
   }
 
   if (isLoading) return <div className="p-6">Завантаження...</div>
@@ -243,6 +287,33 @@ export default function AdminCategoriesPage() {
         </div>
       )}
 
+      {/* Створення категорії */}
+      <div className="mb-6">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h2 className="text-lg font-semibold mb-4">Створити категорію</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Назва</label>
+              <input className="w-full rounded border px-3 py-2" value={createName} onChange={e => setCreateName(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-sm text-gray-600 mb-1">Батьківська (optional)</label>
+              <select className="w-full rounded border px-3 py-2" value={createParentId} onChange={e => setCreateParentId(e.target.value)}>
+                <option value="">— Коренева —</option>
+                {categories.map(c => (
+                  <option key={c.id} value={c.id}>{c.name} ({c.id})</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3">
+              <button disabled={creating} onClick={createCategory} className="rounded bg-green-600 text-white px-4 py-2 disabled:opacity-50">Створити</button>
+              {creating && <span className="text-gray-500 text-sm self-center">Створення...</span>}
+              {createMsg && <span className="text-sm self-center {createMsg.startsWith('Створено') ? 'text-green-600' : 'text-red-600'}">{createMsg}</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Всі категорії */}
       {!showSearchResults && (
         <div>
@@ -264,7 +335,10 @@ export default function AdminCategoriesPage() {
                     <td className="px-3 py-2">{c.name}</td>
                     <td className="px-3 py-2 text-gray-500">{c.parentId || '-'}</td>
                     <td className="px-3 py-2">
-                      <Link className="text-blue-600 hover:underline" href={`/admin/categories/${c.id}/edit`}>Редагувати</Link>
+                      <div className="flex items-center gap-3">
+                        <Link className="text-blue-600 hover:underline" href={`/admin/categories/${c.id}/edit`}>Редагувати</Link>
+                        <DeleteCategoryButton id={c.id} name={c.name} hasParent={!!c.parentId} onDeleted={loadCategories} />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -277,4 +351,72 @@ export default function AdminCategoriesPage() {
   )
 }
 
+function DeleteCategoryButton({ id, name, hasParent, onDeleted }: { id: string; name: string; hasParent: boolean; onDeleted: () => Promise<void> | void }) {
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [open, setOpen] = useState(false)
+
+  const handleDelete = async () => {
+    setError(null)
+    const token = authService.getToken()
+    if (!token) {
+      setError('Не авторизовано')
+      return
+    }
+    try {
+      setLoading(true)
+      // Block deleting parent categories that have children
+      if (!hasParent) {
+        const childrenRes = await fetch(`/api/categories/${id}/children`, { cache: 'no-store' })
+        const children = childrenRes.ok ? await childrenRes.json() : []
+        if (Array.isArray(children) && children.length > 0) {
+          setError('Неможливо видалити: категорія має дочірні категорії')
+          return
+        }
+      }
+
+      const res = await fetch(`/api/categories/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const msg = await res.text()
+        throw new Error(msg || 'Не вдалося видалити')
+      }
+      await onDeleted()
+      setOpen(false)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Помилка')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={() => setOpen(true)} disabled={loading} className="text-red-600 hover:underline disabled:opacity-50">Видалити</button>
+      {loading && <span className="text-xs text-gray-500">...</span>}
+      {error && <span className="text-xs text-red-600">{error}</span>}
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/30" onClick={() => !loading && setOpen(false)}></div>
+          <div className="relative bg-white rounded-lg shadow-xl border w-full max-w-md mx-4 p-5">
+            <h3 className="text-lg font-semibold mb-2">Підтвердження видалення</h3>
+            <p className="text-sm text-gray-700 mb-4">Точно видалити категорію "{name}"?</p>
+            <div className="bg-gray-50 rounded border p-3 mb-4">
+              <div className="text-xs text-gray-500">ID категорії</div>
+              <div className="font-mono text-sm break-all">{id}</div>
+            </div>
+            {error && <div className="text-sm text-red-600 mb-3">{error}</div>}
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setOpen(false)} disabled={loading} className="px-3 py-2 rounded border bg-white hover:bg-gray-50 disabled:opacity-50">Скасувати</button>
+              <button onClick={handleDelete} disabled={loading} className="px-3 py-2 rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">Так, видалити</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
