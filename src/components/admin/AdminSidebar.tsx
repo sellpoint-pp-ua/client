@@ -22,6 +22,7 @@ export default function AdminSidebar() {
     { name: 'Головна', href: '/admin', icon: HomeIcon },
     { name: 'Категорії', href: '/admin/categories', icon: FolderIcon },
     { name: 'Продукти', href: '/admin/products', icon: CubeIcon },
+    { name: 'Фільтри', href: '/admin/filter', icon: FolderIcon },
     { name: 'Користувачі', href: '/admin/users', icon: UsersIcon },
     { name: 'Магазини', href: '/admin/stores', icon: BuildingStorefrontIcon },
     { name: 'Пошук', href: '/admin/search', icon: MagnifyingGlassIcon },
