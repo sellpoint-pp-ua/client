@@ -173,7 +173,7 @@ export default function AdminFiltersPage() {
       const res = await fetch(`/api/available-filters/${existing.id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${token}` } })
       if (!res.ok) throw new Error(await res.text())
       setExisting(null)
-      setFilters([{ title: '', values: [''] }])
+      setManageFilters([])
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Помилка видалення')
     } finally { setLoading(false) }
