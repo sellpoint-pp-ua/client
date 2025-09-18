@@ -217,6 +217,38 @@ class StoreService {
     });
   }
 
+  // Store members management
+  async getStoreMembers(storeId: string): Promise<any> {
+    return this.makeRequest<any>(`/api/Store/GetStoreMembers?storeId=${encodeURIComponent(storeId)}`, {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  async getStoreMembersByMyId(): Promise<any> {
+    return this.makeRequest<any>('/api/Store/GetStoreMembersByMyId', {
+      method: 'GET',
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  async addMemberToStore(memberId: string, role: number = 1): Promise<any> {
+    // role: 1 => Manager
+    const params = new URLSearchParams({ memberId, role: String(role) });
+    return this.makeRequest<any>(`/api/Store/AddMemberToStore?${params.toString()}`, {
+      method: 'PUT',
+      headers: this.getAuthHeaders(),
+    });
+  }
+
+  async removeMemberFromStore(memberId: string): Promise<any> {
+    const params = new URLSearchParams({ memberId });
+    return this.makeRequest<any>(`/api/Store/RemoveMemberFromStore?${params.toString()}`, {
+      method: 'DELETE',
+      headers: this.getAuthHeaders(),
+    });
+  }
+
   async getCurrentUser(): Promise<any> {
     return this.makeRequest<any>('/api/User/GetUserByMyId', {
       method: 'GET',
