@@ -148,7 +148,7 @@ class ProductService {
     return response as Product;
   }
 
-  async addMedia(productId: string, files: File[], type?: number): Promise<any> {
+  async addMedia(productId: string, files: File[]): Promise<any> {
     if (!files || files.length === 0) return { success: true };
     const token = this.getToken();
     if (!token) throw new Error('No authentication token available');
@@ -156,8 +156,20 @@ class ProductService {
     // Use PUT /api/ProductMedia/many as specified in API docs
     const form = new FormData();
     
-    // Add files to FormData
-    files.forEach((f, idx) => form.append('files', f, f.name || `file_${idx}`));
+    // Add files to FormData with proper type detection
+    files.forEach((f, idx) => {
+      form.append('files', f, f.name || `file_${idx}`);
+      
+      // Determine if it's a video based on file type or extension
+      const isVideo = f.type.startsWith('video/') || 
+        /\.(mp4|webm|mov|avi|mkv|m4v|ogg)$/i.test(f.name);
+      
+      if (isVideo) {
+        form.append('type', '1'); // 1 for video, 0 for image
+      } else {
+        form.append('type', '0'); // 0 for image
+      }
+    });
     
     // Add productId as query parameter in URL
     const url = `${API_BASE_URL}/api/ProductMedia/many?productId=${encodeURIComponent(productId)}`;
@@ -166,7 +178,12 @@ class ProductService {
       console.log('ProductService: Starting media upload...');
       console.log('ProductService: URL:', url);
       console.log('ProductService: ProductId:', productId);
-      console.log('ProductService: Files:', files.map(f => ({ name: f.name, size: f.size, type: f.type })));
+      console.log('ProductService: Files:', files.map(f => ({ 
+        name: f.name, 
+        size: f.size, 
+        type: f.type,
+        isVideo: f.type.startsWith('video/') || /\.(mp4|webm|mov|avi|mkv|m4v|ogg)$/i.test(f.name)
+      })));
       
       logger.info('ProductService: Uploading media via PUT /api/ProductMedia/many', { 
         productId, 

@@ -45,6 +45,12 @@ export default function StoreDashboardPage() {
   const [categoryOptions, setCategoryOptions] = useState<{ id: string; label: string }[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [productFeatures, setProductFeatures] = useState<Array<{
+    category: string;
+    features: Array<{ key: string; value: string }>;
+  }>>([
+    { category: 'Основні', features: [{ key: '', value: '' }] },
+  ]);
 
   useEffect(() => {
     if (storeId) {
@@ -440,16 +446,31 @@ export default function StoreDashboardPage() {
     });
     setEditingProduct(null);
     setUploadFiles([]);
+    setProductFeatures([
+      { category: 'Основні', features: [{ key: '', value: '' }] },
+    ]);
     if (productNameRef.current) productNameRef.current.value = '';
   };
 
   const handleCreateOrUpdateProduct = async () => {
     try {
       const buildFeatures = (): any[] => {
-        const existing = (productForm as any).features;
-        if (Array.isArray(existing) && existing.length > 0) return existing;
-        const cat = productForm.category || 'general';
-        return [{ category: cat, features: {} }];
+        // Convert productFeatures to API format
+        return productFeatures
+          .filter(group => group.category.trim() && group.features.some(f => f.key.trim() && f.value.trim()))
+          .map(group => ({
+            category: group.category.trim(),
+            features: group.features
+              .filter(f => f.key.trim() && f.value.trim())
+              .reduce((acc, f) => {
+                acc[f.key.trim()] = {
+                  value: f.value.trim(),
+                  type: "string",
+                  nullable: true
+                };
+                return acc;
+              }, {} as Record<string, any>)
+          }));
       };
       const nameFromInput = productNameRef.current?.value?.toString() || '';
       if (editingProduct) {
@@ -580,6 +601,23 @@ export default function StoreDashboardPage() {
       productDimensions: p.productDimensions,
       description: p.description || '',
     });
+    
+    // Convert existing features to editable format
+    if (p.features && Array.isArray(p.features) && p.features.length > 0) {
+      const convertedFeatures = p.features.map(featureGroup => ({
+        category: featureGroup.category || 'Основні',
+        features: Object.entries(featureGroup.features || {}).map(([key, value]) => ({
+          key,
+          value: typeof value === 'object' && value.value ? String(value.value) : String(value)
+        }))
+      }));
+      setProductFeatures(convertedFeatures);
+    } else {
+      setProductFeatures([
+        { category: 'Основні', features: [{ key: '', value: '' }] },
+      ]);
+    }
+    
     if (productNameRef.current) productNameRef.current.value = p.name || '';
   };
 
@@ -595,46 +633,77 @@ export default function StoreDashboardPage() {
     }
   };
 
-  // Component to display product image
-  const ProductImage = ({ productId }: { productId: string }) => {
-    const [imageUrl, setImageUrl] = useState<string | null>(null);
+  // Component to display product image/video
+  const ProductMedia = ({ productId }: { productId: string }) => {
+    const [mediaUrl, setMediaUrl] = useState<string | null>(null);
+    const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-      const loadImage = async () => {
+      const loadMedia = async () => {
         try {
           const response = await fetch(`/api/products/media/${productId}`);
           if (response.ok) {
             const media = await response.json();
-            const firstImage = Array.isArray(media) ? media[0] : null;
-            if (firstImage?.url) {
-              setImageUrl(firstImage.url);
+            const firstMedia = Array.isArray(media) ? media[0] : null;
+            if (firstMedia?.url) {
+              setMediaUrl(firstMedia.url);
+              setMediaType(firstMedia.type || 'image');
             }
           }
         } catch (error) {
-          console.error('Error loading product image:', error);
+          console.error('Error loading product media:', error);
         } finally {
           setIsLoading(false);
         }
       };
-      loadImage();
+      loadMedia();
     }, [productId]);
 
     if (isLoading) {
-      return <div className="w-full h-full bg-gray-200 animate-pulse" />;
+      return <div className="w-full h-full bg-gray-200 animate-pulse rounded" style={{ width: '48px', height: '48px' }} />;
     }
 
-    if (!imageUrl) {
-      return <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs">Немає фото</div>;
+    if (!mediaUrl) {
+      return (
+        <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400 text-xs rounded" style={{ width: '48px', height: '48px' }}>
+          Немає фото
+        </div>
+      );
+    }
+
+    if (mediaType === 'video') {
+      return (
+        <video
+          src={mediaUrl}
+          className="w-full h-full object-cover rounded"
+          muted
+          playsInline
+          style={{ 
+            width: '48px', 
+            height: '48px', 
+            objectFit: 'cover',
+            maxWidth: '48px',
+            maxHeight: '48px'
+          }}
+        />
+      );
     }
 
     return (
       <Image
-        src={imageUrl}
+        src={mediaUrl}
         alt="Product"
-        fill
-        className="object-cover"
-        sizes="48px"
+        width={48}
+        height={48}
+        className="object-cover rounded"
+        style={{ 
+          width: '48px', 
+          height: '48px', 
+          objectFit: 'cover',
+          maxWidth: '48px',
+          maxHeight: '48px'
+        }}
       />
     );
   };
@@ -712,27 +781,121 @@ export default function StoreDashboardPage() {
             </select>
           </label>
 
-          <label className="text-sm text-gray-700 md:col-span-2">
-            <span className="block mb-1">Опис товару</span>
-            <textarea
-              className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
-              rows={3}
-              value={productForm.description || ''}
-              onChange={(e) => setProductForm(f => ({ ...f, description: e.target.value }))}
-              placeholder="Опишіть товар детально..."
-            />
-          </label>
+          <div className="md:col-span-2">
+            <span className="block mb-3 text-sm font-medium text-gray-700">Характеристики товару</span>
+            <div className="space-y-4">
+              {productFeatures.map((featureGroup, groupIdx) => (
+                <div key={groupIdx} className="bg-gray-50 rounded-lg p-4 border">
+                  <div className="flex items-end gap-3 mb-3">
+                    <div className="flex-1">
+                      <label className="block text-sm text-gray-600 mb-1">Категорія характеристик</label>
+                      <input
+                        className="w-full rounded border px-3 py-2 text-sm"
+                        value={featureGroup.category}
+                        onChange={(e) => {
+                          const newFeatures = [...productFeatures];
+                          newFeatures[groupIdx].category = e.target.value;
+                          setProductFeatures(newFeatures);
+                        }}
+                        placeholder="Наприклад: Основні, Технічні характеристики, Доставка"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        const newFeatures = productFeatures.filter((_, i) => i !== groupIdx);
+                        setProductFeatures(newFeatures);
+                      }}
+                      className="px-3 py-2 rounded border bg-white hover:bg-gray-50 text-sm"
+                    >
+                      Видалити
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-sm text-gray-600">Характеристики</div>
+                    {featureGroup.features.map((feature, featureIdx) => (
+                      <div key={featureIdx} className="flex items-center gap-2">
+                        <input
+                          className="flex-1 rounded border px-3 py-2 text-sm"
+                          placeholder="Назва характеристики"
+                          value={feature.key}
+                          onChange={(e) => {
+                            const newFeatures = [...productFeatures];
+                            newFeatures[groupIdx].features[featureIdx].key = e.target.value;
+                            setProductFeatures(newFeatures);
+                          }}
+                        />
+                        <span className="text-gray-400">:</span>
+                        <input
+                          className="flex-1 rounded border px-3 py-2 text-sm"
+                          placeholder="Значення"
+                          value={feature.value}
+                          onChange={(e) => {
+                            const newFeatures = [...productFeatures];
+                            newFeatures[groupIdx].features[featureIdx].value = e.target.value;
+                            setProductFeatures(newFeatures);
+                          }}
+                        />
+                        <button
+                          onClick={() => {
+                            const newFeatures = [...productFeatures];
+                            newFeatures[groupIdx].features = newFeatures[groupIdx].features.filter((_, i) => i !== featureIdx);
+                            setProductFeatures(newFeatures);
+                          }}
+                          className="px-2 py-2 rounded border bg-white hover:bg-gray-50 text-sm"
+                        >
+                          –
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const newFeatures = [...productFeatures];
+                        newFeatures[groupIdx].features.push({ key: '', value: '' });
+                        setProductFeatures(newFeatures);
+                      }}
+                      className="mt-2 px-3 py-2 rounded border bg-white hover:bg-gray-50 text-sm"
+                    >
+                      Додати характеристику
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() => {
+                  setProductFeatures([...productFeatures, { category: '', features: [{ key: '', value: '' }] }]);
+                }}
+                className="px-4 py-2 rounded border bg-white hover:bg-gray-50 text-sm"
+              >
+                Додати категорію характеристик
+              </button>
+            </div>
+          </div>
 
           <label className="text-sm text-gray-700 md:col-span-2">
-            <span className="block mb-1">Фото товару</span>
+            <span className="block mb-1">Медіа товару (фото/відео)</span>
             <input
               type="file"
               multiple
-              accept="image/*,video/*"
+              accept="image/*,video/*,.mp4,.webm,.mov,.avi,.mkv"
               className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
               onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
             />
-            <span className="block mt-1 text-xs text-gray-500">Можна додати кілька файлів (зображення/відео)</span>
+            <span className="block mt-1 text-xs text-gray-500">
+              Можна додати кілька файлів: зображення (JPG, PNG, GIF) або відео (MP4, WebM, MOV, AVI, MKV)
+            </span>
+            {uploadFiles.length > 0 && (
+              <div className="mt-2">
+                <span className="text-xs text-gray-600">Вибрано файлів: {uploadFiles.length}</span>
+                <div className="mt-1 space-y-1">
+                  {uploadFiles.map((file, index) => (
+                    <div key={index} className="text-xs text-gray-500 flex items-center gap-2">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                      {file.name} ({(file.size / 1024 / 1024).toFixed(1)} MB)
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </label>
         </div>
         <div className="mt-3 text-xs text-gray-500 leading-relaxed">
@@ -765,14 +928,21 @@ export default function StoreDashboardPage() {
             {products.map((p) => (
               <div key={p.id} className="py-3 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0">
-                    <ProductImage productId={p.id} />
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden flex-shrink-0 relative" style={{ minWidth: '48px', minHeight: '48px', maxWidth: '48px', maxHeight: '48px' }}>
+                    <ProductMedia productId={p.id} />
                   </div>
                   <div>
                     <div className="font-medium text-gray-900 text-sm">{p.name}</div>
                     <div className="text-xs text-gray-500">ID: {p.id}</div>
-                    {p.description && (
-                      <div className="text-xs text-gray-600 mt-1 line-clamp-2 max-w-xs">{p.description}</div>
+                    {p.features && p.features.length > 0 && (
+                      <div className="text-xs text-gray-600 mt-1 max-w-xs">
+                        {p.features.slice(0, 2).map((group, idx) => (
+                          <div key={idx} className="line-clamp-1">
+                            <span className="font-medium">{group.category}:</span> {Object.keys(group.features || {}).slice(0, 2).join(', ')}
+                          </div>
+                        ))}
+                        {p.features.length > 2 && <div className="text-gray-500">...</div>}
+                      </div>
                     )}
                   </div>
                 </div>
