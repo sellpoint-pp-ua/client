@@ -24,10 +24,11 @@ export async function PUT(request: NextRequest) {
     appendIfPresent('FullName')
     appendIfPresent('Gender')
     appendIfPresent('DateOfBirth')
+    appendIfPresent('PhoneNumber')
 
     const avatar = incoming.get('Avatar')
-    if (avatar instanceof File) {
-      forward.append('Avatar', avatar)
+    if (avatar && typeof (avatar as any).arrayBuffer === 'function') {
+      forward.append('Avatar', avatar as any)
     }
 
     const response = await fetch(`${API_BASE_URL}/api/User/UpdateUser`, {

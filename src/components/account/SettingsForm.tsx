@@ -128,6 +128,7 @@ export default function SettingsForm() {
       if (gender) form.append('Gender', gender)
       if (dateOfBirth) form.append('DateOfBirth', new Date(dateOfBirth).toISOString())
       if (avatarFile) form.append('Avatar', avatarFile)
+      if (phone) form.append('PhoneNumber', phone)
 
       const res = await fetch('/api/users/update', {
         method: 'PUT',
