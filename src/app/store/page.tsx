@@ -25,14 +25,12 @@ export default function StoreManagementPage() {
 
   const checkAuthAndLoad = async () => {
     try {
-      // Перевіряємо чи користувач авторизований
       const isAuthenticated = await authService.checkAuth();
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
 
-      // Завантажуємо користувача
       await loadCurrentUser();
     } catch (error) {
       console.error('Error checking auth status:', error);
@@ -103,7 +101,6 @@ export default function StoreManagementPage() {
     }
   };
 
-  // (видалено невикористовувані хелпери і логіку заявок для простішої сторінки)
 
   if (isLoading) {
     return (

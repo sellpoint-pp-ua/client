@@ -66,12 +66,12 @@ export default function CategoryCard({ title, iconType, count, href }: CategoryC
   return (
     <Link
       href={href}
-      className="group flex flex-col items-center rounded-lg bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+      className="group flex h-50 w-full flex-col items-center justify-between rounded-lg bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
     >
-      <div className="mb-4 rounded-full bg-gray-50 p-4 text-[#4563d1] transition-colors group-hover:bg-[#4563d1] group-hover:text-white">
+      <div className="mb-0 rounded-full bg-gray-50 p-4 text-[#4563d1] transition-colors group-hover:bg-[#4563d1] group-hover:text-white">
         <Icon className="h-8 w-8" />
       </div>
-      <h3 className="mb-2 text-center text-sm font-medium text-gray-900">
+      <h3 className="mb-0 h-20 w-full overflow-hidden text-center text-sm font-medium text-gray-900">
         {title}
       </h3>
       <span className="text-xs text-gray-500">{count} товарів</span>

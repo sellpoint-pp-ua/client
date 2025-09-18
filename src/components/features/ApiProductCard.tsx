@@ -136,7 +136,6 @@ export default function ApiProductCard({
         onClick={(e) => {
           e.preventDefault()
           if (!isAuthenticated) { window.location.href = '/auth/login'; return }
-          // First attempt toggle. If a picker is needed, FavoritesProvider will open it.
           toggleFavorite(id)
         }}
       >

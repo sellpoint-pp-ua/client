@@ -44,7 +44,6 @@ class AuthService {
       
   logger.error('AuthService: Parsed error data:', errorData)
       
-      // Handle validation errors specifically
       if (errorData.errors && typeof errorData.errors === 'object') {
         const errors = errorData.errors as Record<string, string[]>;
         const errorMessages: string[] = [];
@@ -155,7 +154,6 @@ class AuthService {
       return isAuthenticated;
     } catch (error) {
   logger.error('AuthService: Auth check error:', error)
-      // Clear invalid token
       this.logout();
       return false;
     }
@@ -217,7 +215,6 @@ class AuthService {
   getToken(): string | null {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('auth_token')
-      logger.info('AuthService: Getting token, present:', !!token, 'length:', token?.length)
       return token
     }
     return null;
@@ -234,7 +231,6 @@ class AuthService {
 
   isAuthenticated(): boolean {
   const hasToken = !!this.getToken()
-  logger.info('AuthService: isAuthenticated check:', hasToken)
   return hasToken
   }
 
@@ -250,7 +246,8 @@ class AuthService {
   async verifyEmailCode(code: string): Promise<void> {
     const token = this.getToken();
     if (!token) throw new Error('Not authenticated');
-    await this.makeRequest(`verify-email-code?code=${encodeURIComponent(code)}`, {
+    const normalizedCode = code.replace(/\s+/g, '').toUpperCase()
+    await this.makeRequest(`verify-email-code?code=${encodeURIComponent(normalizedCode)}`, {
       method: 'GET',
       headers: { 'Authorization': `Bearer ${token}` },
     });
@@ -275,7 +272,6 @@ class AuthService {
   async sendPasswordResetCode(request: ForgotPasswordRequest): Promise<PasswordResetResponse> {
     logger.info('AuthService: Sending password reset code for login:', request.login);
     
-    // Звертаємося безпосередньо до зовнішнього API
     const url = `https://api.sellpoint.pp.ua/api/Auth/send-password-reset-code?login=${encodeURIComponent(request.login)}`;
     logger.info('AuthService: Making direct request to:', url);
     
@@ -309,21 +305,17 @@ class AuthService {
     
     try {
       const parsed = JSON.parse(text) as unknown;
-      // If API returns an object with resetToken/message
       if (parsed && typeof parsed === 'object') {
         const maybe = parsed as { resetToken?: string; message?: string };
         if (maybe.resetToken && typeof maybe.resetToken === 'string') {
           return { success: true, resetToken: maybe.resetToken, message: maybe.message };
         }
       }
-      // If API returns a string JSON, treat as token
       if (typeof parsed === 'string' && parsed.trim().length > 0) {
         return { success: true, resetToken: parsed };
       }
-      // Fallback to generic
       return { success: true } as PasswordResetResponse;
     } catch {
-      // Non-JSON body: assume it's the token
       if (text && text.trim().length > 0) {
         return { success: true, resetToken: text.trim() };
       }
@@ -334,7 +326,6 @@ class AuthService {
   async verifyPasswordResetCode(request: VerifyResetCodeRequest): Promise<PasswordResetResponse> {
     logger.info('AuthService: Verifying password reset code');
     
-    // Звертаємося безпосередньо до зовнішнього API
     const url = `https://api.sellpoint.pp.ua/api/Auth/verify-password-reset-code?resetToken=${encodeURIComponent(request.resetToken)}&code=${encodeURIComponent(request.code)}`;
     logger.info('AuthService: Making direct request to:', url);
     
@@ -367,20 +358,17 @@ class AuthService {
     
     try {
       const parsed = JSON.parse(text) as unknown;
-      // If API returns an object with accessCode
       if (parsed && typeof parsed === 'object') {
         const maybe = parsed as { accessCode?: string; message?: string };
         if (maybe.accessCode && typeof maybe.accessCode === 'string') {
           return { success: true, accessCode: maybe.accessCode, message: maybe.message };
         }
       }
-      // If API returns a string JSON, treat as accessCode
       if (typeof parsed === 'string' && parsed.trim().length > 0) {
         return { success: true, accessCode: parsed };
       }
       return { success: true } as PasswordResetResponse;
     } catch {
-      // Non-JSON body: assume it's the accessCode
       if (text && text.trim().length > 0) {
         return { success: true, accessCode: text.trim() };
       }
@@ -391,7 +379,6 @@ class AuthService {
   async resetPassword(request: ResetPasswordRequest): Promise<PasswordResetResponse> {
     logger.info('AuthService: Resetting password');
     
-    // Звертаємося безпосередньо до зовнішнього API
     const url = `https://api.sellpoint.pp.ua/api/Auth/reset-password?password=${encodeURIComponent(request.password)}&accessCode=${encodeURIComponent(request.accessCode)}`;
     logger.info('AuthService: Making direct request to:', url);
     
@@ -408,7 +395,6 @@ class AuthService {
       const errorText = await response.text();
       logger.error('AuthService: Error response body:', errorText);
       
-      // If it's a 400 error with "Invalid code", treat as success since password was actually changed
       if (response.status === 400 && errorText.includes('Invalid code')) {
         logger.info('AuthService: Treating 400 Invalid code as success (password was changed)');
         return { success: true, message: 'Password reset successfully' } as PasswordResetResponse;

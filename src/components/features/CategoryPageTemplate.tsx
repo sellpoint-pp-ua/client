@@ -57,6 +57,7 @@ export default function CategoryPageTemplate({
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [sortBy, setSortBy] = useState('newest')
   const [crumbs, setCrumbs] = useState<Array<{ id: string; name: string }>>([])
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({})
 
   useEffect(() => {
     async function fetchCategoryData() {
@@ -70,7 +71,25 @@ export default function CategoryPageTemplate({
         }
         const data = await response.json()
         setCategories(data)
-        // Build breadcrumbs to current category
+
+        try {
+          const entries = await Promise.all(
+            (Array.isArray(data) ? data : []).map(async (c: { id: string }) => {
+              try {
+                const r = await fetch(`/api/products/by-category/${c.id}?pageSize=20`, { cache: 'no-store' })
+                if (!r.ok) return [c.id, 0] as const
+                const meta = await r.json()
+                const count = typeof meta?.count === 'number' ? meta.count : 0
+                return [c.id, count] as const
+              } catch {
+                return [c.id, 0] as const
+              }
+            })
+          )
+          setCategoryCounts(Object.fromEntries(entries))
+        } catch {
+          setCategoryCounts({})
+        }
         try {
           const chain: Array<{ id: string; name: string }> = []
           let currentId: string | null = categoryId
@@ -125,11 +144,9 @@ export default function CategoryPageTemplate({
     fetchProducts()
   }, [categoryId])
 
-  // Фільтрація та сортування продуктів
   useEffect(() => {
     let result = [...products]
 
-    // Фільтрація по пошуковому запиту
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase()
       result = result.filter(product => 
@@ -137,7 +154,6 @@ export default function CategoryPageTemplate({
       )
     }
 
-    // Сортування
     switch (sortBy) {
       case 'price-low':
         result.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price))
@@ -147,7 +163,6 @@ export default function CategoryPageTemplate({
         break
       case 'newest':
       default:
-        // Новинки: лишаємо початковий порядок як отримано з API
         break
     }
 
@@ -156,7 +171,6 @@ export default function CategoryPageTemplate({
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    // Пошук вже реалізований через useEffect
   }
 
   const applyFiltersToServer = useCallback(async (selected: Record<string, string[]>) => {
@@ -164,7 +178,6 @@ export default function CategoryPageTemplate({
       setIsLoadingProducts(true)
       const active = Object.entries(selected).filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
       if (active.length === 0) {
-        // No filters selected: load base category products
         const res = await fetch(`/api/products/by-category/${categoryId}?pageSize=50`, { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to fetch products')
         const productsData = await res.json()
@@ -239,27 +252,31 @@ export default function CategoryPageTemplate({
             <h2 className="mb-6 text-xl font-semibold text-gray-900">
               Категорії
             </h2>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8">
-              {isLoadingCategories ? (
-                Array.from({ length: 8 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-32 animate-pulse rounded-lg bg-gray-200"
-                  />
-                ))
-              ) : error ? (
-                <p className="col-span-full text-center text-red-500">{error}</p>
-              ) : (
-                categories.map((category) => (
-                  <CategoryCard
-                    key={category.id}
-                    title={category.name}
-                    count={0}
-                    href={`/category/${category.id}`}
-                    iconType="sparkles"
-                  />
-                ))
-              )}
+            {/* If more than 8 categories, enable horizontal scroll */}
+            <div className={categories.length > 8 ? 'overflow-x-auto pb-2' : ''}>
+              <div className={categories.length > 8 ? 'flex gap-4' : 'grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-8'}>
+                {isLoadingCategories ? (
+                  (categories.length > 8 ? Array.from({ length: 8 }) : Array.from({ length: 8 })).map((_, index) => (
+                    <div
+                      key={index}
+                      className={categories.length > 8 ? 'min-w-[180px] h-32 animate-pulse rounded-lg bg-gray-200' : 'h-32 animate-pulse rounded-lg bg-gray-200'}
+                    />
+                  ))
+                ) : error ? (
+                  <p className="col-span-full text-center text-red-500">{error}</p>
+                ) : (
+                  categories.map((category) => (
+                    <div key={category.id} className={categories.length > 8 ? 'min-w-[180px]' : ''}>
+                      <CategoryCard
+                        title={category.name}
+                        count={categoryCounts[category.id] ?? 0}
+                        href={`/category/${category.id}`}
+                        iconType="sparkles"
+                      />
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </section>
         )}

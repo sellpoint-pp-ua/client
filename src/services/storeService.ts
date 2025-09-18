@@ -27,7 +27,6 @@ class StoreService {
       const errorText = await response.text();
       logger.error('StoreService: Error response body:', errorText);
       
-      // Prefer server-provided JSON message; otherwise fall back to raw text or status text
       try {
         const parsed = JSON.parse(errorText);
         const message = (parsed && parsed.message) ? parsed.message : response.statusText || 'Request failed';
@@ -129,7 +128,6 @@ class StoreService {
   }
 
   async getRequestByMyId(): Promise<StoreRequest[]> {
-    // Використовуємо тільки основний ендпоінт, оскільки інші не працюють
     try {
       const requestsResponse = await this.makeRequest<StoreListResponse>('/api/Store/GetRequestByMyId', {
         method: 'GET',
@@ -138,7 +136,6 @@ class StoreService {
 
       console.log('Raw requests response:', requestsResponse);
 
-      // Обробляємо відповідь
       let requests: StoreRequest[] = [];
       if (Array.isArray(requestsResponse)) {
         requests = requestsResponse as StoreRequest[];
@@ -146,7 +143,6 @@ class StoreService {
         if (requestsResponse.success && requestsResponse.data) {
           requests = requestsResponse.data as StoreRequest[];
         } else if ('id' in requestsResponse && requestsResponse.id) {
-          // Одна заявка як об'єкт
           const r = requestsResponse as any;
           requests = [{
             id: r.id ?? '',
@@ -201,7 +197,6 @@ class StoreService {
   }
 
   async getStoreById(storeId: string): Promise<StoreResponse> {
-    // API expects storeId as a query parameter, not as a path segment
     return this.makeRequest<StoreResponse>(`/api/Store/GetStoreById?storeId=${encodeURIComponent(storeId)}`, {
       method: 'GET',
       headers: this.getAuthHeaders(),
@@ -216,8 +211,6 @@ class StoreService {
   }
 
   async getMyStores(): Promise<StoreListResponse> {
-    // Використовуємо GetStores для отримання магазинів користувача
-    // (API повертає тільки магазини поточного користувача)
     return this.makeRequest<StoreListResponse>('/api/Store/GetStores', {
       method: 'GET',
       headers: this.getAuthHeaders(),

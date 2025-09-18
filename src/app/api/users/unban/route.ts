@@ -14,12 +14,10 @@ export async function POST(request: Request) {
       )
     }
 
-    // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
 
     const headers: HeadersInit = {}
     
-    // Додаємо токен авторизації якщо він є
     if (authHeader) {
       headers['Authorization'] = authHeader
     }

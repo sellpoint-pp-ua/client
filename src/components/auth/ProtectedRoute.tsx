@@ -52,7 +52,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         });
 
         if (response.status === 403) {
-          // Користувач заблокований
           setIsBanned(true);
         }
       } catch (error) {
@@ -69,12 +68,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return null;
   }
 
-  // Якщо користувач заблокований, показуємо повідомлення про бан
   if (isBanned) {
     return <BanNotification />;
   }
 
-  // Якщо перевіряємо банів, показуємо завантаження
   if (isCheckingBan) {
     return (
       <div className="flex-1 bg-gray-50">

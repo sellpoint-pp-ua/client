@@ -55,7 +55,6 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
 
   useEffect(() => { refresh() }, [refresh])
 
-  // Fetch list cover images (first product image of each list)
   useEffect(() => {
     let cancelled = false
     async function loadCovers() {
@@ -106,7 +105,6 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
       setLists(Array.isArray(data) ? data : [])
       const customsNow = (Array.isArray(data) ? data : []).filter(l => l.name !== 'Товари')
       if (customsNow.length === 0) {
-        // no customs anymore: add to default directly
         await fetch(`https://api.sellpoint.pp.ua/Favorite/AddToFavoriteProductCollectionToDefault?productId=${encodeURIComponent(productId)}`,
           { method: 'POST', headers: { accept: '*/*', Authorization: `Bearer ${token}` }, body: '' })
         await refresh()
@@ -134,11 +132,9 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
         return
       }
 
-      // no current list: decide destination
       let destListId = options?.forceListId
       if (!destListId) {
         if (customs.length === 0) {
-          // add to default
           await fetch(`https://api.sellpoint.pp.ua/Favorite/AddToFavoriteProductCollectionToDefault?productId=${encodeURIComponent(productId)}`,
             { method: 'POST', headers: { accept: '*/*', Authorization: `Bearer ${token}` }, body: '' })
           await refresh()
@@ -147,7 +143,6 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
           setTimeout(() => setToast(null), 2500)
           return
         } else {
-          // re-check current lists before opening picker to avoid stale data
           try {
             const res = await fetch('https://api.sellpoint.pp.ua/Favorite/GetAllFavoriteProducts', {
               headers: { accept: '*/*', Authorization: `Bearer ${token}` },
@@ -166,13 +161,11 @@ export default function FavoritesProvider({ children }: { children: React.ReactN
               return
             }
           } catch {}
-          // open picker; user will select and press Save
           await openPicker(productId)
           return
         }
       }
 
-      // add to specific list
       await fetch(`https://api.sellpoint.pp.ua/Favorite/AddToFavoriteProductCollection?id=${encodeURIComponent(destListId!)}&productId=${encodeURIComponent(productId)}`,
         { method: 'POST', headers: { accept: '*/*', Authorization: `Bearer ${token}` }, body: '' })
       await refresh()

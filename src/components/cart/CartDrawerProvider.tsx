@@ -59,6 +59,7 @@ type CartDrawerContextValue = {
   changePcs: (cartItemId: string, pcs: number) => Promise<void>
   removeFromCart: (cartItemId: string) => Promise<void>
   isInCart: (productId: string) => boolean
+  clearCart: () => Promise<void>
 }
 
 const CartDrawerContext = createContext<CartDrawerContextValue | undefined>(undefined)
@@ -84,7 +85,6 @@ export default function CartDrawerProvider({ children }: Props) {
   const openCart = useCallback(() => setIsOpen(true), [])
   const closeCart = useCallback(() => setIsOpen(false), [])
 
-  // Lock body scroll while drawer is open without layout shift
   useEffect(() => {
     if (typeof document === 'undefined') return
     const body = document.body
@@ -119,7 +119,6 @@ export default function CartDrawerProvider({ children }: Props) {
     }
   }, [isOpen])
 
-  // Close on Escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') closeCart()
@@ -146,7 +145,6 @@ export default function CartDrawerProvider({ children }: Props) {
       }
       const data: RawCartItem[] = await res.json()
 
-      // Enrich with product info and media
       const enriched: EnrichedCartItem[] = await Promise.all(
         (data || []).map(async (it) => {
           try {
@@ -184,7 +182,6 @@ export default function CartDrawerProvider({ children }: Props) {
     fetchCart()
   }, [token, fetchCart])
 
-  // Fetch seller store info (name, avatar) for all unique sellerIds in cart
   useEffect(() => {
     const uniqueSellerIds = Array.from(
       new Set(items.map((it) => it.product?.sellerId).filter((s): s is string => Boolean(s)))
@@ -237,7 +234,6 @@ export default function CartDrawerProvider({ children }: Props) {
           body: form,
         })
         await fetchCart()
-        // best-effort toast
         const added = items.find((i) => i.productId === productId)
         setShowToast({ name: added?.product?.name || 'Товар', imageUrl: added?.imageUrl })
         setTimeout(() => setShowToast(null), 2500)
@@ -304,7 +300,20 @@ export default function CartDrawerProvider({ children }: Props) {
 
   const cartCount = items.length
 
-  // ---- NEW: group items by seller in a memo (avoids JSX generic parsing issues) ----
+  const clearCart = useCallback(async () => {
+    if (!token) return
+    try {
+      await fetch('https://api.sellpoint.pp.ua/Cart/ClearCartList', {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}`, accept: '*/*' },
+      })
+    } catch {
+      /* noop */
+    } finally {
+      setItems([])
+    }
+  }, [token])
+
   const groupedBySeller = useMemo(() => {
     const map: Record<string, EnrichedCartItem[]> = {}
     for (const it of items) {
@@ -340,8 +349,9 @@ export default function CartDrawerProvider({ children }: Props) {
       changePcs,
       removeFromCart,
       isInCart,
+      clearCart,
     }),
-    [isOpen, openCart, closeCart, items, cartCount, addToCart, changePcs, removeFromCart, isInCart]
+    [isOpen, openCart, closeCart, items, cartCount, addToCart, changePcs, removeFromCart, isInCart, clearCart]
   )
 
   return (
@@ -453,7 +463,6 @@ export default function CartDrawerProvider({ children }: Props) {
                         ? p?.finalPrice ?? p?.discountPrice ?? p?.price
                         : p?.finalPrice ?? p?.price) || 0
 
-                    // stock state similar to ProductPageTemplate
                     let badge = { text: 'В наявності', classes: 'bg-green-100 text-green-800' }
                     const normalized =
                       typeof p?.quantityStatus === 'string'

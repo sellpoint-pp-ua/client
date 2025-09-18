@@ -70,7 +70,6 @@ export default function ProductPageTemplate({ productId }: Props) {
           if (pRes.ok) {
             const prod = await pRes.json()
             setProduct(prod)
-            // fetch seller name once product is known
             try {
               const sid = typeof prod?.sellerId === 'string' ? prod.sellerId : ''
               if (sid) {

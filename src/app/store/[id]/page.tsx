@@ -44,7 +44,6 @@ export default function StoreDashboardPage() {
       setIsLoading(true);
       setError(null);
       const response = await storeService.getStoreById(storeId);
-      // API може повертати або { success, data }, або одразу об'єкт магазину
       const maybeAny = response as any;
       if (maybeAny && typeof maybeAny === 'object') {
         if (maybeAny.success && maybeAny.data) {

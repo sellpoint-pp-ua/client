@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import CartDrawerProvider from "@/components/cart/CartDrawerProvider";
 import FavoritesProvider from "@/components/favorites/FavoritesProvider";
+import NotificationsDrawerProvider from "@/components/notifications/NotificationsDrawerProvider";
 
 const inter = Inter({ subsets: ["latin", "cyrillic"] });
 
@@ -21,9 +22,11 @@ export default function RootLayout({
       <body className={inter.className}>
         <div className="min-h-screen bg-gray-50">
           <CartDrawerProvider>
-            <FavoritesProvider>
-              {children}
-            </FavoritesProvider>
+            <NotificationsDrawerProvider>
+              <FavoritesProvider>
+                {children}
+              </FavoritesProvider>
+            </NotificationsDrawerProvider>
           </CartDrawerProvider>
         </div>
       </body>

@@ -14,11 +14,28 @@ export async function POST(request: NextRequest) {
       cache: 'no-store',
     })
 
-    const text = await res.text()
-    let data: unknown
-    try { data = JSON.parse(text) } catch { data = { raw: text } }
+    if (res.status === 204) {
+      return NextResponse.json({ success: true }, { status: 200 })
+    }
 
-    return NextResponse.json(data, { status: res.status })
+    if (res.ok) {
+      const text = await res.text().catch(() => '')
+      if (!text) return NextResponse.json({ success: true }, { status: 200 })
+      try {
+        const data = JSON.parse(text) as object
+        return NextResponse.json(data, { status: 200 })
+      } catch {
+        return NextResponse.json({ success: true, message: text }, { status: 200 })
+      }
+    }
+
+    const errorText = await res.text().catch(() => '')
+    try {
+      const errorJson = JSON.parse(errorText) as object
+      return NextResponse.json(errorJson, { status: res.status })
+    } catch {
+      return NextResponse.json({ message: errorText || 'Logout failed' }, { status: res.status })
+    }
   } catch {
     return NextResponse.json({ message: 'Failed to logout' }, { status: 500 })
   }

@@ -23,14 +23,12 @@ export default function CreateStorePage() {
 
   const checkAuthAndAdminStatus = async () => {
     try {
-      // Спочатку перевіряємо чи користувач авторизований
       const isAuthenticated = await authService.checkAuth();
       if (!isAuthenticated) {
         router.push('/auth/login');
         return;
       }
 
-      // Потім перевіряємо чи він адміністратор
       const adminStatus = await authService.checkAdminStatus();
       setIsAdmin(adminStatus);
       if (adminStatus) {
@@ -57,10 +55,9 @@ export default function CreateStorePage() {
     setError(null);
 
     try {
-      // Створюємо заявку без попередньої перевірки
       await storeService.createStore({
         name: formData.name,
-        plan: 0, // Завжди 0 для базового плану
+        plan: 0, 
         file: formData.file
       });
       

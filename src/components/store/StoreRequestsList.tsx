@@ -25,7 +25,6 @@ export default function StoreRequestsList({ onRequestUpdated }: StoreRequestsLis
       const requestsResponse = await storeService.getRequestByMyId();
       console.log('Store requests response:', requestsResponse);
       
-      // Обробляємо різні формати відповіді
       let requests: StoreRequest[] = [];
       
       if (Array.isArray(requestsResponse)) {
@@ -35,7 +34,6 @@ export default function StoreRequestsList({ onRequestUpdated }: StoreRequestsLis
         if (response.success && response.data) {
           requests = response.data as StoreRequest[];
         } else if (response.id) {
-          // Одна заявка як об'єкт
           requests = [response as StoreRequest];
         }
       }

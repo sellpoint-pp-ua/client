@@ -68,7 +68,6 @@ export default function Sidebar() {
       clearTimeout(hoverSwitchTimeoutRef.current)
       hoverSwitchTimeoutRef.current = null
     }
-    // For categories without children, switch immediately
     if (!hasChildren) {
       setHoveredCategory(categoryId)
       return
@@ -108,7 +107,6 @@ export default function Sidebar() {
     fetchCategories()
   }, [])
 
-  // Measure expanded sidebar height when shown and on resize
   useEffect(() => {
     function measure() {
       const el = expandedPanelRef.current
@@ -117,20 +115,17 @@ export default function Sidebar() {
       setExpandedHeightPx(Math.max(0, Math.floor(rect.height)))
     }
     if (isExpanded) {
-      // next tick to ensure layout
       requestAnimationFrame(measure)
       window.addEventListener('resize', measure)
       return () => window.removeEventListener('resize', measure)
     }
   }, [isExpanded, categories.length])
 
-  // Freeze background scroll when overlay is active
   useEffect(() => {
     if (typeof window === 'undefined') return
     const htmlEl = document.documentElement
     const bodyEl = document.body
     if (isExpanded) {
-      // Save previous styles
       prevBodyOverflowRef.current = bodyEl.style.overflow
       prevHtmlOverflowRef.current = htmlEl.style.overflow
       prevBodyPaddingRightRef.current = bodyEl.style.paddingRight
@@ -138,21 +133,17 @@ export default function Sidebar() {
 
       const scrollbarWidth = window.innerWidth - htmlEl.clientWidth
       if (scrollbarWidth > 0) {
-        // Apply compensation only to body to avoid double gap
         bodyEl.style.paddingRight = `${scrollbarWidth}px`
       }
       bodyEl.style.overflow = 'hidden'
       htmlEl.style.overflow = 'hidden'
     } else {
-      // Restore
       bodyEl.style.overflow = prevBodyOverflowRef.current
       htmlEl.style.overflow = prevHtmlOverflowRef.current
       bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
-      // html paddingRight was not changed; ensure it's cleared to previous
       htmlEl.style.paddingRight = prevHtmlPaddingRightRef.current
     }
     return () => {
-      // Safety restore on unmount
       bodyEl.style.overflow = prevBodyOverflowRef.current
       htmlEl.style.overflow = prevHtmlOverflowRef.current
       bodyEl.style.paddingRight = prevBodyPaddingRightRef.current
@@ -265,22 +256,19 @@ export default function Sidebar() {
             const top = expandedPos.top;
             
             const containerHeight = expandedHeightPx || Math.floor(window.innerHeight * (EXPANDED_MAX_HEIGHT_VH / 100));
-            const approxItemHeight = 72; // базовая оценка высоты одного блока
+            const approxItemHeight = 72; 
             
-            // 🔧 Крутилки для "чаще создавать колонки"
-            const bias = 1.2;              // 1.1–1.5: чем больше, тем меньше itemsPerColumn
-            const verticalPadding = 48;    // "съедаем" часть высоты под заголовки/отступы
-            const hardCap = 4;             // максимум пунктов на одну колонку
+            const bias = 1.2;              
+            const verticalPadding = 48;    
+            const hardCap = 4;             
             
-            // Рассчитываем "эффективную" высоту и лимит на элементы в колонке
             const usableHeight = Math.max(0, containerHeight - verticalPadding);
             const itemsPerColumnRaw = Math.floor(usableHeight / (approxItemHeight * bias));
             const itemsPerColumn = Math.min(hardCap, Math.max(1, itemsPerColumnRaw));
             
-            // Колонки и размеры
             const columns = Math.max(1, Math.ceil(items.length / itemsPerColumn));
-            const columnWidth = 380; // px
-            const panelWidth = Math.min(columns, 5) * columnWidth + 32; // кап 5 колонок + паддинг
+            const columnWidth = 380;
+            const panelWidth = Math.min(columns, 5) * columnWidth + 32;
             
             return (
               <aside

@@ -37,7 +37,6 @@ export default function NewPasswordPage() {
       [name]: value
     }));
     
-    // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -46,7 +45,6 @@ export default function NewPasswordPage() {
       });
     }
     
-    // Clear error messages when user starts typing
     if (error) {
       clearError();
     }

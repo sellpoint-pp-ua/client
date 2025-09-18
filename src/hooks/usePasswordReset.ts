@@ -12,7 +12,6 @@ export const usePasswordReset = () => {
   const [resetToken, setResetToken] = useState<string | null>(null);
   const [accessCode, setAccessCode] = useState<string | null>(null);
   const router = useRouter();
-  // Hydrate from localStorage on mount
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const storedResetToken = localStorage.getItem('password_reset_token');
@@ -57,7 +56,6 @@ export const usePasswordReset = () => {
       const response = await authService.sendPasswordResetCode(request);
       setSuccess('Код відновлення надіслано на вашу пошту');
       
-      // Зберігаємо resetToken якщо він є у відповіді
       if (response.resetToken) {
         setResetToken(response.resetToken);
         if (typeof window !== 'undefined') {
@@ -85,7 +83,6 @@ export const usePasswordReset = () => {
       setResetToken(request.resetToken);
       setSuccess('Код підтверджено успішно');
       
-      // Зберігаємо accessCode якщо він є у відповіді
       if (response.accessCode) {
         setAccessCode(response.accessCode);
         if (typeof window !== 'undefined') {
@@ -140,7 +137,6 @@ export const usePasswordReset = () => {
     }
   }, []);
 
-  // Clear only reset-related tokens, keep success/error messages
   const clearTokens = useCallback(() => {
     setResetToken(null);
     setAccessCode(null);

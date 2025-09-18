@@ -11,12 +11,12 @@ const slides = [
   },
   {
     id: 2,
-    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/ad_2.png',
+    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/add_3.png',
     title: 'Нова колекція',
   },
   {
     id: 3,
-    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/ad_2.png',
+    imageUrl: 'https://cloud.sellpoint.pp.ua/media/adds-photos/add_4.png',
     title: 'Спеціальні пропозиції',
   },
 ]

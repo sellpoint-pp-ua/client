@@ -25,12 +25,10 @@ export async function GET(request: NextRequest) {
   try {
     console.log('Fetching all users from:', `${API_BASE_URL}/api/User/GetAllUsers`)
     
-    // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
     
     const headers: HeadersInit = {}
     
-    // Додаємо токен авторизації якщо він є
     if (authHeader) {
       headers['Authorization'] = authHeader
       console.log('Authorization header present:', authHeader.substring(0, 20) + '...')
@@ -48,7 +46,6 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       console.error('API error:', response.status, response.statusText)
       
-      // Якщо 401 - потрібна авторизація
       if (response.status === 401) {
         return NextResponse.json(
           { error: 'Unauthorized - Admin access required' },

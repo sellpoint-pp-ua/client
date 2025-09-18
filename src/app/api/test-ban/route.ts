@@ -29,7 +29,6 @@ export async function GET(request: NextRequest) {
       console.log('Test-ban API: User data:', userData);
       
       if (userData && userData.id) {
-        // Тестуємо отримання банів
         console.log('Test-ban API: Testing GetAllByUserId for user:', userData.id);
         const bansResponse = await fetch(`${API_BASE_URL}/api/User/GetAllByUserId?userId=${userData.id}`, {
           method: 'GET',
