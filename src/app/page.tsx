@@ -13,9 +13,6 @@ type BestCategoryConfig = {
   img: string
 }
 
-// Configure up to 10 real category IDs here and provide custom images.
-// If id is provided, the name will be fetched from API and the card will link to /category/{id}.
-// If id is omitted, the static title is shown and the card is not clickable.
 const BEST_CATEGORY_CONFIG: BestCategoryConfig[] = [
   { title: "Краса та здоров'я", img: 'https://cloud.sellpoint.pp.ua/media/category-photos/krasa-ta-zdorovya.webp', id: '68b076a78b56ead269c2ed6d' },
   { title: 'Одяг та взуття', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/odyag-ta-vzuttya.webp', id: '68b076a78b56ead269c2ed6f' },
@@ -43,7 +40,6 @@ const homepageProducts = [
 ]
 
 export default async function Home() {
-  // Fetch names for configured category IDs (if provided)
   const configuredWithIds = BEST_CATEGORY_CONFIG.filter(c => c.id && c.id.trim().length > 0)
   const idToName = new Map<string, string>()
   if (configuredWithIds.length > 0) {
@@ -65,7 +61,6 @@ export default async function Home() {
         if (r.id && r.name) idToName.set(r.id, r.name)
       }
     } catch {
-      // ignore fetch errors, fall back to titles
     }
   }
   return (

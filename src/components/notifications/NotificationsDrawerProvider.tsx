@@ -44,7 +44,6 @@ export default function NotificationsDrawerProvider({ children }: Props) {
 
   useEffect(() => { setMounted(true) }, [])
 
-  // Lock scroll when open (same behavior as cart)
   useEffect(() => {
     if (!mounted) return
     const body = document.body
