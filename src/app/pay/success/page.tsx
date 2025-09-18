@@ -18,7 +18,6 @@ export default function PaySuccessPage() {
         await clearCart()
         if (!cancelled) setCleared(true)
       } catch {
-        // ignore
       }
     })()
     return () => { cancelled = true }

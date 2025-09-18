@@ -5,7 +5,17 @@ import SiteFooter from '@/components/layout/SiteFooter'
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
+import { useNotifications } from '@/components/notifications/NotificationsDrawerProvider'
 import { useParams, useRouter } from 'next/navigation'
+
+// Hook wrapper: calls useNotifications but returns null if provider isn't present
+function useOptionalNotifications() {
+  try {
+    return useNotifications()
+  } catch {
+    return null as any
+  }
+}
 
 type BuyItem = {
   id: string
@@ -31,6 +41,8 @@ export default function PayPage() {
   const [cvvError, setCvvError] = useState<string>('')
   const [remember, setRemember] = useState<boolean>(false)
   const [busy, setBusy] = useState<boolean>(false)
+  const notifCtx = useOptionalNotifications()
+  const refreshNotifications = notifCtx?.refresh
 
   const formatCard = (raw: string) => {
     const digits = raw.replace(/\D/g, '').slice(0, 16)
@@ -155,6 +167,9 @@ export default function PayPage() {
         setError('Оплату відхилено. Спробуйте іншу карту або пізніше.')
         setBusy(false)
         return
+      }
+      if (refreshNotifications) {
+        try { await refreshNotifications() } catch {}
       }
       router.push('/pay/success')
     } catch {
