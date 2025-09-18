@@ -7,6 +7,7 @@ import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
+import { useNotifications } from '@/components/notifications/NotificationsDrawerProvider'
 
 type CategorySearchResult = {
   id: string;
@@ -85,11 +86,13 @@ export default function Header() {
     }
     return null
   })
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const searchContainerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const { isAuthenticated, logout } = useAuth()
   const { openCart, cartCount } = useCartDrawer()
+  const { open: openNotifications, unreadCount } = useNotifications()
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -107,6 +110,33 @@ export default function Header() {
       const token = localStorage.getItem('auth_token')
       const name = localStorage.getItem('user_display_name')
       setDisplayName(token ? (name || 'Кабінет') : null)
+      if (token) {
+        (async () => {
+          try {
+            let res = await fetch('https://api.sellpoint.pp.ua/api/User/GetUserByMyId', {
+              headers: { Authorization: `Bearer ${token}` },
+              cache: 'no-store',
+            }).catch(() => null as any)
+            if (!res || !res.ok) {
+              res = await fetch('/api/users/current', {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store',
+              })
+            }
+            if (res && res.ok) {
+              const u = await res.json()
+              const fullName = (typeof u?.fullName === 'string' && u.fullName.trim()) ? u.fullName : null
+              if (fullName) setDisplayName(fullName)
+              const avatarObj = u?.avatar
+              const url = (avatarObj && typeof avatarObj?.sourceUrl === 'string') ? avatarObj.sourceUrl : (avatarObj && typeof avatarObj?.compressedUrl === 'string' ? avatarObj.compressedUrl : null)
+              setAvatarUrl(url)
+              try { window.dispatchEvent(new CustomEvent('user:profile-updated', { detail: { fullName, avatarUrl: url } })) } catch {}
+            }
+          } catch {}
+        })()
+      } else {
+        setAvatarUrl(null)
+      }
     }
   }, [isAuthenticated])
 
@@ -323,21 +353,32 @@ export default function Header() {
           </Link>
           {mounted && (isAuthenticated ? (
               <Link href="/orders" onClick={(e) => handleProtectedClick(e, '/orders')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
-                <User className="h-6 w-6" />
+                {avatarUrl ? (
+                  <span className="relative h-6 w-6 overflow-hidden rounded-full">
+                    <img src={avatarUrl} alt={displayName || 'User'} className="h-6 w-6 object-cover" />
+                  </span>
+                ) : (
+                  <User className="h-6 w-6" />
+                )}
                 <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
           ) : (
             <>
               <Link href="/orders" onClick={(e) => handleProtectedClick(e, '/orders')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
-              <User className="h-6 w-6" />
-              <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
+                <User className="h-6 w-6" />
+                <span className="hidden text-[12px] xl:block">{displayName || 'Кабінет'}</span>
               </Link>
             </>
           ))}
-          <Link href="/notifications" onClick={(e) => handleProtectedClick(e, '/notifications')} className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+          <button onClick={() => { if (!isAuthenticated) { router.push('/auth/login'); return } openNotifications() }} className="relative hover:cursor-pointer flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <Bell className="h-6 w-6" />
+            {isAuthenticated && unreadCount > 0 && (
+              <span className="absolute -right-2 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-purple-600 px-1 text-[11px] font-semibold text-white">
+                {unreadCount}
+              </span>
+            )}
             <span className="hidden text-[12px] xl:block">Сповіщення</span>
-          </Link>
+          </button>
           <Link href="/favorites" onClick={(e) => handleProtectedClick(e, '/favorites')} className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <Heart className="h-6 w-6" />
             <span className="hidden text-[12px] xl:block">Обране</span>

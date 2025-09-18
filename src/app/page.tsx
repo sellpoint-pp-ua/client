@@ -2,9 +2,32 @@ import Header from '@/components/layout/Header'
 import Sidebar from '@/components/layout/Sidebar'
 import Carousel from '@/components/features/Carousel'
 import ApiProductCard from '@/components/features/ApiProductCard'
+import RandomProductsGrid from '@/components/features/RandomProductsGrid'
 import SiteFooter from '@/components/layout/SiteFooter'
 import Image from 'next/image'
 import Link from 'next/link'
+
+type BestCategoryConfig = {
+  id?: string
+  title?: string
+  img: string
+}
+
+// Configure up to 10 real category IDs here and provide custom images.
+// If id is provided, the name will be fetched from API and the card will link to /category/{id}.
+// If id is omitted, the static title is shown and the card is not clickable.
+const BEST_CATEGORY_CONFIG: BestCategoryConfig[] = [
+  { title: "Краса та здоров'я", img: 'https://cloud.sellpoint.pp.ua/media/category-photos/krasa-ta-zdorovya.webp', id: '68b076a78b56ead269c2ed6d' },
+  { title: 'Одяг та взуття', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/odyag-ta-vzuttya.webp', id: '68b076a78b56ead269c2ed6f' },
+  { title: "Техніка та електроніка", img: 'https://cloud.sellpoint.pp.ua/media/category-photos/tehnika-ta-elektronika.webp', id: '68b076a78b56ead269c2ed70' },
+  { title: 'Авто-, мото', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/avto-moto.webp', id: '68b076a78b56ead269c2ed72' },
+  { title: 'Аксесуари та прикраси', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/aksesuari-ta-prikrasi.webp', id: '68b076a78b56ead269c2ed74' },
+  { title: 'Дім і сад', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/dim-i-sad.webp', id: '68b076a78b56ead269c2ed6e' },
+  { title: 'Медикаменти та медичні товари', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/medikamenti-ta-medichni.webp', id: '68b076a78b56ead269c2ed77' },
+  { title: 'Товари для дітей', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/tovari-dlya-ditej.webp', id: '68b076a78b56ead269c2ed71' },
+  { title: 'Спорт і відпочинок', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/sport-i-vidpochinok.webp', id: '68b076a78b56ead269c2ed76' },
+  { title: 'Подарунки, хобі, книги', img: 'https://cloud.sellpoint.pp.ua/media/category-photos/podarunki-hobi-knigi.webp', id: '68b076a78b56ead269c2ed73' },
+]
 
 const homepageProducts = [
   { id: '1001', name: 'Смартфон Samsung Galaxy A54 6/128GB', price: 13999, hasDiscount: true, finalPrice: 12499, discountPercentage: 11, quantityStatus: 'В наявності', quantity: 7, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
@@ -19,7 +42,32 @@ const homepageProducts = [
   { id: '1010', name: 'Кавомашина DeLonghi Magnifica S', price: 16999, hasDiscount: true, finalPrice: 14999, discountPercentage: 12, quantityStatus: 'В наявності', quantity: 5, imageUrl: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
 ]
 
-export default function Home() {
+export default async function Home() {
+  // Fetch names for configured category IDs (if provided)
+  const configuredWithIds = BEST_CATEGORY_CONFIG.filter(c => c.id && c.id.trim().length > 0)
+  const idToName = new Map<string, string>()
+  if (configuredWithIds.length > 0) {
+    try {
+      const results = await Promise.all(
+        configuredWithIds.map(async (c) => {
+          try {
+            const res = await fetch(`https://api.sellpoint.pp.ua/api/Category/${c.id}`, { cache: 'no-store' })
+            if (!res.ok) return { id: c.id as string, name: c.title || '' }
+            const data = await res.json()
+            const name: string = typeof data?.name === 'string' ? data.name : (data?.name?.uk || c.title || 'Категорія')
+            return { id: c.id as string, name }
+          } catch {
+            return { id: c.id as string, name: c.title || '' }
+          }
+        })
+      )
+      for (const r of results) {
+        if (r.id && r.name) idToName.set(r.id, r.name)
+      }
+    } catch {
+      // ignore fetch errors, fall back to titles
+    }
+  }
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -78,61 +126,41 @@ export default function Home() {
             <section>
               <h2 className="mb-4 text-xl font-semibold text-gray-900">Найкращі категорії</h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10 gap-4">
-                {[
-                  { title: 'Смартфони', img: 'https://cloud.sellpoint.pp.ua/media/products-images/smartfony.webp' },
-                  { title: 'Одяг', img: 'https://cloud.sellpoint.pp.ua/media/products-images/odyag.webp' },
-                  { title: 'Здоров\'я', img: 'https://cloud.sellpoint.pp.ua/media/products-images/zdorovia.webp' },
-                  { title: 'Рюкзаки', img: 'https://cloud.sellpoint.pp.ua/media/products-images/rukzaki.webp' },
-                  { title: 'Комп\'ютери', img: 'https://cloud.sellpoint.pp.ua/media/products-images/computeri.webp' },
-                  { title: 'Дім і сад', img: 'https://cloud.sellpoint.pp.ua/media/products-images/dim_i_sad.webp' },
-                  { title: 'Кухня', img: 'https://cloud.sellpoint.pp.ua/media/products-images/kuhna.webp' },
-                  { title: 'Автозапчастини', img: 'https://cloud.sellpoint.pp.ua/media/products-images/avtozap.webp' },
-                  { title: 'Рибалка', img: 'https://cloud.sellpoint.pp.ua/media/products-images/ribalka.webp' },
-                  { title: 'Для школи', img: 'https://cloud.sellpoint.pp.ua/media/products-images/shkola.webp' },
-                ].map((c, idx) => (
-                  <div key={idx} className="flex flex-col items-center">
-                    <div className="w-full rounded-lg border border-gray-300 bg-white p-1 hover:shadow-md transition-shadow">
-                      <div className="aspect-square flex items-center justify-center rounded-lg bg-gray-50">
-                        <Image 
-                          src={c.img} 
-                          alt={c.title} 
-                          width={100}
-                          height={100}
-                          className="w-full h-full object-contain" 
-                        />
+                {BEST_CATEGORY_CONFIG.map((c, idx) => {
+                  const name = c.id ? (idToName.get(c.id) || c.title || 'Категорія') : (c.title || 'Категорія')
+                  const card = (
+                    <>
+                      <div className="w-full rounded-lg border border-gray-300 bg-white p-1 hover:shadow-md transition-shadow">
+                        <div className="aspect-square flex items-center justify-center rounded-lg bg-gray-50">
+                          <Image 
+                            src={c.img}
+                            alt={name}
+                            width={100}
+                            height={100}
+                            className="w-full h-full object-contain" 
+                          />
+                        </div>
                       </div>
+                      <p className="mt-2 text-center text-[12px] sm:text-xs text-gray-900 ">{name}</p>
+                    </>
+                  )
+                  return (
+                    <div key={c.id || idx} className="flex flex-col items-center">
+                      {c.id && c.id.trim().length > 0 ? (
+                        <Link href={`/category/${c.id}`} className="w-full">
+                          {card}
+                        </Link>
+                      ) : (
+                        card
+                      )}
                     </div>
-                    <p className="mt-2 text-center text-[12px] sm:text-xs text-gray-900 ">{c.title}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </section>
             
-            {/* Hardcoded products grid */}
-            <section className="mt-4">
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
-                {homepageProducts.map((p) => (
-                  <ApiProductCard
-                    key={p.id}
-                    id={p.id}
-                    name={p.name}
-                    price={p.price}
-                    hasDiscount={p.hasDiscount}
-                    finalPrice={p.finalPrice}
-                    discountPercentage={p.discountPercentage}
-                    quantityStatus={p.quantityStatus}
-                    quantity={p.quantity}
-                    imageUrl={p.imageUrl}
-                    
-                  />
-                ))}
-              </div>
-              <div className="mt-6 flex justify-center">
-                <button className="rounded-xl hover:cursor-pointer border-2 border-[#6282f5] px-6 py-1.5 text-[#4563d1] font-semibold hover:bg-[#4563d1]/10 transition-colors w-full mx-auto">
-                  Показати ще
-                </button>
-              </div>
-            </section>
+            {/* API-powered random products grid */}
+            <RandomProductsGrid />
           </div>
         </div>
       </main>

@@ -137,14 +137,12 @@ export default function UsersPage() {
       setIsLoading(true)
       setError(null)
       
-      // Отримуємо токен з localStorage
       const token = localStorage.getItem('auth_token')
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
       
-      // Додаємо токен авторизації якщо він є
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }
@@ -174,14 +172,12 @@ export default function UsersPage() {
     try {
       setIsLoadingBans(true)
       
-      // Отримуємо токен з localStorage
       const token = localStorage.getItem('auth_token')
       
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
       }
       
-      // Додаємо токен авторизації якщо він є
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }

@@ -21,7 +21,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
     useEffect(() => {
         console.log('AdminRoute: useEffect triggered, retryCount:', retryCount);
         const checkAdminAccess = async () => {
-            // Skip server-side execution
             if (typeof window === 'undefined') {
                 console.log('AdminRoute: Server-side execution, skipping');
                 setIsLoading(false)
@@ -30,7 +29,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
 
             console.log('AdminRoute: Starting admin access check')
 
-            // Check if user is authenticated first
             const isAuth = authService.isAuthenticated();
             console.log('AdminRoute: Local auth check:', isAuth);
             
@@ -40,7 +38,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 return
             }
 
-            // Also check auth with server
             try {
                 console.log('AdminRoute: Starting server auth check');
                 const isAuth = await authService.checkAuth()
@@ -58,7 +55,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 return
             }
 
-            // Log token info for debugging
             const token = authService.getToken()
             console.log('AdminRoute: Token exists:', !!token)
             if (token) {
@@ -67,7 +63,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 console.log('AdminRoute: Token ends with:', '...' + token.substring(token.length - 4))
             }
 
-            // Check dev bypass
             try {
                 const devBypass = localStorage.getItem('admin_dev_bypass')
                 console.log('AdminRoute: Dev bypass check:', devBypass);
@@ -86,7 +81,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 setError(null)
                 console.log(`AdminRoute: Attempting admin check (attempt ${retryCount + 1}/${maxRetries + 1})`)
                 
-                // Use authService to check admin status
                 console.log('AdminRoute: Starting admin status check');
                 const adminStatus = await authService.checkAdminStatus()
                 
@@ -115,7 +109,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                 console.error('AdminRoute: Error type:', typeof error);
                 console.error('AdminRoute: Error name:', errorName);
                 
-                // Handle specific error types
                 if (errorName === 'AbortError') {
                     console.warn('AdminRoute: Admin check timed out')
                     setError('Перевірка доступу зайняла забагато часу')
@@ -136,7 +129,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
                     setError('Помилка перевірки доступу')
                 }
 
-                // Retry logic
                 if (retryCount < maxRetries) {
                     console.log(`AdminRoute: Retrying admin check in 2 seconds... (${retryCount + 1}/${maxRetries})`)
                     setTimeout(() => {
@@ -181,7 +173,6 @@ export default function AdminRoute({ children, redirectTo = '/auth/login' }: Adm
         )
     }
 
-    // Only render children if user is confirmed as admin
     if (!isAdmin) {
         console.log('AdminRoute: User is not admin, not rendering children');
         return (

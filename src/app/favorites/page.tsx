@@ -150,7 +150,6 @@ export default function FavoritesPage() {
 		return () => { cancelled = true }
 	}, [userLists])
 
-	// Load products for selected custom list when chosen
 	useEffect(() => {
 		let cancelled = false
 		async function loadSelected() {
@@ -190,7 +189,6 @@ export default function FavoritesPage() {
 	const customLists = (userLists || []).filter(l => l.name !== 'Товари')
 	const selectedListEmpty = Boolean(selectedListId && (userLists?.find(l => l.id === selectedListId)?.products?.length || 0) === 0)
 
-	// Compute filtered/sorted products for default list
 	const filteredDefaultProducts = (() => {
 		let result = [...defaultProducts]
 		if (searchQuery.trim()) {
@@ -211,7 +209,6 @@ export default function FavoritesPage() {
 		return result
 	})()
 
-	// Filter/sort for selected list too
 	const filteredSelectedProducts = (() => {
 		let result = [...selectedListProducts]
 		if (searchQuery.trim()) {

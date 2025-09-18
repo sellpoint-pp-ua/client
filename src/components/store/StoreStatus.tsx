@@ -20,7 +20,6 @@ export default function StoreStatus({ onStoreCreated }: StoreStatusProps) {
     try {
       setIsLoading(true);
       
-      // Завантажуємо заявки користувача
       try {
         const requestsResponse = await storeService.getRequestByMyId();
         console.log('Store requests response:', requestsResponse);
@@ -29,18 +28,15 @@ export default function StoreStatus({ onStoreCreated }: StoreStatusProps) {
         if (response.success && response.data) {
           setStoreRequests(response.data as StoreRequest[]);
         } else if (Array.isArray(requestsResponse)) {
-          // Якщо API повертає масив безпосередньо
           setStoreRequests(requestsResponse as StoreRequest[]);
         } else {
           setStoreRequests([]);
         }
       } catch (error) {
-        // 404 означає що заявок немає - це нормально
         console.log('No store requests found (404 is expected for new users)');
         setStoreRequests([]);
       }
 
-      // Завантажуємо магазини користувача (якщо заявка схвалена)
       try {
         const storesResponse = await storeService.getStores();
         console.log('User stores response:', storesResponse);
@@ -109,8 +105,6 @@ export default function StoreStatus({ onStoreCreated }: StoreStatusProps) {
   const approvedRequest = storeRequests.find(req => req.status === 'approved');
   const rejectedRequest = storeRequests.find(req => req.status === 'rejected');
   
-  // Перевіряємо чи користувач може створити нову заявку
-  // Для звичайних користувачів перевіряємо тільки заявки
   const canCreateNewRequest = !pendingRequest && !approvedRequest;
 
   return (

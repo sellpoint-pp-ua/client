@@ -39,7 +39,6 @@ export default function AdminStoresPage() {
 
   const checkAuthAndLoadData = async () => {
     try {
-      // Перевіряємо чи користувач авторизований та є адміном
       const isAuthenticated = await authService.checkAuth();
       if (!isAuthenticated) {
         router.push('/auth/login');
@@ -64,11 +63,9 @@ export default function AdminStoresPage() {
       setIsLoading(true);
       setError(null);
       
-      // Завантажуємо всі магазини
       const storesResponse = await storeService.getStores();
       console.log('Stores response:', storesResponse);
       
-      // API повертає масив безпосередньо
       if (Array.isArray(storesResponse)) {
         setStores(storesResponse as Store[]);
       } else if (storesResponse.success && storesResponse.data) {
@@ -77,11 +74,9 @@ export default function AdminStoresPage() {
         setStores([]);
       }
 
-      // Завантажуємо всі заявки
       const requestsResponse = await storeService.getAllRequests();
       console.log('Requests response:', requestsResponse);
       
-      // API повертає масив безпосередньо
       if (Array.isArray(requestsResponse)) {
         setStoreRequests(requestsResponse as StoreRequest[]);
       } else if (requestsResponse.success && requestsResponse.data) {

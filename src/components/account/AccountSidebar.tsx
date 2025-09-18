@@ -9,6 +9,7 @@ import { authService } from '@/services/authService'
 
 export default function AccountSidebar() {
 	const [userName, setUserName] = useState<string>('')
+	const [userLogin, setUserLogin] = useState<string>('')
 	const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
 	const router = useRouter()
 	const pathname = usePathname()
@@ -23,20 +24,41 @@ export default function AccountSidebar() {
 		let cancelled = false
 		async function loadCurrentUser() {
 			try {
-				const res = await fetch('/api/users/current', {
+				let res = await fetch('https://api.sellpoint.pp.ua/api/User/GetUserByMyId', {
 					headers: { 'Authorization': `Bearer ${token}` },
 					cache: 'no-store',
-				})
-				if (!res.ok) return
+				}).catch(() => null as any)
+				if (!res || !res.ok) {
+					res = await fetch('/api/users/current', {
+						headers: { 'Authorization': `Bearer ${token}` },
+						cache: 'no-store',
+					})
+				}
+				if (!res || !res.ok) return
 				const u = await res.json()
 				if (cancelled) return
-				const name: string = typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || '')
-				const avatar: string | null = typeof u?.avatarUrl === 'string' ? u.avatarUrl : null
+				const name: string = (typeof u?.fullName === 'string' && u.fullName.trim())
+					? u.fullName
+					: (typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || ''))
+				const loginVal: string = typeof u?.username === 'string' ? u.username : ''
+				const avatarObj = u?.avatar
+				const avatar: string | null = (avatarObj && typeof avatarObj?.sourceUrl === 'string')
+					? avatarObj.sourceUrl
+					: (avatarObj && typeof avatarObj?.compressedUrl === 'string' ? avatarObj.compressedUrl : null)
 				setUserName(name)
+				setUserLogin(loginVal)
 				setAvatarUrl(avatar)
 			} catch {}
 		}
 		loadCurrentUser()
+		function handleProfileUpdated(e: any) {
+			try {
+				const detail = e?.detail || {}
+				if (detail?.fullName) setUserName(detail.fullName)
+				if (typeof detail?.avatarUrl === 'string') setAvatarUrl(detail.avatarUrl)
+			} catch {}
+		}
+		try { window.addEventListener('user:profile-updated', handleProfileUpdated as any) } catch {}
 		return () => { cancelled = true }
 	}, [])
 
@@ -69,7 +91,7 @@ export default function AccountSidebar() {
 				</div>
 				<div>
 					<p className="text-sm font-medium text-gray-900">{userName || 'Кабінет'}</p>
-					<p className="text-xs text-gray-500">&nbsp;</p>
+					<p className="text-xs text-gray-500">{userLogin ? `${userLogin}` : '\u00A0'}</p>
 				</div>
 			</div>
 
@@ -119,7 +141,7 @@ export default function AccountSidebar() {
 						</Link>
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+					<Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
 							<Settings className="h-5 w-5" />
 							<span>Налаштування</span>
 						</Link>

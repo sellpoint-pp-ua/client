@@ -21,7 +21,6 @@ export default function ForgotPasswordPage() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const router = useRouter();
 
-  // Clear tokens on page load to always start from email input
   useEffect(() => {
     clearTokens();
   }, [clearTokens]);
@@ -33,7 +32,6 @@ export default function ForgotPasswordPage() {
       [name]: value
     }));
     
-    // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -42,7 +40,6 @@ export default function ForgotPasswordPage() {
       });
     }
     
-    // Clear error messages when user starts typing
     if (error) {
       clearError();
     }
@@ -57,9 +54,7 @@ export default function ForgotPasswordPage() {
     if (!formData.login.trim()) {
       errors.login = 'Email або логін обов\'язковий';
     } else if (!formData.login.includes('@')) {
-      // If it doesn't contain @, it's a username, which is fine
     } else {
-      // Basic email validation
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       if (!emailRegex.test(formData.login)) {
         errors.login = 'Введіть коректний email';
@@ -133,7 +128,6 @@ export default function ForgotPasswordPage() {
 
     try {
       let codeToUse = accessCode || null;
-      // If we don't have a fresh accessCode, try to re-verify with the provided code
       if (!codeToUse && resetToken && formData.code.trim()) {
         const verifyResp = await verifyResetCode({ resetToken, code: formData.code.trim() });
         if (verifyResp && verifyResp.accessCode) {
@@ -145,7 +139,6 @@ export default function ForgotPasswordPage() {
         return;
       }
       await resetPassword({ password: formData.password, accessCode: codeToUse });
-      // On success, keep success message and show links/buttons to proceed or start over
     } catch (err) {
       console.error('Reset password failed:', err);
     }

@@ -4,7 +4,6 @@ const API_BASE_URL = 'https://api.sellpoint.pp.ua'
 
 export async function GET(request: NextRequest) {
   try {
-    // Отримуємо токен з заголовків запиту
     const authHeader = request.headers.get('authorization')
     
     if (!authHeader) {

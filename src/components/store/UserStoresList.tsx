@@ -55,9 +55,7 @@ export default function UserStoresList({ onStoreUpdated }: UserStoresListProps) 
         allStores = storesResponse.data as Store[];
       }
 
-      // Фільтруємо магазини за ID користувача
       const userStores = allStores.filter(store => {
-        // Перевіряємо чи користувач є власником магазину через roles
         return store.roles && store.roles[currentUserId] !== undefined;
       });
 
@@ -109,7 +107,7 @@ export default function UserStoresList({ onStoreUpdated }: UserStoresListProps) 
   }
 
   if (stores.length === 0) {
-    return null; // Не показуємо нічого, якщо немає магазинів
+    return null; 
   }
 
   return (

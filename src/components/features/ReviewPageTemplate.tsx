@@ -185,7 +185,6 @@ export default function ReviewPageTemplate({ productId }: Props) {
     return () => { cancelled = true }
   }, [productId])
 
-  // Load current user id for reaction highlighting
   useEffect(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
     if (!token) { setCurrentUserId(null); return }
@@ -431,12 +430,18 @@ function ReviewCard({ review, productId, initialLikeCount, initialDislikeCount, 
     let cancelled = false
     async function loadUser() {
       try {
-        const r = await fetch(`/api/users/${review.userId}`, { cache: 'no-store' })
-        if (!r.ok) return
+        let r = await fetch(`https://api.sellpoint.pp.ua/api/User/GetUserById?userId=${encodeURIComponent(review.userId)}`, { cache: 'no-store' }).catch(() => null as any)
+        if (!r || !r.ok) {
+          r = await fetch(`/api/users/${review.userId}`, { cache: 'no-store' })
+        }
+        if (!r || !r.ok) return
         const u = await r.json()
         if (cancelled) return
-        setUserName(typeof u?.username === 'string' ? u.username : 'Користувач')
-        setAvatarUrl(typeof u?.avatarUrl === 'string' ? u.avatarUrl : null)
+        const name = (typeof u?.fullName === 'string' && u.fullName.trim()) ? u.fullName : (typeof u?.username === 'string' ? u.username : 'Користувач')
+        const avatarObj = u?.avatar
+        const avatar = (avatarObj && typeof avatarObj?.sourceUrl === 'string') ? avatarObj.sourceUrl : (typeof u?.avatarUrl === 'string' ? u.avatarUrl : null)
+        setUserName(name)
+        setAvatarUrl(avatar)
       } catch {}
     }
     loadUser()

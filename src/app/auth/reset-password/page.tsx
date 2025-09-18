@@ -30,7 +30,6 @@ export default function ResetPasswordPage() {
       [name]: value
     }));
     
-    // Clear validation error when user starts typing
     if (validationErrors[name]) {
       setValidationErrors(prev => {
         const newErrors = { ...prev };
@@ -39,7 +38,6 @@ export default function ResetPasswordPage() {
       });
     }
     
-    // Clear error messages when user starts typing
     if (error) {
       clearError();
     }
@@ -74,7 +72,6 @@ export default function ResetPasswordPage() {
         code: formData.code 
       });
       
-      // Redirect to new password page after successful verification
       setTimeout(() => {
         const accessCode = response.accessCode || localStorage.getItem('password_reset_access_code');
         if (accessCode) {
