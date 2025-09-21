@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { authService } from '@/services/authService';
 import { storeService } from '@/services/storeService';
+import { userService } from '@/services/userService';
 import { Store } from '@/types/store';
 import { productService } from '@/services/productService';
 import { Product, ProductInput, ProductUpdateInput } from '@/types/product';
@@ -24,6 +25,65 @@ export default function StoreDashboardPage() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [members, setMembers] = useState<any[]>([]);
   const [isMembersLoading, setIsMembersLoading] = useState(false);
+  const [userDetails, setUserDetails] = useState<{[key: string]: any}>({});
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Функція для отримання назви ролі
+  const getRoleName = (role: any): string => {
+    if (typeof role === 'string') {
+      return role;
+    }
+    if (typeof role === 'number') {
+      switch (role) {
+        case 0: return 'Owner';
+        case 1: return 'Manager';
+        case 2: return 'Employee';
+        default: return 'Unknown';
+      }
+    }
+    return 'Unknown';
+  };
+
+  // Функція для отримання ролі користувача в магазині з members масиву
+  const getUserRoleInStore = (userId: string): string | null => {
+    const member = members.find(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) === userId);
+    if (!member) return null;
+    return member.roleName || getRoleName(member.role) || null;
+  };
+
+  // Функція для перевірки, чи може поточний користувач видалити іншого користувача
+  const canRemoveMember = (memberId: string): boolean => {
+    if (!currentUser || !currentUserId) return false;
+    
+    // Користувач не може видалити себе
+    if (memberId === currentUserId) return false;
+    
+    // Адміністратор може видалити будь-кого
+    if (currentUser.roles && currentUser.roles.includes('admin')) return true;
+    
+    // Власник магазину може видалити будь-кого
+    const currentUserRole = getUserRoleInStore(currentUserId);
+    console.log('Current user role:', currentUserRole, 'for user:', currentUserId);
+    if (currentUserRole === 'Owner') return true;
+    
+    // Менеджер не може видалити нікого
+    if (currentUserRole === 'Manager') {
+      return false;
+    }
+    
+    return false;
+  };
+
+  // Функція для перевірки, чи може користувач покинути магазин
+  const canLeaveStore = (memberId: string): boolean => {
+    if (!currentUser || !currentUserId) return false;
+    
+    // Тільки менеджери можуть покинути магазин
+    if (memberId !== currentUserId) return false;
+    
+    const currentUserRole = getUserRoleInStore(currentUserId);
+    return currentUserRole === 'Manager';
+  };
   const [memberIdInput, setMemberIdInput] = useState('');
   const [products, setProducts] = useState<Product[]>([]);
   const [isProductsLoading, setIsProductsLoading] = useState(false);
@@ -51,6 +111,8 @@ export default function StoreDashboardPage() {
   }>>([
     { category: 'Основні', features: [{ key: '', value: '' }] },
   ]);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+  const [accessCheckLoading, setAccessCheckLoading] = useState(true);
 
   useEffect(() => {
     if (storeId) {
@@ -58,17 +120,110 @@ export default function StoreDashboardPage() {
     }
   }, [storeId]);
 
+  // Відстежуємо зміни currentUserId та storeId для перевірки доступу
+  useEffect(() => {
+    console.log('useEffect triggered - storeId:', storeId, 'currentUserId:', currentUserId, 'isLoading:', isLoading, 'hasAccess:', hasAccess);
+    if (storeId && currentUserId && !isLoading && hasAccess === null) {
+      console.log('All conditions met, checking access for user:', currentUserId);
+      checkStoreAccess();
+    } else {
+      console.log('Conditions not met for access check - storeId:', !!storeId, 'currentUserId:', !!currentUserId, 'isLoading:', isLoading, 'hasAccess:', hasAccess);
+    }
+  }, [storeId, currentUserId, isLoading, hasAccess]);
+
   const checkAuthAndLoad = async () => {
     try {
       const isAuthenticated = await authService.checkAuth();
       if (!isAuthenticated) {
-        router.push('/auth/login');
+        console.log('User not authenticated, setting access to false');
+        setHasAccess(false);
+        setAccessCheckLoading(false);
         return;
       }
+      
+      // Спочатку завантажуємо користувача та магазин
       await Promise.all([loadStore(), loadCurrentUser()]);
+      
+      console.log('Auth and load completed, currentUserId:', currentUserId);
     } catch (err) {
       console.error('Error checking auth status:', err);
-      router.push('/auth/login');
+      console.log('Error in auth check, setting access to false');
+      setHasAccess(false);
+      setAccessCheckLoading(false);
+    }
+  };
+
+  const checkStoreAccess = async () => {
+    console.log('checkStoreAccess called with storeId:', storeId, 'currentUserId:', currentUserId);
+    
+    if (!storeId || !currentUserId) {
+      console.log('Missing storeId or currentUserId, setting access to false');
+      setHasAccess(false);
+      setAccessCheckLoading(false);
+      return;
+    }
+
+    try {
+      setAccessCheckLoading(true);
+      console.log('Starting access check...');
+      
+      // Спочатку перевіряємо, чи користувач є адміністратором
+      const isAdmin = await authService.checkAdminStatus();
+      console.log('Admin check result:', isAdmin);
+      
+      if (isAdmin) {
+        console.log('User is admin, granting access to store');
+        setHasAccess(true);
+        setAccessCheckLoading(false);
+        return;
+      }
+      
+      // Отримуємо список учасників магазину
+      console.log('Getting store members for storeId:', storeId);
+      const membersResponse = await storeService.getStoreMembers(storeId);
+      console.log('Store members response:', membersResponse);
+      
+      let isMember = false;
+      
+      // Перевіряємо, чи є поточний користувач серед учасників
+      if (membersResponse && typeof membersResponse === 'object') {
+        // Якщо це об'єкт з ролями (як повертає сервер)
+        if (membersResponse[currentUserId]) {
+          console.log('User found in store roles:', membersResponse[currentUserId]);
+          isMember = true;
+        } else {
+          // Якщо це масив учасників
+          let members: any[] = [];
+          if (Array.isArray(membersResponse)) {
+            members = membersResponse;
+          } else if (membersResponse.success && membersResponse.data) {
+            members = Array.isArray(membersResponse.data) ? membersResponse.data : [membersResponse.data];
+          } else if ('id' in membersResponse || 'memberId' in membersResponse) {
+            members = [membersResponse];
+          }
+          
+          console.log('Parsed members array:', members);
+          isMember = members.some(member => {
+            const memberId = member.memberId || member.id || member.userId || member.UserId || member.Id;
+            console.log('Checking member ID:', memberId, 'against current user:', currentUserId);
+            return String(memberId) === String(currentUserId);
+          });
+        }
+      }
+      
+      console.log('Current user ID:', currentUserId);
+      console.log('User has access to store:', isMember);
+      
+      // Встановлюємо результат перевірки доступу
+      setHasAccess(isMember);
+      
+    } catch (err) {
+      console.error('Error checking store access:', err);
+      console.log('Setting access to false due to error');
+      setHasAccess(false);
+    } finally {
+      console.log('Setting accessCheckLoading to false');
+      setAccessCheckLoading(false);
     }
   };
 
@@ -101,9 +256,56 @@ export default function StoreDashboardPage() {
     if (!storeId) return;
     try {
       setIsMembersLoading(true);
+      console.log('Loading members for storeId:', storeId);
       const response = await storeService.getStoreMembers(storeId);
+      console.log('Members response:', response);
+      
       let list: any[] = [];
-      if (Array.isArray(response)) {
+      
+      // Якщо це об'єкт з ролями (як повертає сервер)
+      if (response && typeof response === 'object' && !Array.isArray(response)) {
+        // Перетворюємо об'єкт ролей в масив учасників
+        list = Object.entries(response).map(([userId, role]) => ({
+          id: userId,
+          userId: userId,
+          memberId: userId,
+          role: role,
+          roleName: getRoleName(role)
+        }));
+        console.log('Converted roles to members list:', list);
+        
+        // Завантажуємо деталі користувачів з обробкою помилок
+        const userDetailsPromises = list.map(async (member) => {
+          try {
+            console.log(`Loading user details for ${member.userId}`);
+            const userDetails = await userService.getUserById(member.userId);
+            console.log(`Successfully loaded user details for ${member.userId}:`, userDetails);
+            return { userId: member.userId, details: userDetails };
+          } catch (err) {
+            console.error(`Error loading user details for ${member.userId}:`, err);
+            // Повертаємо базову інформацію навіть якщо API не працює
+            return { 
+              userId: member.userId, 
+              details: {
+                id: member.userId,
+                username: `User ${member.userId.slice(-4)}`,
+                fullName: `User ${member.userId.slice(-4)}`,
+                email: null,
+                avatar: null
+              }
+            };
+          }
+        });
+        
+        const userDetailsResults = await Promise.all(userDetailsPromises);
+        const userDetailsMap: {[key: string]: any} = {};
+        userDetailsResults.forEach(({ userId, details }) => {
+          userDetailsMap[userId] = details;
+        });
+        
+        console.log('Final user details map:', userDetailsMap);
+        setUserDetails(userDetailsMap);
+      } else if (Array.isArray(response)) {
         list = response as any[];
       } else if (response && typeof response === 'object') {
         if (response.success && response.data) {
@@ -112,6 +314,7 @@ export default function StoreDashboardPage() {
           list = [response as any];
         }
       }
+      
       setMembers(list);
     } catch (err) {
       console.error('Error loading members:', err);
@@ -124,8 +327,12 @@ export default function StoreDashboardPage() {
   const loadCurrentUser = async () => {
     try {
       const user = await storeService.getCurrentUser();
-      const id = user?.id || user?.userId || user?.Id || null;
+      console.log('Raw user response:', user);
+      const id = user?.id || user?.userId || user?.Id || user?.ID || user?._id;
+      console.log('Extracted user ID:', id);
+      console.log('Setting currentUserId to:', id);
       setCurrentUserId(id);
+      setCurrentUser(user);
     } catch (e) {
       console.error('Failed to get current user:', e);
       setCurrentUserId(null);
@@ -256,7 +463,40 @@ export default function StoreDashboardPage() {
     try {
       await storeService.addMemberToStore(trimmed, 1);
       setMemberIdInput('');
-      await loadMembers();
+      
+      // Оновлюємо локальний стан додавши нового учасника з правильною роллю
+      const newMember = {
+        id: trimmed,
+        userId: trimmed,
+        memberId: trimmed,
+        role: 1, // Manager
+        roleName: 'Manager'
+      };
+      
+      setMembers(prev => [...prev, newMember]);
+      
+      // Завантажуємо деталі нового користувача
+      try {
+        const userDetails = await userService.getUserById(trimmed);
+        setUserDetails(prev => ({
+          ...prev,
+          [trimmed]: userDetails
+        }));
+      } catch (err) {
+        console.error(`Error loading user details for ${trimmed}:`, err);
+        // Додаємо fallback дані
+        setUserDetails(prev => ({
+          ...prev,
+          [trimmed]: {
+            id: trimmed,
+            username: `User ${trimmed.slice(-4)}`,
+            fullName: `User ${trimmed.slice(-4)}`,
+            email: null,
+            avatar: null
+          }
+        }));
+      }
+      
       alert('Користувача додано як менеджера');
     } catch (err) {
       console.error('Error adding member:', err);
@@ -268,11 +508,45 @@ export default function StoreDashboardPage() {
     if (!confirm('Видалити учасника з магазину?')) return;
     try {
       await storeService.removeMemberFromStore(memberId);
-      await loadMembers();
+      
+      // Оновлюємо локальний стан видаливши учасника
+      setMembers(prev => prev.filter(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) !== memberId));
+      
+      // Видаляємо деталі користувача
+      setUserDetails(prev => {
+        const newDetails = { ...prev };
+        delete newDetails[memberId];
+        return newDetails;
+      });
+      
       alert('Учасника видалено');
     } catch (err) {
       console.error('Error removing member:', err);
       alert('Не вдалося видалити учасника');
+    }
+  };
+
+  const handleLeaveStore = async (memberId: string) => {
+    if (!confirm('Ви впевнені, що хочете покинути цей магазин?')) return;
+    try {
+      await storeService.removeMemberFromStore(memberId);
+      
+      // Оновлюємо локальний стан видаливши учасника
+      setMembers(prev => prev.filter(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) !== memberId));
+      
+      // Видаляємо деталі користувача
+      setUserDetails(prev => {
+        const newDetails = { ...prev };
+        delete newDetails[memberId];
+        return newDetails;
+      });
+      
+      alert('Ви покинули магазин');
+      // Перенаправляємо на головну сторінку магазинів
+      router.push('/store');
+    } catch (err) {
+      console.error('Error leaving store:', err);
+      alert('Не вдалося покинути магазин');
     }
   };
 
@@ -376,6 +650,41 @@ export default function StoreDashboardPage() {
     <div className="rounded-xl bg-white p-10 shadow-sm border text-center text-gray-600">{title} — розділ у розробці</div>
   );
 
+  const AccessDeniedPage = () => (
+    <div className="flex min-h-screen flex-col bg-gray-100">
+      <Header />
+      <main className="flex-1 bg-gray-100">
+        <div className="mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8 py-8">
+          <div className="text-center">
+            <div className="text-gray-400 text-6xl mb-4">🚫</div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Доступ обмежено</h3>
+            <p className="text-gray-500 mb-6">
+              На жаль, у вас немає доступу до даного магазину. 
+              Ви можете переглядати тільки ті магазини, в яких є учасником.
+            </p>
+            <div className="space-y-3">
+              <button 
+                onClick={() => router.push('/store')} 
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-[#4563d1] px-4 py-2 text-sm text-[#3046b4] hover:bg-[#4563d1]/10 transition-colors"
+              >
+                Повернутися до моїх магазинів
+              </button>
+              <div className="text-sm text-gray-400">
+                або
+              </div>
+              <button 
+                onClick={() => router.push('/requests')} 
+                className="inline-flex items-center gap-2 rounded-xl border-2 border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              >
+                Подати заявку на створення магазину
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+
   const roleBadge = (role?: number) => {
     if (role === 0) return <span className="px-2 py-0.5 rounded bg-yellow-100 text-yellow-800 text-xs">Власник</span>;
     if (role === 1) return <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-800 text-xs">Менеджер</span>;
@@ -410,17 +719,65 @@ export default function StoreDashboardPage() {
           <div className="divide-y">
             {members.map((m: any, idx: number) => {
               const memberId = m.memberId || m.id || m.userId || m.UserId || m.Id;
-              const display = m.fullName || m.name || m.email || m.login || memberId || `member-${idx}`;
+              const memberDetails = userDetails[memberId];
+              const display = memberDetails?.fullName || memberDetails?.name || memberDetails?.email || memberDetails?.username || memberId || `member-${idx}`;
               const roleValue: number | undefined = typeof m.role === 'number' ? m.role : (store?.roles && memberId && store.roles[memberId] !== undefined ? store.roles[memberId] : undefined);
+              const roleName = m.roleName || getRoleName(m.role) || getRoleName(roleValue);
+              const canRemove = canRemoveMember(memberId);
+              const isCurrentUser = memberId === currentUserId;
+              
               return (
                 <div key={`${memberId}-${idx}`} className="py-3 flex items-center justify-between">
-                  <div>
-                    <div className="font-medium text-gray-900 text-sm">{display}</div>
-                    {memberId && <div className="text-xs text-gray-500">ID: {memberId}</div>}
+                  <div className="flex items-center gap-3">
+                    {memberDetails?.avatar?.sourceUrl ? (
+                      <Image
+                        src={memberDetails.avatar.sourceUrl}
+                        alt={display}
+                        width={40}
+                        height={40}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center">
+                        <span className="text-gray-600 text-sm font-medium">
+                          {display?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                    )}
+                    <div>
+                      <div className="font-medium text-gray-900 text-sm">{display}</div>
+                      {memberDetails?.email && <div className="text-xs text-gray-500">{memberDetails.email}</div>}
+                      {roleName && <div className="text-xs text-blue-600">Роль: {roleName}</div>}
+                      {isCurrentUser && <div className="text-xs text-green-600">(Ви)</div>}
+                    </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {roleBadge(roleValue)}
-                    <button onClick={() => handleRemoveMember(String(memberId))} className="text-sm text-red-600 hover:text-red-800">Видалити</button>
+                    {isCurrentUser ? (
+                      canLeaveStore(memberId) ? (
+                        <button 
+                          onClick={() => handleLeaveStore(String(memberId))} 
+                          className="text-sm text-orange-600 hover:text-orange-800"
+                        >
+                          Покинути магазин
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-400">
+                          Власник не може покинути магазин
+                        </span>
+                      )
+                    ) : canRemove ? (
+                      <button 
+                        onClick={() => handleRemoveMember(String(memberId))} 
+                        className="text-sm text-red-600 hover:text-red-800"
+                      >
+                        Видалити
+                      </button>
+                    ) : (
+                      <span className="text-sm text-gray-400">
+                        Немає прав для видалення
+                      </span>
+                    )}
                   </div>
                 </div>
               );
@@ -958,7 +1315,10 @@ export default function StoreDashboardPage() {
     </div>
   );
 
+  console.log('Rendering - isLoading:', isLoading, 'accessCheckLoading:', accessCheckLoading, 'hasAccess:', hasAccess);
+
   if (isLoading) {
+    console.log('Showing loading screen');
     return (
       <div className="flex min-h-screen flex-col bg-gray-100">
         <Header />
@@ -971,6 +1331,30 @@ export default function StoreDashboardPage() {
       </div>
     );
   }
+
+  // Перевіряємо доступ до магазину
+  if (hasAccess === false) {
+    console.log('Showing access denied page');
+    return <AccessDeniedPage />;
+  }
+
+  // Якщо доступ ще не перевірений, показуємо завантаження
+  if (hasAccess === null || accessCheckLoading) {
+    console.log('Showing access check loading');
+    return (
+      <div className="flex min-h-screen flex-col bg-gray-100">
+        <Header />
+        <main className="flex-1 bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Перевірка доступу до магазину...</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  console.log('Showing main store page');
 
   if (error || !store) {
     return (

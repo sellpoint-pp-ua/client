@@ -64,7 +64,7 @@ export default function AdminStoresPage() {
       setError(null);
       
       const storesResponse = await storeService.getStores();
-      console.log('Stores response:', storesResponse);
+      console.log('Admin stores response:', storesResponse);
       
       if (Array.isArray(storesResponse)) {
         setStores(storesResponse as Store[]);
@@ -140,7 +140,13 @@ export default function AdminStoresPage() {
     }
 
     try {
-      await storeService.deleteStore(storeId);
+      console.log('Attempting to delete store with ID:', storeId);
+      console.log('Store ID type:', typeof storeId);
+      console.log('Store ID length:', storeId.length);
+      
+      const result = await storeService.deleteStore(storeId);
+      console.log('Delete store result:', result);
+      
       await loadData();
       alert('Магазин успішно видалено');
     } catch (err) {

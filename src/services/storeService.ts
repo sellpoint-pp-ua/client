@@ -53,8 +53,10 @@ class StoreService {
   private getAuthHeaders(): Record<string, string> {
     const token = this.getToken();
     if (!token) {
+      logger.error('StoreService: No authentication token available');
       throw new Error('No authentication token available');
     }
+    logger.info('StoreService: Using token for auth, length:', token.length);
     return {
       'Authorization': `Bearer ${token}`,
     };
@@ -86,11 +88,16 @@ class StoreService {
 
 
   async deleteStore(storeId: string): Promise<StoreResponse> {
-    return this.makeRequest<StoreResponse>(`/api/Store/DeleteStore?storeId=${storeId}`, {
+    logger.info('StoreService: deleteStore called with storeId:', storeId);
+    const url = `/api/Store/DeleteStore?storeId=${encodeURIComponent(storeId)}`;
+    logger.info('StoreService: deleteStore URL:', url);
+    
+    return this.makeRequest<StoreResponse>(url, {
       method: 'DELETE',
       headers: this.getAuthHeaders(),
     });
   }
+
 
   async getAllRequests(): Promise<StoreListResponse> {
     return this.makeRequest<StoreListResponse>('/api/Store/GetAllRequests', {
