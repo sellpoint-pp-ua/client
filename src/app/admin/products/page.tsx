@@ -55,8 +55,24 @@ export default function AdminProductsPage() {
           const nameResponse = await fetch(`https://api.sellpoint.pp.ua/api/Product/search?name=${encodeURIComponent(query)}`);
           if (nameResponse.ok) {
             const nameResults = await nameResponse.json();
+            console.log('Name search results:', nameResults); // Додаємо логування для дебагу
             if (Array.isArray(nameResults)) {
-              results = [...results, ...nameResults];
+              // Адаптуємо структуру даних під наш тип SearchProduct
+              const adaptedResults = nameResults.map(product => ({
+                id: product.productId || product.id,
+                name: product.highlighted || product.name || '',
+                categoryId: product.categoryId,
+                categoryName: product.categoryName
+              }));
+              
+              // Фільтруємо результати з валідним ID
+              const validResults = adaptedResults.filter(product => 
+                product && 
+                product.id && 
+                product.id.toString().trim() !== ''
+              );
+              console.log('Filtered name results:', validResults); // Додаємо логування для дебагу
+              results = [...results, ...validResults];
             }
           }
         } catch (error) {
@@ -82,7 +98,23 @@ export default function AdminProductsPage() {
           if (categoryResponse.ok) {
             const categoryData = await categoryResponse.json();
             const categoryResults = Array.isArray(categoryData?.products) ? categoryData.products : Array.isArray(categoryData) ? categoryData : [];
-            categoryResults.forEach((product: SearchProduct) => {
+            console.log('Category search results:', categoryResults); // Додаємо логування для дебагу
+            // Адаптуємо структуру даних під наш тип SearchProduct
+            const adaptedCategoryResults = categoryResults.map((product: any) => ({
+              id: product.productId || product.id,
+              name: product.highlighted || product.name || '',
+              categoryId: product.categoryId,
+              categoryName: product.categoryName
+            }));
+            
+            // Фільтруємо результати з валідним ID
+            const validCategoryResults = adaptedCategoryResults.filter((product: SearchProduct) => 
+              product && 
+              product.id && 
+              product.id.toString().trim() !== ''
+            );
+            console.log('Filtered category results:', validCategoryResults); // Додаємо логування для дебагу
+            validCategoryResults.forEach((product: SearchProduct) => {
               if (!results.find(r => r.id === product.id)) {
                 results.push(product);
               }
@@ -299,27 +331,38 @@ export default function AdminProductsPage() {
             ) : searchResults.length > 0 ? (
               <div className="space-y-4">
                 {searchResults.map((product) => (
-                  <div key={product.id} className="bg-white rounded-lg shadow border p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{product.name}</h3>
-                        <p className="text-sm text-gray-600">ID: {product.id}</p>
-                        {product.categoryId && (
-                          <p className="text-xs text-gray-500">Категорія ID: {product.categoryId}</p>
-                        )}
-                        {product.categoryName && (
-                          <p className="text-xs text-gray-500">Категорія: {product.categoryName}</p>
-                        )}
+                    <div key={product.id} className="bg-white rounded-lg shadow border p-4 hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900">
+                              {product.name && product.name.trim() !== '' ? product.name : `Продукт`}
+                            </h3>
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-mono rounded">
+                              ID: {product.id}
+                            </span>
+                          </div>
+                          {product.categoryId && (
+                            <p className="text-xs text-gray-500">Категорія ID: {product.categoryId}</p>
+                          )}
+                          {product.categoryName && (
+                            <p className="text-xs text-gray-500">Категорія: {product.categoryName}</p>
+                          )}
+                          {(!product.name || product.name.trim() === '') && (
+                            <p className="text-xs text-orange-500 mt-1">⚠️ Назва продукту відсутня</p>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <Link
+                            href={`/product/${product.id}`}
+                            className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors inline-block"
+                          >
+                            Деталі
+                          </Link>
+                        </div>
                       </div>
-                      <Link
-                        href={`/admin/products/${product.id}`}
-                        className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition-colors"
-                      >
-                        Переглянути
-                      </Link>
                     </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             ) : (searchQuery.trim().length >= 2 || categoryIdInput.trim().length >= 2) ? (
               <div className="text-center py-8">
