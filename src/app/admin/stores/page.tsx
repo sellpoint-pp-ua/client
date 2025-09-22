@@ -11,10 +11,12 @@ import {
   XCircleIcon,
   TrashIcon,
   CalendarIcon,
-  UserIcon
+  UserIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { storeService } from '@/services/storeService';
 import { authService } from '@/services/authService';
+import { userService } from '@/services/userService';
 import { Store, StoreRequest } from '@/types/store';
 
 type FilterType = 'all' | 'pending' | 'approved' | 'rejected';
@@ -31,6 +33,11 @@ export default function AdminStoresPage() {
   const [rejectReason, setRejectReason] = useState('');
   const [isRejecting, setIsRejecting] = useState(false);
   const [statusFilter, setStatusFilter] = useState<FilterType>('all');
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [isStoreModalOpen, setIsStoreModalOpen] = useState(false);
+  const [storeUsers, setStoreUsers] = useState<any[]>([]);
+  const [isLoadingStoreUsers, setIsLoadingStoreUsers] = useState(false);
+  const [userDetails, setUserDetails] = useState<{[key: string]: any}>({});
   const router = useRouter();
 
   useEffect(() => {
@@ -132,6 +139,109 @@ export default function AdminStoresPage() {
     } finally {
       setIsRejecting(false);
     }
+  };
+
+  const openStoreModal = async (store: Store) => {
+    setSelectedStore(store);
+    setIsStoreModalOpen(true);
+    await fetchStoreUsers(store.id);
+  };
+
+  const closeStoreModal = () => {
+    setSelectedStore(null);
+    setIsStoreModalOpen(false);
+    setStoreUsers([]);
+    setUserDetails({});
+  };
+
+  const fetchStoreUsers = async (storeId: string) => {
+    try {
+      setIsLoadingStoreUsers(true);
+      console.log('Loading store members for storeId:', storeId);
+      
+      const response = await storeService.getStoreMembers(storeId);
+      console.log('Store members response:', response);
+      
+      let members: any[] = [];
+      
+      // Якщо це об'єкт з ролями (як повертає сервер)
+      if (response && typeof response === 'object' && !Array.isArray(response)) {
+        // Перетворюємо об'єкт ролей в масив учасників
+        members = Object.entries(response).map(([userId, role]) => ({
+          id: userId,
+          userId: userId,
+          memberId: userId,
+          role: role,
+          roleName: getRoleName(role)
+        }));
+        console.log('Converted roles to members list:', members);
+      } else if (Array.isArray(response)) {
+        members = response as any[];
+      } else if (response && typeof response === 'object') {
+        if (response.success && response.data) {
+          members = Array.isArray(response.data) ? response.data : [response.data];
+        } else if ('id' in response || 'memberId' in response) {
+          members = [response as any];
+        }
+      }
+      
+      setStoreUsers(members);
+      
+      // Завантажуємо деталі користувачів
+      if (members.length > 0) {
+        const userDetailsPromises = members.map(async (member) => {
+          try {
+            console.log(`Loading user details for ${member.userId}`);
+            const userDetails = await userService.getUserById(member.userId);
+            console.log(`Successfully loaded user details for ${member.userId}:`, userDetails);
+            return { userId: member.userId, details: userDetails };
+          } catch (err) {
+            console.error(`Error loading user details for ${member.userId}:`, err);
+            // Повертаємо базову інформацію навіть якщо API не працює
+            return { 
+              userId: member.userId, 
+              details: {
+                id: member.userId,
+                username: `User ${member.userId.slice(-4)}`,
+                fullName: `User ${member.userId.slice(-4)}`,
+                email: null,
+                avatar: null
+              }
+            };
+          }
+        });
+        
+        const userDetailsResults = await Promise.all(userDetailsPromises);
+        const userDetailsMap: {[key: string]: any} = {};
+        userDetailsResults.forEach(({ userId, details }) => {
+          userDetailsMap[userId] = details;
+        });
+        
+        console.log('Final user details map:', userDetailsMap);
+        setUserDetails(userDetailsMap);
+      }
+    } catch (err) {
+      console.error('Error fetching store users:', err);
+      setStoreUsers([]);
+    } finally {
+      setIsLoadingStoreUsers(false);
+    }
+  };
+
+  // Функція для отримання назви ролі
+  const getRoleName = (role: any): string => {
+    if (typeof role === 'string') {
+      return role;
+    }
+    if (typeof role === 'number') {
+      switch (role) {
+        case 0: return 'Owner';
+        case 1: return 'Manager';
+        case 2: return 'Employee';
+        default: return 'Unknown';
+      }
+    }
+    return 'Unknown';
   };
 
   const handleDeleteStore = async (storeId: string) => {
@@ -467,11 +577,11 @@ export default function AdminStoresPage() {
                         <td className="px-4 py-3 text-sm font-medium">
                           <div className="flex items-center space-x-2">
                             <button
-                              onClick={() => router.push(`/stores/${store.id}`)}
+                              onClick={() => openStoreModal(store)}
                               className="text-blue-600 hover:text-blue-900 flex items-center"
                             >
                               <EyeIcon className="h-4 w-4 mr-1" />
-                              Переглянути
+                              Деталі
                             </button>
                             
                                 <button
@@ -694,6 +804,144 @@ export default function AdminStoresPage() {
                   disabled={isRejecting}
                 >
                   {isRejecting ? 'Відхилення...' : 'Відхилити заявку'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Модальне вікно з детальною інформацією про магазин */}
+      {isStoreModalOpen && selectedStore && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Детальна інформація про магазин
+                </h3>
+                <button
+                  onClick={closeStoreModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Основна інформація */}
+                <div className="flex items-center space-x-4">
+                  <div className="flex-shrink-0 h-16 w-16">
+                    {selectedStore.avatar ? (
+                      <img
+                        src={selectedStore.avatar.compressedUrl || selectedStore.avatar.sourceUrl}
+                        alt={selectedStore.name}
+                        className="h-16 w-16 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div className="h-16 w-16 rounded-lg bg-gray-300 flex items-center justify-center">
+                        <BuildingStorefrontIcon className="h-8 w-8 text-gray-600" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="text-xl font-semibold text-gray-900">
+                      {selectedStore.name}
+                    </h4>
+                    <p className="text-sm text-gray-500">ID: {selectedStore.id}</p>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                      {getPlanName(selectedStore.plan)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Дата створення */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Дата створення</h5>
+                  <div className="flex items-center">
+                    <CalendarIcon className="h-4 w-4 text-gray-400 mr-2" />
+                    <span className="text-sm text-gray-900">{formatDate(selectedStore.createdAt)}</span>
+                  </div>
+                </div>
+
+                {/* Користувачі магазину */}
+                <div>
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">Користувачі магазину</h5>
+                  {isLoadingStoreUsers ? (
+                    <div className="text-center py-4">
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <p className="mt-2 text-sm text-gray-600">Завантаження...</p>
+                    </div>
+                  ) : storeUsers.length > 0 ? (
+                    <div className="space-y-3">
+                      {storeUsers.map((user) => {
+                        const roleName = user.roleName || getRoleName(user.role);
+                        const roleBadgeColor = user.role === 0 ? 'bg-yellow-100 text-yellow-800' : 
+                                             user.role === 1 ? 'bg-blue-100 text-blue-800' : 
+                                             'bg-gray-100 text-gray-800';
+                        
+                        const memberDetails = userDetails[user.userId];
+                        const displayName = memberDetails?.fullName || memberDetails?.name || memberDetails?.username || `User ${user.userId.slice(-4)}`;
+                        const email = memberDetails?.email;
+                        const avatar = memberDetails?.avatar;
+                        
+                        return (
+                          <div key={user.id} className="bg-gray-50 border border-gray-200 rounded-md p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="flex-shrink-0 h-10 w-10">
+                                  {avatar?.sourceUrl ? (
+                                    <img
+                                      src={avatar.sourceUrl}
+                                      alt={displayName}
+                                      className="h-10 w-10 rounded-full object-cover"
+                                    />
+                                  ) : (
+                                    <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                      <span className="text-gray-600 text-sm font-medium">
+                                        {displayName?.charAt(0)?.toUpperCase() || '?'}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center space-x-2">
+                                    <p className="text-sm font-medium text-gray-900 truncate">
+                                      {displayName}
+                                    </p>
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${roleBadgeColor}`}>
+                                      {roleName}
+                                    </span>
+                                  </div>
+                                  <div className="mt-1">
+                                    <p className="text-xs text-gray-500 truncate">
+                                      ID: {user.id}
+                                    </p>
+                                    {email && (
+                                      <p className="text-xs text-gray-500 truncate">
+                                        {email}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500">Користувачі не знайдені</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={closeStoreModal}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Закрити
                 </button>
               </div>
             </div>
