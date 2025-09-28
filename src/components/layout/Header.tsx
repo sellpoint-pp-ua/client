@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Search, User, Bell, Heart, ShieldUser, ShoppingCart } from 'lucide-react'
+import { Search, User, Bell, Heart, ShieldUser, ShoppingCart, Ambulance } from 'lucide-react'
 import Link from 'next/link'
 import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import { useRouter } from 'next/navigation'
@@ -93,6 +93,7 @@ export default function Header() {
   const { isAuthenticated, logout } = useAuth()
   const { openCart, cartCount } = useCartDrawer()
   const { open: openNotifications, unreadCount } = useNotifications()
+  const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -125,17 +126,35 @@ export default function Header() {
             }
             if (res && res.ok) {
               const u = await res.json()
-              const fullName = (typeof u?.fullName === 'string' && u.fullName.trim()) ? u.fullName : null
-              if (fullName) setDisplayName(fullName)
+              const part = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+              const displayNameTwo = [part(u?.lastName), part(u?.firstName)].filter(Boolean).join(' ').trim() || null
+              if (displayNameTwo) setDisplayName(displayNameTwo)
               const avatarObj = u?.avatar
               const url = (avatarObj && typeof avatarObj?.sourceUrl === 'string') ? avatarObj.sourceUrl : (avatarObj && typeof avatarObj?.compressedUrl === 'string' ? avatarObj.compressedUrl : null)
               setAvatarUrl(url)
-              try { window.dispatchEvent(new CustomEvent('user:profile-updated', { detail: { fullName, avatarUrl: url } })) } catch {}
+              try {
+                const eventFullName = [part(u?.lastName), part(u?.firstName), part(u?.middleName)].filter(Boolean).join(' ').trim() || displayNameTwo
+                window.dispatchEvent(new CustomEvent('user:profile-updated', { detail: { fullName: eventFullName, avatarUrl: url } }))
+              } catch {}
             }
           } catch {}
         })()
+        ;(async () => {
+          try {
+            const r = await fetch('https://api.sellpoint.pp.ua/api/Auth/check-admin', {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${token}`, 'accept': '*/*' },
+              cache: 'no-store',
+            }).catch(() => null as any)
+            const ok = !!(r && (r.status === 200 || r.status === 204))
+            setIsAdmin(ok)
+          } catch {
+            setIsAdmin(false)
+          }
+        })()
       } else {
         setAvatarUrl(null)
+        setIsAdmin(false)
       }
     }
   }, [isAuthenticated])
@@ -346,11 +365,13 @@ export default function Header() {
         </div>
 
         {/* Utility Icons */}
-<div className="flex shrink-0 items-center gap-6 mt-1">
-          <Link href="/admin" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
-            <ShieldUser className="h-6 w-6" />
-            <span className="hidden text-[12px] xl:block">Адмін панель</span>
-          </Link>
+        <div className="flex shrink-0 items-center gap-6 mt-1">
+          {isAdmin && (
+            <Link href="/admin" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+              <ShieldUser className="h-6 w-6" />
+              <span className="hidden text-[12px] xl:block">Адмін панель</span>
+            </Link>
+          )}
           {mounted && (isAuthenticated ? (
               <Link href="/orders" onClick={(e) => handleProtectedClick(e, '/orders')} className="flex flex-col items-center text-center text-gray-700 hover:text-[#4563d1]">
                 {avatarUrl ? (
@@ -383,12 +404,17 @@ export default function Header() {
             <Heart className="h-6 w-6" />
             <span className="hidden text-[12px] xl:block">Обране</span>
           </Link>
+          {mounted && !isAuthenticated && (
+            <Link href="/orders/track" className="flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
+              <Ambulance className="h-6 w-6" />
+              <span className="hidden text-[12px] xl:block">Відстеження</span>
+            </Link>
+          )}
           <button onClick={() => {
-            if (!isAuthenticated) { router.push('/auth/login'); return }
             openCart()
           }} className="relative hover:cursor-pointer flex flex-col items-center text-gray-700 hover:text-[#4563d1]">
             <ShoppingCart className="h-6 w-6" />
-            {isAuthenticated && cartCount > 0 && (
+            {cartCount > 0 && (
               <span className="absolute -right-2 -top-1 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-semibold text-white">
                 {cartCount}
               </span>

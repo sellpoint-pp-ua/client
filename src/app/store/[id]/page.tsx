@@ -28,7 +28,6 @@ export default function StoreDashboardPage() {
   const [userDetails, setUserDetails] = useState<{[key: string]: any}>({});
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Функція для отримання назви ролі
   const getRoleName = (role: any): string => {
     if (typeof role === 'string') {
       return role;
@@ -44,29 +43,23 @@ export default function StoreDashboardPage() {
     return 'Unknown';
   };
 
-  // Функція для отримання ролі користувача в магазині з members масиву
   const getUserRoleInStore = (userId: string): string | null => {
     const member = members.find(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) === userId);
     if (!member) return null;
     return member.roleName || getRoleName(member.role) || null;
   };
 
-  // Функція для перевірки, чи може поточний користувач видалити іншого користувача
   const canRemoveMember = (memberId: string): boolean => {
     if (!currentUser || !currentUserId) return false;
     
-    // Користувач не може видалити себе
     if (memberId === currentUserId) return false;
     
-    // Адміністратор може видалити будь-кого
     if (currentUser.roles && currentUser.roles.includes('admin')) return true;
     
-    // Власник магазину може видалити будь-кого
     const currentUserRole = getUserRoleInStore(currentUserId);
     console.log('Current user role:', currentUserRole, 'for user:', currentUserId);
     if (currentUserRole === 'Owner') return true;
     
-    // Менеджер не може видалити нікого
     if (currentUserRole === 'Manager') {
       return false;
     }
@@ -74,11 +67,9 @@ export default function StoreDashboardPage() {
     return false;
   };
 
-  // Функція для перевірки, чи може користувач покинути магазин
   const canLeaveStore = (memberId: string): boolean => {
     if (!currentUser || !currentUserId) return false;
     
-    // Тільки менеджери можуть покинути магазин
     if (memberId !== currentUserId) return false;
     
     const currentUserRole = getUserRoleInStore(currentUserId);
@@ -120,7 +111,6 @@ export default function StoreDashboardPage() {
     }
   }, [storeId]);
 
-  // Відстежуємо зміни currentUserId та storeId для перевірки доступу
   useEffect(() => {
     console.log('useEffect triggered - storeId:', storeId, 'currentUserId:', currentUserId, 'isLoading:', isLoading, 'hasAccess:', hasAccess);
     if (storeId && currentUserId && !isLoading && hasAccess === null) {
@@ -141,7 +131,6 @@ export default function StoreDashboardPage() {
         return;
       }
       
-      // Спочатку завантажуємо користувача та магазин
       await Promise.all([loadStore(), loadCurrentUser()]);
       
       console.log('Auth and load completed, currentUserId:', currentUserId);
@@ -167,7 +156,6 @@ export default function StoreDashboardPage() {
       setAccessCheckLoading(true);
       console.log('Starting access check...');
       
-      // Спочатку перевіряємо, чи користувач є адміністратором
       const isAdmin = await authService.checkAdminStatus();
       console.log('Admin check result:', isAdmin);
       
@@ -178,21 +166,17 @@ export default function StoreDashboardPage() {
         return;
       }
       
-      // Отримуємо список учасників магазину
       console.log('Getting store members for storeId:', storeId);
       const membersResponse = await storeService.getStoreMembers(storeId);
       console.log('Store members response:', membersResponse);
       
       let isMember = false;
       
-      // Перевіряємо, чи є поточний користувач серед учасників
       if (membersResponse && typeof membersResponse === 'object') {
-        // Якщо це об'єкт з ролями (як повертає сервер)
         if (membersResponse[currentUserId]) {
           console.log('User found in store roles:', membersResponse[currentUserId]);
           isMember = true;
         } else {
-          // Якщо це масив учасників
           let members: any[] = [];
           if (Array.isArray(membersResponse)) {
             members = membersResponse;
@@ -214,7 +198,6 @@ export default function StoreDashboardPage() {
       console.log('Current user ID:', currentUserId);
       console.log('User has access to store:', isMember);
       
-      // Встановлюємо результат перевірки доступу
       setHasAccess(isMember);
       
     } catch (err) {
@@ -262,9 +245,7 @@ export default function StoreDashboardPage() {
       
       let list: any[] = [];
       
-      // Якщо це об'єкт з ролями (як повертає сервер)
       if (response && typeof response === 'object' && !Array.isArray(response)) {
-        // Перетворюємо об'єкт ролей в масив учасників
         list = Object.entries(response).map(([userId, role]) => ({
           id: userId,
           userId: userId,
@@ -274,7 +255,6 @@ export default function StoreDashboardPage() {
         }));
         console.log('Converted roles to members list:', list);
         
-        // Завантажуємо деталі користувачів з обробкою помилок
         const userDetailsPromises = list.map(async (member) => {
           try {
             console.log(`Loading user details for ${member.userId}`);
@@ -283,7 +263,6 @@ export default function StoreDashboardPage() {
             return { userId: member.userId, details: userDetails };
           } catch (err) {
             console.error(`Error loading user details for ${member.userId}:`, err);
-            // Повертаємо базову інформацію навіть якщо API не працює
             return { 
               userId: member.userId, 
               details: {
@@ -343,7 +322,6 @@ export default function StoreDashboardPage() {
     if (activeTab === 'members') {
       loadMembers();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, storeId]);
 
   const loadProducts = async () => {
@@ -376,13 +354,11 @@ export default function StoreDashboardPage() {
         } catch (e: any) {
           lastError = e;
           console.log(`No products found for sellerId ${sellerId}:`, e.message);
-          // Continue trying next candidate (404 on this id is normal)
           continue;
         }
       }
 
       if (!list || list.length === 0) {
-        // Fallback: get all and filter by first candidate
         const prefer = candidateIds[0];
         try {
           const all = await productService.getAll();
@@ -403,7 +379,6 @@ export default function StoreDashboardPage() {
       }
 
       if ((!list || list.length === 0) && lastError) {
-        // Only show error if it's not a 404 (which is normal when no products exist)
         const is404Error = lastError && typeof lastError === 'object' && 
           'message' in lastError && 
           String((lastError as any).message).includes('404');
@@ -428,7 +403,6 @@ export default function StoreDashboardPage() {
       loadProducts();
       loadCategories();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, storeId]);
 
   const loadCategories = async () => {
@@ -464,18 +438,16 @@ export default function StoreDashboardPage() {
       await storeService.addMemberToStore(trimmed, 1);
       setMemberIdInput('');
       
-      // Оновлюємо локальний стан додавши нового учасника з правильною роллю
       const newMember = {
         id: trimmed,
         userId: trimmed,
         memberId: trimmed,
-        role: 1, // Manager
+        role: 1,
         roleName: 'Manager'
       };
       
       setMembers(prev => [...prev, newMember]);
       
-      // Завантажуємо деталі нового користувача
       try {
         const userDetails = await userService.getUserById(trimmed);
         setUserDetails(prev => ({
@@ -484,7 +456,6 @@ export default function StoreDashboardPage() {
         }));
       } catch (err) {
         console.error(`Error loading user details for ${trimmed}:`, err);
-        // Додаємо fallback дані
         setUserDetails(prev => ({
           ...prev,
           [trimmed]: {
@@ -509,10 +480,8 @@ export default function StoreDashboardPage() {
     try {
       await storeService.removeMemberFromStore(memberId);
       
-      // Оновлюємо локальний стан видаливши учасника
       setMembers(prev => prev.filter(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) !== memberId));
       
-      // Видаляємо деталі користувача
       setUserDetails(prev => {
         const newDetails = { ...prev };
         delete newDetails[memberId];
@@ -531,10 +500,8 @@ export default function StoreDashboardPage() {
     try {
       await storeService.removeMemberFromStore(memberId);
       
-      // Оновлюємо локальний стан видаливши учасника
       setMembers(prev => prev.filter(m => (m.memberId || m.id || m.userId || m.UserId || m.Id) !== memberId));
       
-      // Видаляємо деталі користувача
       setUserDetails(prev => {
         const newDetails = { ...prev };
         delete newDetails[memberId];
@@ -542,7 +509,6 @@ export default function StoreDashboardPage() {
       });
       
       alert('Ви покинули магазин');
-      // Перенаправляємо на головну сторінку магазинів
       router.push('/store');
     } catch (err) {
       console.error('Error leaving store:', err);
@@ -811,7 +777,6 @@ export default function StoreDashboardPage() {
   const handleCreateOrUpdateProduct = async () => {
     try {
       const buildFeatures = (): any[] => {
-        // Convert productFeatures to API format
         return productFeatures
           .filter(group => group.category.trim() && group.features.some(f => f.key.trim() && f.value.trim()))
           .map(group => ({
@@ -878,14 +843,12 @@ export default function StoreDashboardPage() {
         console.log('Created product ID:', created?.id);
         console.log('Upload files count:', uploadFiles.length);
         
-        // Wait for product to be fully created before uploading media
         if (uploadFiles.length > 0) {
           let productId = created?.id;
           
           if (!productId) {
             console.log('Product ID not found in response, trying to find it via get-all...');
             try {
-              // Wait a bit for the product to be indexed
               await new Promise(resolve => setTimeout(resolve, 2000));
               
               const allProducts = await productService.getAll();
@@ -897,7 +860,6 @@ export default function StoreDashboardPage() {
                 else if ((allProducts as any).products) allList = (allProducts as any).products as Product[];
               }
               
-              // Find the most recent product with matching name
               const matchingProduct = allList
                 .filter(p => p.name === payload.name)
                 .sort((a, b) => new Date(b.id).getTime() - new Date(a.id).getTime())[0];
@@ -918,7 +880,6 @@ export default function StoreDashboardPage() {
               console.log('Media upload completed successfully');
             } catch (e) { 
               console.error('Media upload failed (create):', e);
-              // Don't fail the whole process if media upload fails
             }
           } else {
             console.error('Cannot upload media: product ID is missing from response', created);
@@ -929,7 +890,6 @@ export default function StoreDashboardPage() {
         }
       }
       
-      // Wait a bit for the product to be indexed, then reload
       setTimeout(async () => {
         await loadProducts();
       }, 1000);
@@ -958,7 +918,6 @@ export default function StoreDashboardPage() {
       description: p.description || '',
     });
     
-    // Convert existing features to editable format
     if (p.features && Array.isArray(p.features) && p.features.length > 0) {
       const convertedFeatures = p.features.map(featureGroup => ({
         category: featureGroup.category || 'Основні',
@@ -989,7 +948,6 @@ export default function StoreDashboardPage() {
     }
   };
 
-  // Component to display product image/video
   const ProductMedia = ({ productId }: { productId: string }) => {
     const [mediaUrl, setMediaUrl] = useState<string | null>(null);
     const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
@@ -1332,13 +1290,11 @@ export default function StoreDashboardPage() {
     );
   }
 
-  // Перевіряємо доступ до магазину
   if (hasAccess === false) {
     console.log('Showing access denied page');
     return <AccessDeniedPage />;
   }
 
-  // Якщо доступ ще не перевірений, показуємо завантаження
   if (hasAccess === null || accessCheckLoading) {
     console.log('Showing access check loading');
     return (

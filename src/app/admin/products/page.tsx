@@ -57,7 +57,6 @@ export default function AdminProductsPage() {
             const nameResults = await nameResponse.json();
             console.log('Name search results:', nameResults); // Додаємо логування для дебагу
             if (Array.isArray(nameResults)) {
-              // Адаптуємо структуру даних під наш тип SearchProduct
               const adaptedResults = nameResults.map(product => ({
                 id: product.productId || product.id,
                 name: product.highlighted || product.name || '',
@@ -65,7 +64,6 @@ export default function AdminProductsPage() {
                 categoryName: product.categoryName
               }));
               
-              // Фільтруємо результати з валідним ID
               const validResults = adaptedResults.filter(product => 
                 product && 
                 product.id && 
@@ -99,7 +97,6 @@ export default function AdminProductsPage() {
             const categoryData = await categoryResponse.json();
             const categoryResults = Array.isArray(categoryData?.products) ? categoryData.products : Array.isArray(categoryData) ? categoryData : [];
             console.log('Category search results:', categoryResults); // Додаємо логування для дебагу
-            // Адаптуємо структуру даних під наш тип SearchProduct
             const adaptedCategoryResults = categoryResults.map((product: any) => ({
               id: product.productId || product.id,
               name: product.highlighted || product.name || '',
@@ -107,7 +104,6 @@ export default function AdminProductsPage() {
               categoryName: product.categoryName
             }));
             
-            // Фільтруємо результати з валідним ID
             const validCategoryResults = adaptedCategoryResults.filter((product: SearchProduct) => 
               product && 
               product.id && 

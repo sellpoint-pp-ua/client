@@ -10,6 +10,7 @@ import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
 export default function PaySuccessPage() {
   const { clearCart } = useCartDrawer()
   const [cleared, setCleared] = useState(false)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -22,6 +23,15 @@ export default function PaySuccessPage() {
     })()
     return () => { cancelled = true }
   }, [clearCart])
+
+  useEffect(() => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      setIsAuthenticated(Boolean(token))
+    } catch {
+      setIsAuthenticated(false)
+    }
+  }, [])
   return (
     <div className="flex min-h-screen flex-col">
       <Header />
@@ -38,7 +48,11 @@ export default function PaySuccessPage() {
             {!cleared ? <p className="mt-1 text-[12px] text-gray-500">Очищення кошика…</p> : null}
             <div className="mt-6 flex items-center justify-center gap-3">
               <Link href="/" className="rounded-lg bg-[#4563d1] px-5 py-2 text-white text-sm font-semibold hover:bg-[#364ea8]">На головну</Link>
-              <Link href="/orders" className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-semibold text-[#3046b4] hover:bg-[#4563d1]/5">Мої замовлення</Link>
+              {isAuthenticated ? (
+                <Link href="/orders" className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-semibold text-[#3046b4] hover:bg-[#4563d1]/5">Мої замовлення</Link>
+              ) : (
+                <Link href="/orders/track" className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-semibold text-[#3046b4] hover:bg-[#4563d1]/5">Відстеження замовлення</Link>
+              )}
             </div>
           </div>
         </div>

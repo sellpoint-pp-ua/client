@@ -365,7 +365,6 @@ function DeleteCategoryButton({ id, name, hasParent, onDeleted }: { id: string; 
     }
     try {
       setLoading(true)
-      // Block deleting parent categories that have children
       if (!hasParent) {
         const childrenRes = await fetch(`/api/categories/${id}/children`, { cache: 'no-store' })
         const children = childrenRes.ok ? await childrenRes.json() : []

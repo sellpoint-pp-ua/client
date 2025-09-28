@@ -5,11 +5,14 @@ import { useEffect, useMemo, useState } from 'react'
 type CurrentUser = {
   id: string
   username: string | null
-  fullName: string | null
+  firstName: string | null
+  lastName: string | null
+  middleName: string | null
   gender: string | null
   dateOfBirth: string | null
   email: string | null
   phoneNumber?: string | null
+  phoneNumberConfirmed?: boolean | null
   avatar?: { sourceUrl?: string; compressedUrl?: string } | null
 }
 
@@ -21,7 +24,9 @@ export default function SettingsForm() {
   const [toast, setToast] = useState<string | null>(null)
 
   const [username, setUsername] = useState('')
-  const [fullName, setFullName] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [middleName, setMiddleName] = useState('')
   const [gender, setGender] = useState('')
   const [dateOfBirth, setDateOfBirth] = useState('')
   const [phone, setPhone] = useState('')
@@ -74,16 +79,21 @@ export default function SettingsForm() {
         const current: CurrentUser = {
           id: sanitizeStr(u?.id) || '',
           username: sanitizeStr(u?.username),
-          fullName: sanitizeStr(u?.fullName),
+          firstName: sanitizeStr(u?.firstName),
+          lastName: sanitizeStr(u?.lastName),
+          middleName: sanitizeStr(u?.middleName),
           gender: normalizeGender(u?.gender),
           dateOfBirth: normalizeDate(u?.dateOfBirth),
           email: sanitizeStr(u?.email),
           phoneNumber: sanitizeStr(u?.phoneNumber),
+          phoneNumberConfirmed: Boolean(u?.phoneNumberConfirmed),
           avatar: u?.avatar || null,
         }
         setUser(current)
         setUsername(current.username || '')
-        setFullName(current.fullName || '')
+        setFirstName(current.firstName || '')
+        setLastName(current.lastName || '')
+        setMiddleName(current.middleName || '')
         setGender(current.gender || '')
         setDateOfBirth(current.dateOfBirth || '')
         setPhone(current.phoneNumber || '')
@@ -124,13 +134,15 @@ export default function SettingsForm() {
       setError(null)
       const form = new FormData()
       if (username) form.append('Username', username)
-      if (fullName) form.append('FullName', fullName)
+      if (firstName) form.append('FirstName', firstName)
+      if (lastName) form.append('LastName', lastName)
+      if (middleName) form.append('MiddleName', middleName)
       if (gender) form.append('Gender', gender)
       if (dateOfBirth) form.append('DateOfBirth', new Date(dateOfBirth).toISOString())
       if (avatarFile) form.append('Avatar', avatarFile)
       if (phone) form.append('PhoneNumber', phone)
 
-      const res = await fetch('/api/users/update', {
+      const res = await fetch('https://api.sellpoint.pp.ua/api/User/UpdateUser', {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
         body: form,
@@ -144,12 +156,10 @@ export default function SettingsForm() {
       setToast('Профіль збережено успішно')
       try {
         const avatarAfter = avatarPreviewUrl || (user?.avatar?.compressedUrl || user?.avatar?.sourceUrl || null)
-        window.dispatchEvent(new CustomEvent('user:profile-updated', { detail: { fullName, avatarUrl: avatarAfter } }))
+        const displayFullName = [firstName, middleName, lastName].filter(Boolean).join(' ').trim()
+        window.dispatchEvent(new CustomEvent('user:profile-updated', { detail: { fullName: displayFullName, avatarUrl: avatarAfter } }))
       } catch {}
-      setTimeout(() => {
-        setToast(null)
-        window.location.reload()
-      }, 1000)
+      setTimeout(() => { setToast(null); try { window.location.reload() } catch {} }, 900)
     } catch (e: any) {
       setError(e?.message || 'Помилка збереження')
     } finally {
@@ -218,8 +228,19 @@ export default function SettingsForm() {
               <input value={username} onChange={(e) => setUsername(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="Ваш логін" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-900 mb-1">Повне ім'я</label>
-              <input value={fullName} onChange={(e) => setFullName(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="Ваше ім'я" />
+              <label className="block text-sm font-medium text-gray-900 mb-1">Ім'я</label>
+              <input value={firstName} onChange={(e) => setFirstName(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="Ім'я" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">Прізвище</label>
+              <input value={lastName} onChange={(e) => setLastName(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="Прізвище" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-1">По батькові</label>
+              <input value={middleName} onChange={(e) => setMiddleName(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="По батькові" />
             </div>
           </div>
 
@@ -242,6 +263,9 @@ export default function SettingsForm() {
           <div>
             <label className="block text-sm font-medium text-gray-900 mb-1">Телефон</label>
             <input value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" placeholder="+380..." />
+            {user?.phoneNumberConfirmed !== undefined && (
+              <p className="mt-1 text-xs text-gray-500">{user?.phoneNumberConfirmed ? 'Номер підтверджено' : 'Номер не підтверджено'}</p>
+            )}
           </div>
 
           <div className="flex items-center gap-3">

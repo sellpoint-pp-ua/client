@@ -9,7 +9,9 @@ WORKDIR /app
 
 # Копіюємо файли залежностей
 COPY package.json package-lock.json* ./
-RUN npm ci
+# npm ci requires a lockfile; if it's absent, fall back to npm install
+# Use a one-liner that tries npm ci and if it fails, runs npm install for production deps.
+RUN npm ci || (npm install --production --no-audit --no-fund)
 
 # Перебудуємо вихідний код коли потрібно
 FROM base AS builder

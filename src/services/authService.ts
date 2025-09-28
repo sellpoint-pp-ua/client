@@ -54,6 +54,12 @@ class AuthService {
         if (errors.Login) {
           errorMessages.push(...errors.Login);
         }
+        if (errors.FirstName) {
+          errorMessages.push(...errors.FirstName);
+        }
+        if (errors.LastName) {
+          errorMessages.push(...errors.LastName);
+        }
         
         if (errorMessages.length > 0) {
           throw new Error(errorMessages.join('. '));
@@ -108,7 +114,7 @@ class AuthService {
   async register(userData: RegisterRequest): Promise<{ token: string }> {
     const result = await this.makeRequest<AuthResponse>('register', {
       method: 'POST',
-      body: JSON.stringify({ fullName: userData.fullName, email: userData.email, password: userData.password }),
+      body: JSON.stringify({ firstName: userData.firstName, lastName: userData.lastName, email: userData.email, password: userData.password }),
     });
     return this.normalizeAuthResponse(result);
   }

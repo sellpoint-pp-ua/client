@@ -129,9 +129,40 @@ export default function CartDrawerProvider({ children }: Props) {
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
 
+  const GUEST_KEY = 'guest_cart'
+  type GuestItem = { id: string; productId: string; pcs: number; createdAt: string }
+  const loadGuestCart = (): GuestItem[] => {
+    try { const raw = typeof window !== 'undefined' ? localStorage.getItem(GUEST_KEY) : null; return raw ? JSON.parse(raw) : [] } catch { return [] }
+  }
+  const saveGuestCart = (arr: GuestItem[]) => { try { if (typeof window !== 'undefined') localStorage.setItem(GUEST_KEY, JSON.stringify(arr)) } catch {} }
+
   const fetchCart = useCallback(async () => {
     if (!token) {
-      setItems([])
+      try {
+        const base = loadGuestCart()
+        const enriched: EnrichedCartItem[] = await Promise.all(
+          base.map(async (it) => {
+            try {
+              const [pRes, mRes] = await Promise.all([
+                fetch(`https://api.sellpoint.pp.ua/api/Product/get-by-id/${it.productId}`),
+                fetch(`https://api.sellpoint.pp.ua/api/ProductMedia/by-product-id/${it.productId}`),
+              ])
+              const product: ProductInfo | null = pRes.ok ? await pRes.json() : null
+              let imageUrl: string | null = null
+              if (mRes.ok) {
+                const media: MediaItem[] = await mRes.json()
+                const first = (Array.isArray(media) ? media : []).sort((a,b) => (a.order||0) - (b.order||0))[0]
+                const webp = first?.files?.compressedUrl || first?.files?.sourceUrl || null
+                imageUrl = webp || null
+              }
+              return { id: it.id, userId: 'guest', pcs: it.pcs, productId: it.productId, createdAt: it.createdAt, product: product || undefined, imageUrl }
+            } catch { return { id: it.id, userId: 'guest', pcs: it.pcs, productId: it.productId, createdAt: it.createdAt } as EnrichedCartItem }
+          })
+        )
+        setItems(enriched)
+      } catch {
+        setItems([])
+      }
       return
     }
     try {
@@ -175,10 +206,6 @@ export default function CartDrawerProvider({ children }: Props) {
   }, [token])
 
   useEffect(() => {
-    if (!token) {
-      setItems([])
-      return
-    }
     fetchCart()
   }, [token, fetchCart])
 
@@ -221,7 +248,15 @@ export default function CartDrawerProvider({ children }: Props) {
   const addToCart = useCallback(
     async (productId: string, pcs: number = 1) => {
       if (!token) {
-        router.push('/auth/login')
+        const base = loadGuestCart()
+        const found = base.find(i => i.productId === productId)
+        if (found) found.pcs = Math.max(1, (found.pcs || 0) + pcs)
+        else base.push({ id: `${productId}-${Date.now()}`, productId, pcs: Math.max(1, pcs), createdAt: new Date().toISOString() })
+        saveGuestCart(base)
+        await fetchCart()
+        const added = items.find((i) => i.productId === productId)
+        setShowToast({ name: added?.product?.name || 'Товар', imageUrl: added?.imageUrl })
+        setTimeout(() => setShowToast(null), 2500)
         return
       }
       try {
@@ -247,7 +282,11 @@ export default function CartDrawerProvider({ children }: Props) {
   const changePcs = useCallback(
     async (cartItemId: string, pcs: number) => {
       if (!token) {
-        router.push('/auth/login')
+        const base = loadGuestCart()
+        const g = base.find(i => i.id === cartItemId)
+        if (g) g.pcs = Math.max(1, pcs)
+        saveGuestCart(base)
+        await fetchCart()
         return
       }
       const item = items.find((i) => i.id === cartItemId)
@@ -279,7 +318,9 @@ export default function CartDrawerProvider({ children }: Props) {
   const removeFromCart = useCallback(
     async (cartItemId: string) => {
       if (!token) {
-        router.push('/auth/login')
+        const base = loadGuestCart().filter(i => i.id !== cartItemId)
+        saveGuestCart(base)
+        await fetchCart()
         return
       }
       try {
@@ -301,7 +342,11 @@ export default function CartDrawerProvider({ children }: Props) {
   const cartCount = items.length
 
   const clearCart = useCallback(async () => {
-    if (!token) return
+    if (!token) {
+      saveGuestCart([])
+      setItems([])
+      return
+    }
     try {
       await fetch('https://api.sellpoint.pp.ua/Cart/ClearCartList', {
         method: 'DELETE',
@@ -334,6 +379,16 @@ export default function CartDrawerProvider({ children }: Props) {
       )
       return { sellerId, group, groupTotal }
     })
+  }, [items])
+
+  const grandTotal = useMemo(() => {
+    return Math.round(
+      items.reduce((sum, ci) => {
+        const pp = ci.product
+        const price = (pp?.hasDiscount ? pp?.finalPrice ?? pp?.discountPrice ?? pp?.price : pp?.finalPrice ?? pp?.price) || 0
+        return sum + price * (ci.pcs || 0)
+      }, 0)
+    )
   }, [items])
 
   const isInCart = useCallback((productId: string) => items.some(i => i.productId === productId), [items])
@@ -574,20 +629,23 @@ export default function CartDrawerProvider({ children }: Props) {
                     )
                   })}
 
-                  {/* Group-level checkout button summing all items for this seller */}
-                  <div className="mt-2">
-                    <button
-                      onClick={() => {
-                        closeCart()
-                        router.push(`/checkout/${encodeURIComponent(sellerId)}`)
-                      }}
-                      className="w-full rounded-xl bg-[#4563d1] text-sm hover:cursor-pointer py-2 text-white hover:bg-[#364ea8]"
-                    >
-                      {`Замовити у продавця • ${groupTotal} ₴`}
-                    </button>
-                  </div>
+                  {/* Removed per-seller checkout button in favor of one global button below */}
                 </div>
               ))}
+            </div>
+            {/* Global checkout footer */}
+            <div className="border-t border-gray-200 bg-white p-3 shadow-[0_-2px_8px_rgba(0,0,0,0.06)]">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm text-gray-700">Разом до оплати</span>
+                <span className="text-base font-semibold text-gray-900">{grandTotal} ₴</span>
+              </div>
+              <button
+                onClick={() => { closeCart(); router.push('/checkout/all') }}
+                className="mt-2 w-full rounded-xl bg-[#4563d1] text-sm hover:cursor-pointer py-2.5 text-white hover:bg-[#364ea8]"
+                disabled={items.length === 0}
+              >
+                {items.length > 0 ? `Оформити всі (${items.length})` : 'Кошик порожній'}
+              </button>
             </div>
           </div>
         )}

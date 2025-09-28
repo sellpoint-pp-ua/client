@@ -224,7 +224,6 @@ class StoreService {
     });
   }
 
-  // Store members management
   async getStoreMembers(storeId: string): Promise<any> {
     return this.makeRequest<any>(`/api/Store/GetStoreMembers?storeId=${encodeURIComponent(storeId)}`, {
       method: 'GET',
@@ -240,7 +239,6 @@ class StoreService {
   }
 
   async addMemberToStore(memberId: string, role: number = 1): Promise<any> {
-    // role: 1 => Manager
     const params = new URLSearchParams({ memberId, role: String(role) });
     return this.makeRequest<any>(`/api/Store/AddMemberToStore?${params.toString()}`, {
       method: 'PUT',
