@@ -13,6 +13,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const routeParams = useParams<{ sellerId: string }>()
   const sellerId = routeParams?.sellerId
+  const isAll = sellerId === 'all'
   const searchParams = useSearchParams()
   const { items } = useCartDrawer()
   const [sellerName, setSellerName] = useState<string>('')
@@ -67,6 +68,7 @@ export default function CheckoutPage() {
   }, [searchParams])
 
   useEffect(() => {
+    if (isAll) return
     let cancelled = false
     const sid = typeof sellerId === 'string' ? sellerId : ''
     if (!sid) return
@@ -79,10 +81,13 @@ export default function CheckoutPage() {
       } catch {}
     })()
     return () => { cancelled = true }
-  }, [sellerId])
+  }, [sellerId, isAll])
 
   const [displayName, setDisplayName] = useState<string>('Користувач')
   const [phoneNumber, setPhoneNumber] = useState<string>('')
+  const [userFirstName, setUserFirstName] = useState<string>('')
+  const [userLastName, setUserLastName] = useState<string>('')
+  const [userMiddleName, setUserMiddleName] = useState<string>('')
   useEffect(() => {
     let cancelled = false
     try {
@@ -102,9 +107,14 @@ export default function CheckoutPage() {
           if (res && res.ok) {
             const u = await res.json()
             if (cancelled) return
-            const full = (typeof u?.fullName === 'string' && u.fullName.trim()) ? u.fullName : (typeof u?.username === 'string' ? u.username : fallback || 'Користувач')
+            const part = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+            const fio = [part(u?.lastName), part(u?.firstName), part(u?.middleName)].filter(Boolean).join(' ').trim()
+            const full = fio || (typeof u?.username === 'string' ? u.username : fallback || 'Користувач')
             setDisplayName(full)
             if (typeof u?.phoneNumber === 'string') setPhoneNumber(u.phoneNumber)
+            setUserFirstName(part(u?.firstName))
+            setUserLastName(part(u?.lastName))
+            setUserMiddleName(part(u?.middleName))
           }
         } catch {}
       })()
@@ -121,17 +131,28 @@ export default function CheckoutPage() {
   const [marketConfirmed, setMarketConfirmed] = useState<boolean>(false)
   const [novaConfirmed, setNovaConfirmed] = useState<boolean>(false)
   const [selfConfirmed, setSelfConfirmed] = useState<boolean>(false)
-  const [marketCity, setMarketCity] = useState<string>('Київ (Київська обл.)')
-  const [marketBranch, setMarketBranch] = useState<string>('Івасюка просп., 49')
-  const [novaCity, setNovaCity] = useState<string>('Київ (Київська обл.)')
-  const [novaBranch, setNovaBranch] = useState<string>('Івасюка просп., 49')
-  const [selfCity, setSelfCity] = useState<string>('Київ (Київська обл.)')
-  const [selfAddress, setSelfAddress] = useState<string>('Центральний офіс магазину')
+  const [marketCity, setMarketCity] = useState<string>('Київ')
+  const [marketBranch, setMarketBranch] = useState<string>('Rozetka, просп. Степана Бандери, 6')
+  const [novaCity, setNovaCity] = useState<string>('Київ')
+  const [novaBranch, setNovaBranch] = useState<string>('Відділення №1, вул. Хрещатик, 1')
+  const [selfCity, setSelfCity] = useState<string>('Київ')
+  const [selfAddress, setSelfAddress] = useState<string>('Центральний склад магазину, вул. Складська, 1')
 
   const PAY = { AFTER: 1 << 0, CARD: 1 << 1, MONO: 1 << 2, PRIVAT: 1 << 3, PUMB: 1 << 4 }
   const [availablePaymentMask, setAvailablePaymentMask] = useState<number>(0)
   const [payment, setPayment] = useState<'card' | 'cod' | 'mono' | 'privat' | 'pumb' | null>(null)
   const [paymentConfirmed, setPaymentConfirmed] = useState<boolean>(false)
+  const isGuest = typeof window !== 'undefined' ? !localStorage.getItem('auth_token') : false
+  const [guestFirst, setGuestFirst] = useState('')
+  const [guestLast, setGuestLast] = useState('')
+  const [guestMiddle, setGuestMiddle] = useState('')
+  const [guestEmail, setGuestEmail] = useState('')
+  const [guestPhone, setGuestPhone] = useState('')
+
+  const [showPhoneModal, setShowPhoneModal] = useState<boolean>(false)
+  const [phoneInput, setPhoneInput] = useState<string>('')
+  const [phoneError, setPhoneError] = useState<string | null>(null)
+  const [savingPhone, setSavingPhone] = useState<boolean>(false)
 
   const StepBadge = ({ index, completed }: { index: number; completed: boolean }) => (
     <div className={`h-6 w-6 rounded-full ring-2 flex items-center justify-center text-[12px] ${completed ? 'bg-green-500 ring-green-500 text-white' : 'bg-white ring-gray-300 text-gray-700'}`}>
@@ -151,7 +172,7 @@ export default function CheckoutPage() {
     setPaymentConfirmed(false)
   }
 
-  const displayItems = (searchParams?.get('productId') ? (singleItem ? [singleItem] : []) : sellerItems)
+  const displayItems = (searchParams?.get('productId') ? (singleItem ? [singleItem] : []) : (isAll ? items : sellerItems))
   const itemCount = displayItems.reduce((s, i) => s + (i.pcs || 0), 0)
   const displaySubtotal = Math.round(
     displayItems.reduce((sum, ci: any) => {
@@ -162,6 +183,7 @@ export default function CheckoutPage() {
   )
 
   useEffect(() => {
+    if (isAll) { return } // for seller-specific/single-item only; 'all' uses server masks
     if (!displayItems || displayItems.length === 0) { setAvailablePaymentMask(0); return }
     let mask = (PAY.AFTER | PAY.CARD | PAY.MONO | PAY.PRIVAT | PAY.PUMB)
     for (const it of displayItems) {
@@ -186,6 +208,81 @@ export default function CheckoutPage() {
   const hasPumb = Boolean(availablePaymentMask & PAY.PUMB)
 
   useEffect(() => {
+    let cancelled = false
+    if (!isAll) return
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+      if (!token) {
+        try {
+          if (!displayItems || displayItems.length === 0) { setAvailableDeliveryMask(0); setAvailablePaymentMask(0); return }
+          let pMask = (PAY.AFTER | PAY.CARD | PAY.MONO | PAY.PRIVAT | PAY.PUMB)
+          for (const it of displayItems) {
+            const m = Number((it as any)?.product?.paymentOptions ?? (PAY.AFTER | PAY.CARD))
+            pMask &= m
+          }
+          let dMask = (DELIVERY.NOVA | DELIVERY.ROZETKA | DELIVERY.SELF)
+          for (const it of displayItems) {
+            const m = Number((it as any)?.product?.deliveryType ?? (DELIVERY.NOVA | DELIVERY.ROZETKA | DELIVERY.SELF))
+            dMask &= m
+          }
+          if (!cancelled) {
+            setAvailablePaymentMask(pMask)
+            setAvailableDeliveryMask(dMask)
+            const nowHasMarket = Boolean(dMask & DELIVERY.ROZETKA)
+            const nowHasNova = Boolean(dMask & DELIVERY.NOVA)
+            const nowHasSelf = Boolean(dMask & DELIVERY.SELF)
+            if ((delivery === 'market' && !nowHasMarket) || (delivery === 'nova' && !nowHasNova) || (delivery === 'self' && !nowHasSelf)) {
+              resetSelections()
+            }
+            const nowCard = Boolean(pMask & PAY.CARD)
+            const nowAfter = Boolean(pMask & PAY.AFTER)
+            const nowMono = Boolean(pMask & PAY.MONO)
+            const nowPrivat = Boolean(pMask & PAY.PRIVAT)
+            const nowPumb = Boolean(pMask & PAY.PUMB)
+            if ((payment === 'card' && !nowCard) || (payment === 'cod' && !nowAfter) || (payment === 'mono' && !nowMono) || (payment === 'privat' && !nowPrivat) || (payment === 'pumb' && !nowPumb)) {
+              setPayment(null); setPaymentConfirmed(false)
+            }
+          }
+        } catch {}
+        return
+      }
+      ;(async () => {
+        try {
+          const res = await fetch('https://api.sellpoint.pp.ua/api/Order/GetDeliveryAndPaymentOptions', {
+            method: 'GET',
+            headers: { 'accept': '*/*', 'Authorization': `Bearer ${token}` },
+            cache: 'no-store',
+          })
+          if (!res.ok) return
+          const data = await res.json().catch(() => null)
+          if (cancelled || !data) return
+          const dMask = Number(data.productDeliveryType ?? 0)
+          const pMask = Number(data.paymentOptions ?? 0)
+          setAvailableDeliveryMask(dMask)
+          setAvailablePaymentMask(pMask)
+
+          const nowHasMarket = Boolean(dMask & DELIVERY.ROZETKA)
+          const nowHasNova = Boolean(dMask & DELIVERY.NOVA)
+          const nowHasSelf = Boolean(dMask & DELIVERY.SELF)
+          if ((delivery === 'market' && !nowHasMarket) || (delivery === 'nova' && !nowHasNova) || (delivery === 'self' && !nowHasSelf)) {
+            resetSelections()
+          }
+          const nowCard = Boolean(pMask & PAY.CARD)
+          const nowAfter = Boolean(pMask & PAY.AFTER)
+          const nowMono = Boolean(pMask & PAY.MONO)
+          const nowPrivat = Boolean(pMask & PAY.PRIVAT)
+          const nowPumb = Boolean(pMask & PAY.PUMB)
+          if ((payment === 'card' && !nowCard) || (payment === 'cod' && !nowAfter) || (payment === 'mono' && !nowMono) || (payment === 'privat' && !nowPrivat) || (payment === 'pumb' && !nowPumb)) {
+            setPayment(null); setPaymentConfirmed(false)
+          }
+        } catch {}
+      })()
+    } catch {}
+    return () => { cancelled = true }
+  }, [isAll])
+
+  useEffect(() => {
+    if (isAll) { return } 
     if (!displayItems || displayItems.length === 0) { setAvailableDeliveryMask(0); return }
     let mask = (DELIVERY.NOVA | DELIVERY.ROZETKA | DELIVERY.SELF)
     for (const it of displayItems) {
@@ -315,11 +412,20 @@ export default function CheckoutPage() {
   ]
 
   const paymentToServer = (p: typeof payment): number => {
-    if (p === 'cod') return 1 
-    if (p === 'card') return 2 
-    if (p === 'mono') return 4 
-    if (p === 'privat') return 8 
-    if (p === 'pumb') return 16 
+    if (p === 'cod') return 0
+    if (p === 'card') return 1
+    if (p === 'mono') return 2
+    if (p === 'privat') return 3
+    if (p === 'pumb') return 4
+    return 0
+  }
+
+  const paymentToServerOld = (p: typeof payment): number => {
+    if (p === 'cod') return 1
+    if (p === 'card') return 2
+    if (p === 'mono') return 4
+    if (p === 'privat') return 8
+    if (p === 'pumb') return 16
     return 0
   }
 
@@ -348,7 +454,6 @@ export default function CheckoutPage() {
   const placeOrder = async () => {
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-      if (!token) { alert('Потрібна авторизація'); return }
       if (!payment || !paymentConfirmed) { alert('Оберіть спосіб оплати та підтвердіть'); return }
       if (delivery === 'market' && !marketConfirmed) { alert('Підтвердьте адресу доставки (Rozetka)'); return }
       if (delivery === 'nova' && !novaConfirmed) { alert('Підтвердьте адресу доставки (Нова Пошта)'); return }
@@ -357,50 +462,154 @@ export default function CheckoutPage() {
       const deliveryTo = getDeliveryTo()
       if (!deliveryTo) { alert('Оберіть спосіб доставки'); return }
 
-      const targetItem = displayItems[0]
-      const productId = targetItem?.productId
-      if (!productId) { alert('Неможливо визначити товар'); return }
+      const productIds: string[] = displayItems.map((it: any) => String(it?.productId)).filter(Boolean)
+      if (productIds.length === 0) { alert('Неможливо визначити товари'); return }
 
-      const body = {
-        productId,
-        deliveryPayment: paymentToServer(payment),
-        deliveryTo: deliveryTo,
-      }
-
-      const res = await fetch('https://api.sellpoint.pp.ua/api/Buy/BuyProduct', {
-        method: 'POST',
-        headers: {
-          'accept': '*/*',
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      })
-      if (!res.ok) { alert('Не вдалося оформити замовлення'); return }
-
-      if (payment !== 'cod') {
-        const listRes = await fetch('https://api.sellpoint.pp.ua/api/Buy/GetByMyId', {
-          headers: { 'accept': '*/*', 'Authorization': `Bearer ${token}` }, cache: 'no-store'
-        })
-        if (listRes.ok) {
-          const arr = await listRes.json()
-          const found = Array.isArray(arr) ? arr.find((b: any) => String(b?.miniProductInfo?.productId) === String(productId) && !b?.payed) : null
-          const buyId = found?.id
-          if (buyId) { router.push(`/pay/${buyId}`); return }
+      if (isAll) {
+        const phoneUsed = token ? phoneNumber : (guestPhone || '')
+        if (!phoneUsed) { 
+          if (token) {
+            setPhoneInput(phoneNumber)
+            setPhoneError(null)
+            setShowPhoneModal(true)
+            return
+          } else {
+            alert('Вкажіть номер телефону')
+            return
+          }
         }
-        alert('Замовлення створено, але не вдалося перейти на оплату. Перевірте розділ замовлень.')
-      } else {
-        try {
-          router.push('/pay/success')
+        if (payment !== 'cod') {
+          try {
+            const pending = {
+              deliveryPayment: paymentToServer(payment),
+              phoneNumber: phoneUsed,
+              firstName: token ? userFirstName : guestFirst,
+              lastName: token ? userLastName : guestLast,
+              middleName: token ? userMiddleName : guestMiddle,
+              email: token ? undefined : guestEmail,
+              address: deliveryTo.address,
+              settlement: deliveryTo.settlement,
+              region: deliveryTo.region,
+              amount: displaySubtotal,
+              items: displayItems.map((it: any) => {
+                const p = it.product
+                const price = (p?.hasDiscount ? p?.finalPrice ?? p?.discountPrice ?? p?.price : p?.finalPrice ?? p?.price) || 0
+                return { id: it.productId, name: p?.name || 'Товар', price: price * (it.pcs || 1), qty: (it.pcs || 1), imageUrl: it.imageUrl }
+              })
+            }
+            if (typeof window !== 'undefined') sessionStorage.setItem('pending_order', JSON.stringify(pending))
+          } catch {}
+          router.push('/pay/new')
           return
-        } catch (e) {
-          alert('Замовлення оформлено. Оплата при отриманні.')
+        }
+        let res: Response | null = null
+        if (!token) {
+          const products: Record<string, number> = {}
+          for (const it of displayItems as any[]) { products[String(it.productId)] = (products[String(it.productId)] || 0) + (it.pcs || 1) }
+          res = await fetch('https://api.sellpoint.pp.ua/api/Order/BuyUnRegistered', {
+            method: 'POST',
+            headers: { 'accept': '*/*', 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              products,
+              deliveryPayment: paymentToServer(payment),
+              deliveryTo: { address: deliveryTo.address, settlement: deliveryTo.settlement, region: deliveryTo.region },
+              email: guestEmail,
+              phoneNumber: guestPhone || phoneNumber,
+              firstName: guestFirst,
+              lastName: guestLast,
+              middleName: guestMiddle,
+            })
+          })
+        } else {
+          const query = new URLSearchParams()
+          query.set('deliveryPayment', String(paymentToServer(payment)))
+          query.set('phoneNumber', phoneNumber)
+          if (userFirstName) query.set('firstName', userFirstName)
+          if (userLastName) query.set('lastName', userLastName)
+          if (userMiddleName) query.set('middleName', userMiddleName)
+          res = await fetch(`https://api.sellpoint.pp.ua/api/Order/BuyRegistered?${query.toString()}`, {
+            method: 'POST',
+            headers: { 'accept': '*/*', 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ address: deliveryTo.address, settlement: deliveryTo.settlement, region: deliveryTo.region }),
+          })
+        }
+        if (!res.ok) { alert('Не вдалося оформити замовлення'); return }
+        try { router.push('/pay/success'); return } catch {}
+      } else {
+        if (token && !phoneNumber) {
+          setPhoneInput(phoneNumber)
+          setPhoneError(null)
+          setShowPhoneModal(true)
+          return
+        }
+        const targetItem = displayItems[0]
+        const productId = targetItem?.productId
+        if (!productId) { alert('Неможливо визначити товар'); return }
+        const body = {
+          productId,
+          deliveryPayment: paymentToServerOld(payment),
+          deliveryTo: deliveryTo,
+        }
+        const res = await fetch('https://api.sellpoint.pp.ua/api/Buy/BuyProduct', {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
+          },
+          body: JSON.stringify(body),
+        })
+        if (!res.ok) { alert('Не вдалося оформити замовлення'); return }
+
+        if (payment !== 'cod') {
+          const listRes = await fetch('https://api.sellpoint.pp.ua/api/Buy/GetByMyId', {
+            headers: { 'accept': '*/*', 'Authorization': `Bearer ${token}` }, cache: 'no-store'
+          })
+          if (listRes.ok) {
+            const arr = await listRes.json()
+            const found = Array.isArray(arr) ? arr.find((b: any) => String(b?.miniProductInfo?.productId) === String(productId) && !b?.payed) : null
+            const buyId = found?.id
+            if (buyId) { router.push(`/pay/${buyId}`); return }
+          }
+          alert('Замовлення створено, але не вдалося перейти на оплату. Перевірте розділ замовлень.')
+        } else {
+          try { router.push('/pay/success'); return } catch {}
         }
       }
     } catch (e) {
       alert('Сталася помилка під час оформлення')
     }
   }
+
+  const [sellerInfos, setSellerInfos] = useState<Record<string, { name?: string }>>({})
+  useEffect(() => {
+    if (!displayItems || displayItems.length === 0) return
+    const uniqueSellerIds = Array.from(new Set(displayItems.map((it: any) => it?.product?.sellerId).filter(Boolean))) as string[]
+    const need = uniqueSellerIds.filter((sid) => !sellerInfos[sid])
+    if (need.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const results = await Promise.all(
+          need.map(async (sid) => {
+            try {
+              const r = await fetch(`https://api.sellpoint.pp.ua/api/Store/GetStoreById?storeId=${encodeURIComponent(sid)}`)
+              if (!r.ok) return [sid, {}] as const
+              const data = await r.json()
+              return [sid, { name: typeof data?.name === 'string' ? data.name : undefined }] as const
+            } catch { return [sid, {}] as const }
+          })
+        )
+        if (cancelled) return
+        setSellerInfos((prev) => {
+          const next = { ...prev }
+          for (const [sid, info] of results) next[sid] = { ...(next[sid] || {}), ...info }
+          return next
+        })
+      } catch {}
+    })()
+    return () => { cancelled = true }
+  }, [displayItems])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -427,7 +636,31 @@ export default function CheckoutPage() {
                   </header>
                   <div className="p-4 text-sm text-gray-800">
                     <p className="font-medium">{displayName}</p>
-                    {phoneNumber ? <p className="mt-1">{phoneNumber}</p> : null}
+                    {isGuest && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
+                          <input value={guestFirst} onChange={(e)=>setGuestFirst(e.target.value)} placeholder="Ім'я" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" />
+                          <input value={guestLast} onChange={(e)=>setGuestLast(e.target.value)} placeholder="Прізвище" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" />
+                          <input value={guestMiddle} onChange={(e)=>setGuestMiddle(e.target.value)} placeholder="По батькові (необов'язково)" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" />
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                          <input value={guestEmail} onChange={(e)=>setGuestEmail(e.target.value)} placeholder="Ел. пошта" type="email" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" />
+                          <input value={guestPhone} onChange={(e)=>setGuestPhone(e.target.value)} placeholder="Номер телефону" className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]" />
+                        </div>
+                      </>
+                    )}
+                    {phoneNumber ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <p>{phoneNumber}</p>
+                        <button
+                          type="button"
+                          onClick={() => { setPhoneInput(phoneNumber); setPhoneError(null); setShowPhoneModal(true) }}
+                          className="text-xs text-[#4563d1] hover:underline"
+                        >
+                          Редагувати
+                        </button>
+                      </div>
+                    ) : null}
                     <label className="mt-3 inline-flex items-center gap-2 text-gray-700">
                       <input type="checkbox" className="h-4 w-4 rounded border-gray-300 text-[#4563d1] focus:ring-[#4563d1]" />
                       <span>Інший отримувач замовлення</span>
@@ -439,12 +672,14 @@ export default function CheckoutPage() {
                 <section className="rounded-xl bg-white shadow-sm">
                   <header className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <StepBadge index={2} completed={(delivery === 'market' && marketConfirmed) || (delivery === 'nova' && novaConfirmed) || false} />
+                      <StepBadge index={2} completed={(delivery === 'market' && marketConfirmed) || (delivery === 'nova' && novaConfirmed) || (delivery === 'self' && selfConfirmed)} />
                       <h2 className="font-semibold ml-1.5">Доставка</h2>
                     </div>
-                    {((delivery === 'market' && marketConfirmed) || (delivery === 'nova' && novaConfirmed)) && (
+                    {((delivery === 'market' && marketConfirmed) || (delivery === 'nova' && novaConfirmed) || (delivery === 'self' && selfConfirmed)) && (
                       <button className="text-xs text-[#4563d1] inline-flex items-center gap-1" onClick={() => {
-                        if (delivery === 'market') { setMarketConfirmed(false); setExpandedMarket(true) } else { setNovaConfirmed(false); setExpandedNova(true) }
+                        if (delivery === 'market') { setMarketConfirmed(false); setExpandedMarket(true) }
+                        else if (delivery === 'nova') { setNovaConfirmed(false); setExpandedNova(true) }
+                        else { setSelfConfirmed(false); setExpandedSelf(true) }
                       }}>
                         <Edit3 className="h-3.5 w-3.5" /> Редагувати
                       </button>
@@ -484,7 +719,6 @@ export default function CheckoutPage() {
                     </div>
                     )}
 
-                    <div className="h-px bg-gray-200 my-3" />
 
                     {/* Option: Nova Poshta */}
                     {hasNova && (
@@ -678,7 +912,7 @@ export default function CheckoutPage() {
                           </div>
                           <div className="min-w-0 flex-1">
                             <Link href={`/product/${it.productId}`} className="line-clamp-2 text-sm text-gray-900 hover:underline">{p?.name || 'Товар'}</Link>
-                            <p className="mt-1 text-xs text-gray-600">{sellerName || (typeof sellerId === 'string' ? sellerId : '')}</p>
+                            <p className="mt-1 text-xs text-gray-600">{isAll ? (sellerInfos[p?.sellerId || '']?.name || p?.sellerId || '') : (sellerName || (typeof sellerId === 'string' ? sellerId : ''))}</p>
                           </div>
                           <div className="text-right">
                             <p className="text-sm font-semibold text-gray-900">{Math.round(finalPrice)} ₴/шт.</p>
@@ -697,7 +931,7 @@ export default function CheckoutPage() {
                       <span className="font-bold text-lg">{displaySubtotal} ₴</span>
                     </div>
                   </div>
-                  <button onClick={placeOrder} className="mt-4 w-full hover:cursor-pointer rounded-lg bg-[#4563d1] px-4 py-3 text-white text-sm font-semibold hover:bg-[#364ea8]">Оформити замовлення</button>
+                  <button onClick={placeOrder} className="mt-4 w-full hover:cursor-pointer rounded-lg bg-[#4563d1] px-4 py-3 text-white text-sm font-semibold hover:bg-[#364ea8]">{isAll ? 'Оформити всі товари' : 'Оформити замовлення'}</button>
                   <p className="mt-3 px-2 text-[11px] text-gray-500">Натискаючи кнопку «Оформити замовлення», я погоджуюсь з політикою конфіденційності.</p>
                 </div>
               </aside>
@@ -705,6 +939,67 @@ export default function CheckoutPage() {
           )}
         </div>
       </main>
+      {/* Phone number modal */}
+      {showPhoneModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={() => { if (!savingPhone) setShowPhoneModal(false) }} />
+          <div className="relative z-[121] w-[92vw] max-w-[420px] rounded-2xl bg-white shadow-2xl">
+            <div className="border-b border-gray-200 px-5 py-3">
+              <h3 className="text-[16px] font-semibold text-gray-900">Вкажіть номер телефону</h3>
+              <p className="mt-1 text-[13px] text-gray-600">Ми використаємо його для оформлення замовлення та зв’язку з вами.</p>
+            </div>
+            <div className="p-5">
+              <label className="block text-sm font-medium text-gray-900 mb-1">Телефон</label>
+              <input
+                autoFocus
+                value={phoneInput}
+                onChange={(e) => { setPhoneInput(e.target.value); setPhoneError(null) }}
+                placeholder="+380XXXXXXXXX"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]"
+              />
+              {phoneError ? (<p className="mt-1 text-xs text-red-600">{phoneError}</p>) : null}
+              <div className="mt-4 flex items-center justify-end gap-2">
+                <button
+                  disabled={savingPhone}
+                  onClick={() => setShowPhoneModal(false)}
+                  className="rounded-lg border border-gray-300 px-4 py-1.5 text-sm text-gray-700 hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Скасувати
+                </button>
+                <button
+                  disabled={savingPhone}
+                  onClick={async () => {
+                    const trimmed = (phoneInput || '').trim()
+                    const valid = /^\+?\d{9,15}$/.test(trimmed)
+                    if (!valid) { setPhoneError('Введіть коректний номер телефону'); return }
+                    setSavingPhone(true)
+                    try {
+                      const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+                      if (token) {
+                        const form = new FormData()
+                        form.append('PhoneNumber', trimmed)
+                        await fetch('https://api.sellpoint.pp.ua/api/User/UpdateUser', {
+                          method: 'PUT',
+                          headers: { Authorization: `Bearer ${token}` },
+                          body: form,
+                        }).catch(() => null as any)
+                      }
+                      setPhoneNumber(trimmed)
+                      setShowPhoneModal(false)
+                      setTimeout(() => { try { placeOrder() } catch {} }, 0)
+                    } finally {
+                      setSavingPhone(false)
+                    }
+                  }}
+                  className="rounded-lg bg-[#4563d1] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#364ea8] disabled:opacity-60"
+                >
+                  {savingPhone ? 'Збереження…' : 'Продовжити'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       <SiteFooter />
     </div>
   )

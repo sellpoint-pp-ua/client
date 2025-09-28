@@ -101,7 +101,8 @@ export const useAuth = () => {
         const response = await authService.register(userData);
         authService.setToken(response.token);
         if (typeof window !== 'undefined') {
-          localStorage.setItem('user_display_name', userData.fullName);
+          const display = userData.fullName || `${(userData as any).firstName || ''} ${(userData as any).lastName || ''}`.trim();
+          localStorage.setItem('user_display_name', display || '');
         }
         setIsAuthenticated(true);
         try {

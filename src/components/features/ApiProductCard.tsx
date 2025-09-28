@@ -203,7 +203,6 @@ export default function ApiProductCard({
         onClick={(e) => {
           e.preventDefault()
           if (isInCart(id)) { openCart(); return }
-          if (!isAuthenticated) { window.location.href = '/auth/login'; return }
           addToCart(id, 1)
         }}
       >

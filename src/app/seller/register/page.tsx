@@ -61,7 +61,7 @@ export default function SellerRegisterBannerPage() {
             </div>
 
             <Link
-              href="/auth/register"
+              href="/requests"
               className="rounded-xl bg-[#3A63F1] px-3 sm:px-4 py-2 ml-5.5 text-white text-[17px] sm:text-[17px] font-medium hover:bg-[#3358d8] transition-colors"
             >
               Зареєструватись
@@ -84,7 +84,7 @@ export default function SellerRegisterBannerPage() {
               </p>
               <div className="mt-6">
                 <Link
-                  href="/auth/register"
+                  href="/requests"
                   className="inline-block rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors"
                 >
                   Зареєструватись
@@ -307,7 +307,7 @@ export default function SellerRegisterBannerPage() {
             </p>
             <div className="mt-6 flex justify-center">
               <Link
-                href="/auth/register"
+                href="/requests"
                 className="rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors"
               >
                 Зареєструватись
@@ -401,7 +401,7 @@ export default function SellerRegisterBannerPage() {
                 Перегляньте відео-інструкцію “Як почати продавати на <br /> Sell Point”. Якщо все зрозуміло – реєструйтеся!
               </p>
               <div className="mt-3">
-                <Link href="/auth/register" className="inline-block rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors">
+                <Link href="/requests" className="inline-block rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors">
                   Зареєструватись
                 </Link>
               </div>
@@ -480,7 +480,7 @@ export default function SellerRegisterBannerPage() {
                 </p>
               </div>
               <div className="mt-6">
-                <Link href="/auth/register" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
+                <Link href="/requests" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
                   Зареєструватись
                 </Link>
               </div>
@@ -504,7 +504,7 @@ export default function SellerRegisterBannerPage() {
                 </p>
               </div>
               <div className="mt-6">
-                <Link href="/auth/register" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
+                <Link href="/requests" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
                   Зареєструватись
                 </Link>
               </div>
@@ -528,7 +528,7 @@ export default function SellerRegisterBannerPage() {
                 </p>
               </div>
               <div className="mt-6">
-                <Link href="/auth/register" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
+                <Link href="/requests" className="block text-center rounded-xl bg-[#3A63F1] px-4 py-2 text-white hover:bg-[#3358d8] transition-colors">
                   Зареєструватись
                 </Link>
               </div>
@@ -718,7 +718,7 @@ export default function SellerRegisterBannerPage() {
           </div>
 
           <div className="relative z-10 mt-30 flex justify-center">
-            <Link href="/auth/register" className="rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors">
+            <Link href="/requests" className="rounded-xl bg-[#3A63F1] px-3 sm:px-16 py-2 text-white text-[14px] sm:text-[15px] font-medium hover:bg-[#3358d8] transition-colors">
               Створити магазин
             </Link>
           </div>

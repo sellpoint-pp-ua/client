@@ -42,21 +42,32 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
     const payload = await response.json()
     const list = Array.isArray(payload?.products) ? payload.products : []
 
-    const normalizedProducts = list.map((product: any) => ({
-      id: product?.id || product?.productId || product?._id || '',
-      name: product?.name || 'Без назви',
-      price: Number(product?.price) || 0,
-      discountPrice: product?.discountPrice ?? null,
-      hasDiscount: Boolean(product?.hasDiscount),
-      finalPrice: (product?.finalPrice ?? (Number(product?.price) || 0)),
-      discountPercentage: product?.discountPercentage ?? null,
-      quantityStatus: product?.quantityStatus,
-      quantity: product?.quantity,
-      productType: product?.productType,
-      categoryPath: Array.isArray(product?.categoryPath) ? product.categoryPath : [],
-      paymentOptions: product?.paymentOptions ?? 0,
-      deliveryType: product?.deliveryType ?? 0,
-    }))
+    const normalizedProducts = list.map((product: any) => {
+      const price = Number(product?.price) || 0
+      const rawDiscountPrice = Number(product?.discountPrice)
+      const discountPrice = Number.isFinite(rawDiscountPrice) && rawDiscountPrice > 0 ? rawDiscountPrice : null
+      const hasDiscount = Boolean(product?.hasDiscount) || (discountPrice !== null && discountPrice < price)
+      const rawFinal = Number(product?.finalPrice)
+      const finalPrice = Number.isFinite(rawFinal) && rawFinal > 0
+        ? rawFinal
+        : (hasDiscount && discountPrice !== null ? discountPrice : price)
+      const discountPercentage = product?.discountPercentage ?? (hasDiscount && price > 0 ? Math.round(100 - (finalPrice / price) * 100) : null)
+      return {
+        id: product?.id || product?.productId || product?._id || '',
+        name: product?.name || 'Без назви',
+        price,
+        discountPrice,
+        hasDiscount,
+        finalPrice,
+        discountPercentage,
+        quantityStatus: product?.quantityStatus,
+        quantity: product?.quantity,
+        productType: product?.productType,
+        categoryPath: Array.isArray(product?.categoryPath) ? product.categoryPath : [],
+        paymentOptions: product?.paymentOptions ?? 0,
+        deliveryType: product?.deliveryType ?? 0,
+      }
+    })
 
     const validProducts = normalizedProducts.filter((p: { id?: string; name?: string }) => p.id && p.name && p.name !== 'Без назви')
 

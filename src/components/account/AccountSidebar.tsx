@@ -37,9 +37,12 @@ export default function AccountSidebar() {
 				if (!res || !res.ok) return
 				const u = await res.json()
 				if (cancelled) return
-				const name: string = (typeof u?.fullName === 'string' && u.fullName.trim())
-					? u.fullName
-					: (typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || ''))
+				const part = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+				const last = part(u?.lastName)
+				const first = part(u?.firstName)
+				const middle = part(u?.middleName)
+				const fio = [last, first, middle].filter(Boolean).join(' ').trim()
+				const name: string = fio || (typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || ''))
 				const loginVal: string = typeof u?.username === 'string' ? u.username : ''
 				const avatarObj = u?.avatar
 				const avatar: string | null = (avatarObj && typeof avatarObj?.sourceUrl === 'string')
@@ -90,7 +93,7 @@ export default function AccountSidebar() {
 					)}
 				</div>
 				<div>
-					<p className="text-sm font-medium text-gray-900">{userName || 'Кабінет'}</p>
+					<p className="text-sm font-medium text-gray-900 leading-tight break-words">{userName || 'Кабінет'}</p>
 					<p className="text-xs text-gray-500">{userLogin ? `${userLogin}` : '\u00A0'}</p>
 				</div>
 			</div>
@@ -104,12 +107,7 @@ export default function AccountSidebar() {
 							<span>Мої замовлення</span>
 						</Link>
 					</li>
-					<li>
-						<Link href="/orders/track" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
-							<Truck className="h-5 w-5" />
-							<span>Відстеження замовлення</span>
-						</Link>
-					</li>
+					
 					<li>
 						<Link href="/favorites" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/favorites' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
 							<Heart className="h-5 w-5" />

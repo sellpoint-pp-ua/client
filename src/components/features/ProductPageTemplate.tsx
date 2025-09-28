@@ -219,8 +219,8 @@ export default function ProductPageTemplate({ productId }: Props) {
     const v = product?.deliveryType ?? 0
     const chips: LabeledIcon[] = []
     if (v & (1 << 0)) chips.push({ key: 'NovaPost', label: 'Нова Пошта', icon: 'package' })
-    if (v & (1 << 1)) chips.push({ key: 'UkrPost', label: 'Укрпошта', icon: 'package' })
-    if (v & (1 << 2)) chips.push({ key: 'MeestExpress', label: 'Meest Express', icon: 'truck' })
+    if (v & (1 << 1)) chips.push({ key: 'Rozetka', label: 'Rozetka', icon: 'package' })
+    if (v & (1 << 2)) chips.push({ key: 'SelfPickup', label: 'Самовивіз', icon: 'truck' })
     return chips
   })()
 

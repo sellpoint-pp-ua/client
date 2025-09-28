@@ -1,5 +1,6 @@
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const searchChips: string[] = [
 	'Автомобільні шини',
@@ -92,10 +93,10 @@ export default function SiteFooter() {
 					<div>
 						<h4 className="mb-3 font-semibold text-gray-900">Покупцям</h4>
 						<ul className="space-y-2">
-							<li><a href="#" className="hover:underline">Довідка для покупців</a></li>
-							<li><a href="#" className="hover:underline">Підтримка</a></li>
+							<li><Link href="/info/dovidka-dlya-pokupciv" className="hover:underline">Довідка для покупців</Link></li>
+							<li><Link href="/info/pidtrymka" className="hover:underline">Підтримка</Link></li>
 							<li><a href="#" className="hover:underline">Акції і пропозиції</a></li>
-							<li><a href="#" className="hover:underline">Що таке “Купити із Sellpoint”</a></li>
+							<li><Link href="/info/sellpoint-oplata" className="hover:underline">Що таке “Купити із Sellpoint”</Link></li>
 							<li><a href="#" className="hover:underline">Як купувати з оплатою</a></li>
 							<li><a href="#" className="hover:underline">Рекомендації з безпечних покупок</a></li>
 							<li><a href="#" className="hover:underline">Перевірка на приналежність сайту до платформи sellpoint.ua</a></li>

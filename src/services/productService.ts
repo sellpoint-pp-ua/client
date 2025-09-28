@@ -24,7 +24,6 @@ class ProductService {
     logger.info('ProductService: Status', res.status);
     if (!res.ok) {
       const text = await res.text();
-      // Don't log 404 as error - it's expected for some endpoints
       if (res.status === 404) {
         logger.info('ProductService: 404 response (expected for some endpoints)', text);
       } else {
@@ -85,11 +84,9 @@ class ProductService {
       body: JSON.stringify(product),
     });
     
-    // Log the response to debug ID structure
     logger.info('ProductService: Create response', response);
     console.log('ProductService: Full create response:', JSON.stringify(response, null, 2));
     
-    // Handle different response structures
     if (response && typeof response === 'object') {
       if (response.id) {
         console.log('ProductService: Found ID in response.id:', response.id);
@@ -110,7 +107,6 @@ class ProductService {
         console.log('ProductService: No ID found in response structure:', Object.keys(response));
         console.log('ProductService: Response values:', Object.values(response));
         
-        // Try to find any property that looks like an ID
         for (const [key, value] of Object.entries(response)) {
           if (value && typeof value === 'object' && 'id' in value) {
             console.log(`ProductService: Found nested ID in response.${key}.id:`, (value as any).id);
@@ -131,10 +127,8 @@ class ProductService {
       body: JSON.stringify(product),
     });
     
-    // Log the response to debug ID structure
     logger.info('ProductService: Update response', response);
     
-    // Handle different response structures
     if (response && typeof response === 'object') {
       if (response.id) {
         return response as Product;
@@ -153,25 +147,21 @@ class ProductService {
     const token = this.getToken();
     if (!token) throw new Error('No authentication token available');
 
-    // Use PUT /api/ProductMedia/many as specified in API docs
     const form = new FormData();
     
-    // Add files to FormData with proper type detection
     files.forEach((f, idx) => {
       form.append('files', f, f.name || `file_${idx}`);
       
-      // Determine if it's a video based on file type or extension
       const isVideo = f.type.startsWith('video/') || 
         /\.(mp4|webm|mov|avi|mkv|m4v|ogg)$/i.test(f.name);
       
       if (isVideo) {
-        form.append('type', '1'); // 1 for video, 0 for image
+        form.append('type', '1'); 
       } else {
-        form.append('type', '0'); // 0 for image
+        form.append('type', '0'); 
       }
     });
     
-    // Add productId as query parameter in URL
     const url = `${API_BASE_URL}/api/ProductMedia/many?productId=${encodeURIComponent(productId)}`;
     
     try {

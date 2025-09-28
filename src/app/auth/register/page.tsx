@@ -90,10 +90,9 @@ export default function RegisterPage() {
     }
 
     try {
-      const fullName = `${formData.firstName} ${formData.lastName}`.trim();
-      
       await register({
-        fullName,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
         email: formData.email,
         password: formData.password
       });

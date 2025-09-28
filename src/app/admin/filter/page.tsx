@@ -16,15 +16,12 @@ export default function AdminFiltersPage() {
 
   const [existing, setExisting] = useState<AvailableFilter | null>(null)
 
-  // Create tab state
   const [createFilters, setCreateFilters] = useState<Array<{ title: string; values: string[] }>>([
     { title: '', values: [''] },
   ])
 
-  // Manage tab state (editable copy of existing)
   const [manageFilters, setManageFilters] = useState<Array<{ title: string; values: string[] }>>([])
 
-  // Modal states
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'filter' | 'value'; filterIndex: number; valueIndex?: number } | null>(null)
 
@@ -65,7 +62,6 @@ export default function AdminFiltersPage() {
           return
         }
         const data = await res.json()
-        // Handle both array and object API shapes
         if (Array.isArray(data)) {
           const entry = data[0]
           if (entry && typeof entry === 'object') {
@@ -125,7 +121,6 @@ export default function AdminFiltersPage() {
         body: JSON.stringify({ categoryId: selectedCategoryId, filters: normalizedCreate }),
       })
       if (!res.ok) throw new Error(await res.text())
-      // reload existing
       const r = await fetch(`/api/categories/${selectedCategoryId}/available-filters`, { cache: 'no-store' })
       if (r.ok) {
         const d = await r.json()
@@ -151,7 +146,6 @@ export default function AdminFiltersPage() {
         body: JSON.stringify(normalizedManage),
       })
       if (!res.ok) throw new Error(await res.text())
-      // reload existing
       const r = await fetch(`/api/categories/${selectedCategoryId}/available-filters`, { cache: 'no-store' })
       if (r.ok) {
         const d = await r.json()
@@ -180,7 +174,6 @@ export default function AdminFiltersPage() {
   }
 
   const removeFiltersByCategory = async () => {
-    // with unified param naming, just call deleteById if present, else noop
     if (existing?.id) return deleteById()
     setError('Немає запису для видалення')
   }

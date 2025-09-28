@@ -5,13 +5,15 @@ const API_BASE_URL = 'https://api.sellpoint.pp.ua'
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json().catch(() => ({})) as {
-      fullName?: string
+      firstName?: string
+      lastName?: string
       email?: string
       password?: string
     }
 
     const form = new FormData()
-    if (payload.fullName) form.append('FullName', payload.fullName)
+    if (payload.firstName) form.append('FirstName', payload.firstName)
+    if (payload.lastName) form.append('LastName', payload.lastName)
     if (payload.email) form.append('Email', payload.email)
     if (payload.password) form.append('Password', payload.password)
     form.append('DeviceInfo', 'web')

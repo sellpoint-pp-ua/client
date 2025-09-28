@@ -164,9 +164,7 @@ export default function AdminStoresPage() {
       
       let members: any[] = [];
       
-      // Якщо це об'єкт з ролями (як повертає сервер)
       if (response && typeof response === 'object' && !Array.isArray(response)) {
-        // Перетворюємо об'єкт ролей в масив учасників
         members = Object.entries(response).map(([userId, role]) => ({
           id: userId,
           userId: userId,
@@ -187,7 +185,6 @@ export default function AdminStoresPage() {
       
       setStoreUsers(members);
       
-      // Завантажуємо деталі користувачів
       if (members.length > 0) {
         const userDetailsPromises = members.map(async (member) => {
           try {
@@ -197,7 +194,6 @@ export default function AdminStoresPage() {
             return { userId: member.userId, details: userDetails };
           } catch (err) {
             console.error(`Error loading user details for ${member.userId}:`, err);
-            // Повертаємо базову інформацію навіть якщо API не працює
             return { 
               userId: member.userId, 
               details: {
@@ -228,7 +224,6 @@ export default function AdminStoresPage() {
     }
   };
 
-  // Функція для отримання назви ролі
   const getRoleName = (role: any): string => {
     if (typeof role === 'string') {
       return role;
