@@ -244,7 +244,7 @@ export default function FavoritesPage() {
 								<div className="flex items-center justify-between">
 									<h1 className="text-lg font-bold text-gray-900">Обране</h1>
 								</div>
-								<div className="mt-8  pt-2">
+								<div className="mt-2 pt-2">
 									<div className="flex justify-between">
 										<div className="flex items-center gap-6">
 										<button onClick={() => setActiveTab('products')} className={`hover:cursor-pointer rounded-xl px-5 py-2 text-sm ${activeTab==='products' ? 'bg-[#4563d1] text-white' : 'bg-white text-gray-700 border-2 border-gray-300'}`}>Товари</button>

@@ -25,6 +25,13 @@ class StoreService {
 
     if (!response.ok) {
       const errorText = await response.text();
+      
+      // Не логируем ошибку "Store not found" как ошибку - это нормальная ситуация
+      if (errorText.includes('Store not found')) {
+        logger.info('StoreService: Store not found - this is normal for users without stores');
+        throw new Error('Store not found');
+      }
+      
       logger.error('StoreService: Error response body:', errorText);
       
       try {
@@ -170,6 +177,11 @@ class StoreService {
       }
       return requests;
     } catch (error) {
+      // Если пользователь не имеет магазина или заявок, это нормально - не логируем как ошибку
+      if (error instanceof Error && error.message.includes('Store not found')) {
+        console.log('User has no store requests - this is normal');
+        return [];
+      }
       console.error('Error fetching user requests:', error);
       return [];
     }

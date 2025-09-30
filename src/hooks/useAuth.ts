@@ -131,6 +131,14 @@ export const useAuth = () => {
     setError(null);
   }, []);
 
+  const setAuthData = useCallback((data: { token: string; user: any; isAuthenticated: boolean }) => {
+    authService.setToken(data.token);
+    setIsAuthenticated(data.isAuthenticated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('user_display_name', data.user.displayName || data.user.firstName || 'Користувач');
+    }
+  }, []);
+
   const checkAdminStatus = useCallback(async (): Promise<boolean> => {
     if (!isAuthenticated) {
       return false;
@@ -152,6 +160,7 @@ export const useAuth = () => {
     clearError,
     checkAuth,
     checkAdminStatus,
+    setAuthData,
     sendVerificationCode: authService.sendVerificationCode.bind(authService),
     verifyEmailCode: authService.verifyEmailCode.bind(authService),
   };

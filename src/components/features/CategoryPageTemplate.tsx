@@ -173,11 +173,14 @@ export default function CategoryPageTemplate({
     e.preventDefault()
   }
 
-  const applyFiltersToServer = useCallback(async (selected: Record<string, string[]>) => {
+  const applyFiltersToServer = useCallback(async (selected: { include: Record<string, string[]>; exclude: Record<string, string[]> }) => {
     try {
       setIsLoadingProducts(true)
-      const active = Object.entries(selected).filter(([, arr]) => Array.isArray(arr) && arr.length > 0)
-      if (active.length === 0) {
+      const { include, exclude } = selected
+      const hasIncludeFilters = Object.keys(include).length > 0 && Object.values(include).some(arr => arr.length > 0)
+      const hasExcludeFilters = Object.keys(exclude).length > 0 && Object.values(exclude).some(arr => arr.length > 0)
+      
+      if (!hasIncludeFilters && !hasExcludeFilters) {
         const res = await fetch(`/api/products/by-category/${categoryId}?pageSize=50`, { cache: 'no-store' })
         if (!res.ok) throw new Error('Failed to fetch products')
         const productsData = await res.json()
@@ -192,18 +195,40 @@ export default function CategoryPageTemplate({
 
       const body = {
         categoryId,
-        include: Object.fromEntries(active.map(([k, v]) => [k, v[0]])),
-        exclude: {},
+        include: hasIncludeFilters ? include : {},
+        exclude: hasExcludeFilters ? exclude : {},
         page: 0,
         pageSize: 50,
       }
-      const res = await fetch('/api/products/all', {
+      const res = await fetch('https://api.sellpoint.pp.ua/api/Product/get-all', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('auth_token') : ''}`
+        },
         body: JSON.stringify(body),
       })
       if (!res.ok) throw new Error('Failed to fetch filtered products')
-      const data = await res.json()
+      
+      let data
+      try {
+        const responseText = await res.text()
+        if (!responseText.trim()) {
+          // Пустой ответ - нет товаров по фильтрам
+          setProducts([])
+          setFilteredProducts([])
+          return
+        }
+        data = JSON.parse(responseText)
+      } catch (parseError) {
+        console.warn('Failed to parse response as JSON:', parseError)
+        // Если не удалось распарсить JSON, считаем что товаров нет
+        setProducts([])
+        setFilteredProducts([])
+        return
+      }
+      
       const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
       const valid = list.filter((p: { id?: string; name?: string }) => p && p.id && p.name && p.name !== 'Без назви')
       setProducts(valid)
@@ -298,7 +323,7 @@ export default function CategoryPageTemplate({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Пошук товарів в категорії..."
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]"
+                  className="w-full rounded-lg shadow-sm bg-white border border-gray-300 px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-[#4563d1]/30 focus:border-[#4563d1]"
                 />
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
               </div>

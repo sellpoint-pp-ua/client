@@ -192,7 +192,7 @@ export default function ResetPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
+                className="group relative w-full hover:cursor-pointer flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
               >
                 {isLoading ? 'Перевірка...' : 'Підтвердити'}
               </button>
@@ -201,7 +201,7 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="text-center">
-          <Link href="/auth/forgot-password" className="font-medium text-sm text-[#4563d1] hover:text-[#364ea8]">
+          <Link href="/auth/forgot-password" className="font-medium hover:cursor-pointer text-sm text-[#4563d1] hover:text-[#364ea8]">
             Назад до відновлення пароля
           </Link>
         </div>

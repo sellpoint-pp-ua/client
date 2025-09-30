@@ -20,8 +20,8 @@ export default function SiteFooter() {
 	return (
 		<footer className="bg-gray-100 pt-6">
 			<div className="mx-auto w-full max-w-[1700px] px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-30 py-8 sm:py-10 2xl:pt-0">
-				{/* What people search */}
-				<div className="mb-6 sm:mb-8">
+
+				{/* <div className="mb-6 sm:mb-8">
 					<h3 className="mb-3 text-[19px]  text-gray-900">Що шукають</h3>
 					<div className="flex flex-wrap gap-3">
 						{searchChips.map((label, idx) => (
@@ -34,7 +34,7 @@ export default function SiteFooter() {
 							</button>
 						))}
 					</div>
-				</div>
+				</div> */}
 
 				{/* CTA card */}
 				<div className=" rounded-xl bg-white pl-3 pr-3 pb-1 mb-6">
@@ -51,9 +51,12 @@ export default function SiteFooter() {
 							</p>
 
 							<div className="mt-4">
-								<button className="rounded-xl bg-[#3A63F1] hover:cursor-pointer px-5 py-2.5 w-full mx-auto text-white  hover:bg-[#3358d8] transition-colors">
+								<Link 
+									href="/seller/register"
+									className="block rounded-xl bg-[#3A63F1] hover:cursor-pointer px-5 py-2.5 w-full mx-auto text-white text-center hover:bg-[#3358d8] transition-colors"
+								>
 									Зареєструватися
-								</button>
+								</Link>
 							</div>
 						</div>
 

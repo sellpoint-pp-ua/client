@@ -229,7 +229,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
+                className="group relative w-full hover:cursor-pointer flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
               >
                 {isLoading ? 'Надсилання...' : 'Надіслати код'}
               </button>
@@ -260,7 +260,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
+                className="group relative w-full hover:cursor-pointer flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
               >
                 {isLoading ? 'Перевірка...' : 'Підтвердити код'}
               </button>
@@ -287,7 +287,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="button"
                     aria-label={showPassword ? 'Сховати пароль' : 'Показати пароль'}
-                    className="px-2 py-2 absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                    className="px-2 py-2 absolute hover:cursor-pointer inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                     onClick={() => setShowPassword(v => !v)}
                     tabIndex={-1}
                   >
@@ -315,7 +315,7 @@ export default function ForgotPasswordPage() {
                   <button
                     type="button"
                     aria-label={showConfirmPassword ? 'Сховати пароль' : 'Показати пароль'}
-                    className="px-2 py-2 absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                    className="px-2 py-2 absolute hover:cursor-pointer inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                     onClick={() => setShowConfirmPassword(v => !v)}
                     tabIndex={-1}
                   >
@@ -332,7 +332,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
+                className="group relative w-full hover:cursor-pointer flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ease-out"
               >
                 {isLoading ? 'Зміна пароля...' : 'Змінити пароль'}
               </button>
@@ -342,7 +342,7 @@ export default function ForgotPasswordPage() {
 
 
         <div className="text-center space-y-2">
-          <Link href="/auth/login" className="font-medium text-sm text-[#4563d1] hover:text-[#364ea8]">
+          <Link href="/auth/login" className="font-medium hover:cursor-pointer text-sm text-[#4563d1] hover:text-[#364ea8]">
             Повернутися до входу
           </Link>
           {(resetToken || accessCode) && (
@@ -353,7 +353,7 @@ export default function ForgotPasswordPage() {
                   clearAll();
                   setFormData({ login: '', code: '', password: '', confirmPassword: '' });
                 }}
-                className="font-medium text-sm text-gray-600 hover:text-gray-800"
+                className="font-medium text-sm hover:cursor-pointer text-gray-600 hover:text-gray-800"
               >
                 Почати спочатку
               </button>

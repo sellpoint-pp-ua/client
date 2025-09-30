@@ -85,7 +85,7 @@ export default function VerifyEmailPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed  transition-colors duration-200 ease-out"
+              className="group relative w-full flex hover:cursor-pointer justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed  transition-colors duration-200 ease-out"
             >
               {isLoading ? 'Перевіряємо...' : 'Підтвердити'}
             </button>
@@ -96,14 +96,14 @@ export default function VerifyEmailPage() {
             <button
               type="button"
               onClick={onResend}
-              className="text-sm text-[#4563d1] ml-10 hover:text-[#364ea8] font-medium   transition-colors duration-200 ease-out"
+              className="text-sm text-[#4563d1] ml-10 hover:cursor-pointer hover:text-[#364ea8] font-medium   transition-colors duration-200 ease-out"
               disabled={resendLoading}
             >
               {resendLoading ? 'Надсилаємо...' : 'Надіслати код ще раз'}
             </button>
 
             <div >
-          <Link href="/auth/login" className="font-medium mr-10 text-sm text-[#4563d1] hover:text-[#364ea8]">
+          <Link href="/auth/login" className="font-medium hover:cursor-pointer mr-10 text-sm text-[#4563d1] hover:text-[#364ea8]">
             Повернутися до входу
           </Link>
             </div>
