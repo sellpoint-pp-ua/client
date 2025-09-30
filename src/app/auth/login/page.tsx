@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { Eye, EyeOff } from 'lucide-react';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
  
 
 export default function LoginPage() {
@@ -61,11 +62,8 @@ export default function LoginPage() {
     }
 
     try {
-      const loginValue = formData.login.includes('@')
-        ? formData.login.split('@')[0]
-        : formData.login
       await login({
-        login: loginValue,
+        login: formData.login,  // ✅ Используем полный email/логин
         password: formData.password
       });
     } catch (err) {
@@ -267,7 +265,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   aria-label={showPassword ? 'Сховати пароль' : 'Показати пароль'}
-                  className="px-2 py-2 absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
+                  className="px-2 py-2 absolute hover:cursor-pointer inset-y-0 right-3 flex items-center text-gray-500 hover:text-gray-700"
                   onClick={() => setShowPassword(v => !v)}
                   tabIndex={-1}
                 >
@@ -290,13 +288,13 @@ export default function LoginPage() {
                 onChange={handleInputChange}
                 className="h-4 w-4 text-[#4563d1] focus:ring-[#4563d1] border-gray-300 rounded"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+              <label htmlFor="remember-me" className="ml-2 block hover:cursor-pointer text-sm text-gray-900">
                 Запам&apos;ятати мене
               </label>
             </div>
 
             <div className="text-sm">
-              <Link href="/auth/forgot-password" className="font-medium text-[#4563d1] hover:text-[#364ea8]">
+              <Link href="/auth/forgot-password" className="font-medium text-[#4563d1] hover:cursor-pointer hover:text-[#364ea8]">
                 Забули пароль?
               </Link>
             </div>
@@ -306,10 +304,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed  transition-colors duration-200 ease-out"
+              className="group relative w-full  hover:cursor-pointer flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-xl text-white bg-[#4563d1] hover:bg-[#364ea8] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#4563d1] disabled:opacity-50 disabled:cursor-not-allowed  transition-colors duration-200 ease-out"
             >
               {isLoading ? 'Вхід...' : 'Увійти'}
             </button>
+          </div>
+
+          <div className="mt-2">
+            
+
+            <div className="mt-2  hover:cursor-pointer">
+              <GoogleAuthButton 
+                text="Увійти через Google"
+                className="w-full  hover:cursor-pointer"
+              />
+            </div>
           </div>
         </form>
       </div>

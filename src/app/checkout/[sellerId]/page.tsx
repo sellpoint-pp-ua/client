@@ -153,6 +153,7 @@ export default function CheckoutPage() {
   const [phoneInput, setPhoneInput] = useState<string>('')
   const [phoneError, setPhoneError] = useState<string | null>(null)
   const [savingPhone, setSavingPhone] = useState<boolean>(false)
+  const [isPlacingOrder, setIsPlacingOrder] = useState<boolean>(false)
 
   const StepBadge = ({ index, completed }: { index: number; completed: boolean }) => (
     <div className={`h-6 w-6 rounded-full ring-2 flex items-center justify-center text-[12px] ${completed ? 'bg-green-500 ring-green-500 text-white' : 'bg-white ring-gray-300 text-gray-700'}`}>
@@ -451,30 +452,33 @@ export default function CheckoutPage() {
     return null
   }
 
-  const placeOrder = async () => {
+  const placeOrder = async (phoneOverride?: string) => {
+    setIsPlacingOrder(true)
     try {
       const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
-      if (!payment || !paymentConfirmed) { alert('Оберіть спосіб оплати та підтвердіть'); return }
-      if (delivery === 'market' && !marketConfirmed) { alert('Підтвердьте адресу доставки (Rozetka)'); return }
-      if (delivery === 'nova' && !novaConfirmed) { alert('Підтвердьте адресу доставки (Нова Пошта)'); return }
-      if (delivery === 'self' && !selfConfirmed) { alert('Підтвердьте адресу самовивозу'); return }
+      if (!payment || !paymentConfirmed) { alert('Оберіть спосіб оплати та підтвердіть'); setIsPlacingOrder(false); return }
+      if (delivery === 'market' && !marketConfirmed) { alert('Підтвердьте адресу доставки (Rozetka)'); setIsPlacingOrder(false); return }
+      if (delivery === 'nova' && !novaConfirmed) { alert('Підтвердьте адресу доставки (Нова Пошта)'); setIsPlacingOrder(false); return }
+      if (delivery === 'self' && !selfConfirmed) { alert('Підтвердьте адресу самовивозу'); setIsPlacingOrder(false); return }
 
       const deliveryTo = getDeliveryTo()
-      if (!deliveryTo) { alert('Оберіть спосіб доставки'); return }
+      if (!deliveryTo) { alert('Оберіть спосіб доставки'); setIsPlacingOrder(false); return }
 
       const productIds: string[] = displayItems.map((it: any) => String(it?.productId)).filter(Boolean)
-      if (productIds.length === 0) { alert('Неможливо визначити товари'); return }
+      if (productIds.length === 0) { alert('Неможливо визначити товари'); setIsPlacingOrder(false); return }
 
       if (isAll) {
-        const phoneUsed = token ? phoneNumber : (guestPhone || '')
+        const phoneUsed = phoneOverride || (token ? phoneNumber : (guestPhone || ''))
         if (!phoneUsed) { 
           if (token) {
             setPhoneInput(phoneNumber)
             setPhoneError(null)
             setShowPhoneModal(true)
+            setIsPlacingOrder(false)
             return
           } else {
             alert('Вкажіть номер телефону')
+            setIsPlacingOrder(false)
             return
           }
         }
@@ -536,15 +540,17 @@ export default function CheckoutPage() {
         if (!res.ok) { alert('Не вдалося оформити замовлення'); return }
         try { router.push('/pay/success'); return } catch {}
       } else {
-        if (token && !phoneNumber) {
+        const phoneUsed = phoneOverride || phoneNumber
+        if (token && !phoneUsed) {
           setPhoneInput(phoneNumber)
           setPhoneError(null)
           setShowPhoneModal(true)
+          setIsPlacingOrder(false)
           return
         }
         const targetItem = displayItems[0]
         const productId = targetItem?.productId
-        if (!productId) { alert('Неможливо визначити товар'); return }
+        if (!productId) { alert('Неможливо визначити товар'); setIsPlacingOrder(false); return }
         const body = {
           productId,
           deliveryPayment: paymentToServerOld(payment),
@@ -578,6 +584,8 @@ export default function CheckoutPage() {
       }
     } catch (e) {
       alert('Сталася помилка під час оформлення')
+    } finally {
+      setIsPlacingOrder(false)
     }
   }
 
@@ -676,7 +684,7 @@ export default function CheckoutPage() {
                       <h2 className="font-semibold ml-1.5">Доставка</h2>
                     </div>
                     {((delivery === 'market' && marketConfirmed) || (delivery === 'nova' && novaConfirmed) || (delivery === 'self' && selfConfirmed)) && (
-                      <button className="text-xs text-[#4563d1] inline-flex items-center gap-1" onClick={() => {
+                      <button className="text-xs hover:cursor-pointer text-[#4563d1] inline-flex items-center gap-1" onClick={() => {
                         if (delivery === 'market') { setMarketConfirmed(false); setExpandedMarket(true) }
                         else if (delivery === 'nova') { setNovaConfirmed(false); setExpandedNova(true) }
                         else { setSelfConfirmed(false); setExpandedSelf(true) }
@@ -931,7 +939,17 @@ export default function CheckoutPage() {
                       <span className="font-bold text-lg">{displaySubtotal} ₴</span>
                     </div>
                   </div>
-                  <button onClick={placeOrder} className="mt-4 w-full hover:cursor-pointer rounded-lg bg-[#4563d1] px-4 py-3 text-white text-sm font-semibold hover:bg-[#364ea8]">{isAll ? 'Оформити всі товари' : 'Оформити замовлення'}</button>
+                  <button 
+                    onClick={() => placeOrder()} 
+                    disabled={isPlacingOrder}
+                    className={`mt-4 w-full rounded-lg px-4 py-3 text-white text-sm font-semibold ${
+                      isPlacingOrder 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-[#4563d1] hover:bg-[#364ea8] hover:cursor-pointer'
+                    }`}
+                  >
+                    {isPlacingOrder ? 'Оформлення...' : (isAll ? 'Оформити всі товари' : 'Оформити замовлення')}
+                  </button>
                   <p className="mt-3 px-2 text-[11px] text-gray-500">Натискаючи кнопку «Оформити замовлення», я погоджуюсь з політикою конфіденційності.</p>
                 </div>
               </aside>
@@ -986,7 +1004,6 @@ export default function CheckoutPage() {
                       }
                       setPhoneNumber(trimmed)
                       setShowPhoneModal(false)
-                      setTimeout(() => { try { placeOrder() } catch {} }, 0)
                     } finally {
                       setSavingPhone(false)
                     }
@@ -1000,6 +1017,21 @@ export default function CheckoutPage() {
           </div>
         </div>
       )}
+      
+      {/* Loading overlay */}
+      {isPlacingOrder && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative z-[131] flex flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-[#4563d1]"></div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900">Оформлення замовлення</h3>
+              <p className="mt-1 text-sm text-gray-600">Будь ласка, зачекайте...</p>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <SiteFooter />
     </div>
   )

@@ -41,7 +41,10 @@ export default function StoreRequestsList({ onRequestUpdated }: StoreRequestsLis
       console.log('Processed requests:', requests);
       setStoreRequests(requests);
     } catch (error) {
-      console.error('Error loading store requests:', error);
+      // Не логируем ошибку, если пользователь просто не имеет заявок
+      if (error instanceof Error && !error.message.includes('Store not found')) {
+        console.error('Error loading store requests:', error);
+      }
       setStoreRequests([]);
     } finally {
       setIsLoading(false);

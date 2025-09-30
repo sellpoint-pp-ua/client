@@ -2,9 +2,11 @@
 import Header from '@/components/layout/Header'
 import SiteFooter from '@/components/layout/SiteFooter'
 import AccountSidebar from '@/components/account/AccountSidebar'
+import ReviewModal from '@/components/features/ReviewModal'
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle, X } from 'lucide-react'
+import { CheckCircle, X, AlertCircle, ExternalLink } from 'lucide-react'
 
 type ApiOrder = {
   id: string
@@ -46,6 +48,9 @@ export default function OrdersPage() {
   const [error, setError] = useState<string>('')
   const [busyCancelId, setBusyCancelId] = useState<string | null>(null)
   const [showSuccessToast, setShowSuccessToast] = useState<boolean>(false)
+  const [reviewModalOpen, setReviewModalOpen] = useState<boolean>(false)
+  const [selectedProduct, setSelectedProduct] = useState<{ productId: string; productName: string; price: number; discountPrice?: number; hasDiscount?: boolean; finalPrice?: number; imageUrl?: string; sellerId: string } | null>(null)
+  const [showProductNotFoundToast, setShowProductNotFoundToast] = useState<boolean>(false)
 
   const handleCancel = async (orderId: string) => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
@@ -70,6 +75,44 @@ export default function OrdersPage() {
       setError('Помилка скасування замовлення')
     } finally {
       setBusyCancelId(null)
+    }
+  }
+
+  const handleAddReview = async (order: ApiOrder) => {
+    if (!order.miniProductsInfo?.productId) {
+      setShowProductNotFoundToast(true)
+      setTimeout(() => setShowProductNotFoundToast(false), 3000)
+      return
+    }
+
+    try {
+      // Проверяем существование продукта и получаем полную информацию
+      const productRes = await fetch(`https://api.sellpoint.pp.ua/api/Product/get-by-id/${order.miniProductsInfo.productId}`)
+      
+      if (!productRes.ok) {
+        setShowProductNotFoundToast(true)
+        setTimeout(() => setShowProductNotFoundToast(false), 3000)
+        return
+      }
+
+      const productData = await productRes.json()
+
+      // Подготавливаем данные для модального окна с полной информацией из API
+      setSelectedProduct({
+        productId: order.miniProductsInfo.productId,
+        productName: productData.name || order.miniProductsInfo.productName || 'Товар',
+        price: productData.price || order.miniProductsInfo.price || 0,
+        discountPrice: productData.discountPrice,
+        hasDiscount: productData.hasDiscount,
+        finalPrice: productData.finalPrice,
+        imageUrl: productData.image?.compressedUrl || productData.image?.sourceUrl || order.miniProductsInfo.image?.compressedUrl || order.miniProductsInfo.image?.sourceUrl,
+        sellerId: order.sellerId
+      })
+
+      setReviewModalOpen(true)
+    } catch {
+      setShowProductNotFoundToast(true)
+      setTimeout(() => setShowProductNotFoundToast(false), 3000)
     }
   }
 
@@ -209,7 +252,14 @@ export default function OrdersPage() {
                               <p className="text-sm font-medium text-gray-900">№{String(o.orderNumber || '').slice(0,16)}</p>
                               <p className="mt-1 text-xs text-gray-500">{dateStr}</p>
                               <p className="mt-3 text-xs text-gray-500">{itemsQty} шт. • ID: {o.id}</p>
-                              <p className="mt-1 text-sm text-[#3046b4] hover:underline cursor-pointer truncate">{first?.productName || 'Товар'}</p>
+                              <Link 
+                                href={`/product/${first?.productId || ''}`}
+                                className="mt-1 text-sm text-[#3046b4] hover:underline cursor-pointer block hover:text-[#1e3a8a] transition-colors duration-200 flex items-center gap-1 min-w-0"
+                                title={first?.productName || 'Товар'}
+                              >
+                                <span className="truncate min-w-0 flex-1">{first?.productName || 'Товар'}</span>
+                                <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                              </Link>
                             </div>
                           </div>
                         </div>
@@ -238,7 +288,12 @@ export default function OrdersPage() {
 						  <p className="mt-2 text-sm font-medium text-gray-900">{seller?.name || o.sellerId}</p>
                         </div>
                         <div className="col-span-4 md:col-span-2 flex md:flex-col md:items-end md:justify-end gap-2">
-                          <button className="hover:cursor-pointer rounded-lg bg-[#4563d1] px-4 py-2 text-sm text-white hover:bg-[#364ea8] whitespace-nowrap">Додати відгук</button>
+                          <button 
+                            onClick={() => handleAddReview(o)} 
+                            className="hover:cursor-pointer rounded-lg bg-[#4563d1] px-4 py-2 text-sm text-white hover:bg-[#364ea8] whitespace-nowrap"
+                          >
+                            Додати відгук
+                          </button>
                           {(() => { const canCancel = o.status !== 4 && o.status !== 6; return (
                             <button onClick={() => handleCancel(o.id)} disabled={!canCancel || busyCancelId===o.id} className="hover:cursor-pointer rounded-lg bg-red-500 px-7 py-2 text-sm text-white hover:bg-red-700 whitespace-nowrap disabled:opacity-50">Скасувати</button>
                           ) })()}
@@ -272,6 +327,32 @@ export default function OrdersPage() {
           </div>
         </div>
       )}
+
+      {/* Product Not Found Toast */}
+      {showProductNotFoundToast && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-5 duration-300">
+          <div className="flex items-center gap-3 rounded-lg bg-red-500 px-4 py-3 text-white shadow-lg">
+            <AlertCircle className="h-5 w-5" />
+            <span className="font-medium">Товар не знайдено</span>
+            <button 
+              onClick={() => setShowProductNotFoundToast(false)}
+              className="ml-2 hover:bg-red-600 rounded-full p-1 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={reviewModalOpen}
+        onClose={() => setReviewModalOpen(false)}
+        productInfo={selectedProduct}
+        onReviewSubmitted={() => {
+          // Можно добавить логику обновления данных после успешного добавления отзыва
+        }}
+      />
     </div>
   )
 }

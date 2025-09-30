@@ -9,7 +9,6 @@ import Link from 'next/link'
 import { Star, Truck, Package, CreditCard, ShieldCheck, Store, ChevronRight, ChevronLeft } from 'lucide-react'
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/hooks/useAuth'
 
 
 type MediaItem = { url?: string; secondaryUrl?: string; order?: number; type?: 'image' | 'video' }
@@ -54,8 +53,23 @@ export default function ProductPageTemplate({ productId }: Props) {
   const sliderRef = useRef<HTMLDivElement | null>(null)
   const { addToCart, isInCart, openCart } = useCartDrawer()
   const router = useRouter()
-  const { isAuthenticated } = useAuth()
   const [sellerName, setSellerName] = useState<string>('')
+  const [sellerAvatar, setSellerAvatar] = useState<string>('')
+  const [sellerRating, setSellerRating] = useState<{ averageRating: number; totalReviews: number }>({
+    averageRating: 0,
+    totalReviews: 0
+  })
+  
+  // New states for product sections
+  const [similarSellerProducts, setSimilarSellerProducts] = useState<Product[]>([])
+  const [bestSellerProducts, setBestSellerProducts] = useState<Product[]>([])
+  const [viewedProducts, setViewedProducts] = useState<Product[]>([])
+  const [similarOtherProducts, setSimilarOtherProducts] = useState<Product[]>([])
+  const [loadingSimilarSeller, setLoadingSimilarSeller] = useState(false)
+  const [loadingBestSeller, setLoadingBestSeller] = useState(false)
+  const [loadingViewed, setLoadingViewed] = useState(false)
+  const [loadingSimilarOther, setLoadingSimilarOther] = useState(false)
+  const [productImages, setProductImages] = useState<Record<string, string>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -73,10 +87,26 @@ export default function ProductPageTemplate({ productId }: Props) {
             try {
               const sid = typeof prod?.sellerId === 'string' ? prod.sellerId : ''
               if (sid) {
+                // Load seller info
                 const r = await fetch(`https://api.sellpoint.pp.ua/api/Store/GetStoreById?storeId=${encodeURIComponent(sid)}`)
                 if (r.ok) {
                   const s = await r.json()
-                  if (!cancelled) setSellerName(typeof s?.name === 'string' ? s.name : '')
+                  if (!cancelled) {
+                    setSellerName(typeof s?.name === 'string' ? s.name : '')
+                    setSellerAvatar(typeof s?.avatar?.sourceUrl === 'string' ? s.avatar.sourceUrl : '')
+                  }
+                }
+                
+                // Load seller rating
+                const ratingRes = await fetch(`https://api.sellpoint.pp.ua/api/ProductReview/GetAllReviewsByStoreId?storeId=${encodeURIComponent(sid)}`)
+                if (ratingRes.ok) {
+                  const ratingData = await ratingRes.json()
+                  if (!cancelled) {
+                    setSellerRating({
+                      averageRating: ratingData.averageRating || 0,
+                      totalReviews: ratingData.totalReviews || 0
+                    })
+                  }
                 }
               }
             } catch {}
@@ -116,6 +146,24 @@ export default function ProductPageTemplate({ productId }: Props) {
     return () => { cancelled = true }
   }, [productId])
 
+  // Keyboard navigation for image carousel
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (images.length <= 1) return
+      
+      if (event.key === 'ArrowLeft') {
+        event.preventDefault()
+        setActiveIdx(activeIdx === 0 ? images.length - 1 : activeIdx - 1)
+      } else if (event.key === 'ArrowRight') {
+        event.preventDefault()
+        setActiveIdx(activeIdx === images.length - 1 ? 0 : activeIdx + 1)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [activeIdx, images.length])
+
   useEffect(() => {
     let cancelled = false
     async function loadReviews() {
@@ -148,11 +196,30 @@ export default function ProductPageTemplate({ productId }: Props) {
       if (uniqueIds.length === 0) return
       try {
         const results = await Promise.all(uniqueIds.map(async (id) => {
-          const r = await fetch(`/api/users/${id}`, { cache: 'no-store' })
-          if (!r.ok) return [id, 'Користувач'] as const
-          const u = await r.json()
-          const name = typeof u?.username === 'string' ? u.username : 'Користувач'
-          return [id, name] as const
+          try {
+            const r = await fetch(`https://api.sellpoint.pp.ua/api/User/GetUserById?userId=${encodeURIComponent(id)}`, { cache: 'no-store' })
+            if (!r.ok) return [id, 'Користувач'] as const
+            const u = await r.json()
+            
+            // Формируем имя из firstName и lastName
+            const firstName = typeof u?.firstName === 'string' ? u.firstName.trim() : ''
+            const lastName = typeof u?.lastName === 'string' ? u.lastName.trim() : ''
+            let name = 'Користувач'
+            
+            if (firstName && lastName) {
+              name = `${firstName} ${lastName}`
+            } else if (firstName) {
+              name = firstName
+            } else if (lastName) {
+              name = lastName
+            } else if (typeof u?.username === 'string' && u.username.trim()) {
+              name = u.username
+            }
+            
+            return [id, name] as const
+          } catch {
+            return [id, 'Користувач'] as const
+          }
         }))
         if (cancelled) return
         const map: Record<string, string> = {}
@@ -164,6 +231,320 @@ export default function ProductPageTemplate({ productId }: Props) {
     loadUsers()
     return () => { cancelled = true }
   }, [reviewComments])
+
+  // Load similar seller products
+  useEffect(() => {
+    if (!product?.sellerId) return
+    
+    let cancelled = false
+    async function loadSimilarSeller() {
+      try {
+        setLoadingSimilarSeller(true)
+        console.log('Loading similar seller products for sellerId:', product?.sellerId)
+        
+        const body = {
+          categoryId: product?.categoryPath?.[0] || '',
+          include: {},
+          exclude: {},
+          page: 0,
+          pageSize: 15,
+          priceMin: 0,
+          priceMax: 0,
+          sort: 0
+        }
+        
+        const res = await fetch(`https://api.sellpoint.pp.ua/api/Product/get-by-seller-id/${product?.sellerId}`, {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        
+        if (!res.ok || cancelled) {
+          console.warn('API request failed for similar seller products:', res.status, res.statusText)
+          return
+        }
+        
+        const data = await res.json()
+        console.log('Similar seller products API response:', data)
+        const products = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+        const validProducts = products.filter((p: any) => p && p.id && p.name && p.name !== 'Без назви')
+        console.log('Valid similar seller products:', validProducts.length)
+        
+        if (!cancelled) {
+          // Shuffle array for random order
+          const shuffled = validProducts.sort(() => Math.random() - 0.5)
+          const products = shuffled.slice(0, 15)
+          setSimilarSellerProducts(products)
+          
+          // Load images for these products
+          const productIds = products.map((p: any) => p.id)
+          loadProductImages(productIds)
+        }
+      } catch (error) {
+        console.error('Failed to load similar seller products:', error)
+      } finally {
+        if (!cancelled) setLoadingSimilarSeller(false)
+      }
+    }
+    
+    loadSimilarSeller()
+    return () => { cancelled = true }
+  }, [product?.sellerId, product?.categoryPath])
+
+  // Load best seller products (sorted by rating)
+  useEffect(() => {
+    if (!product?.sellerId) return
+    
+    let cancelled = false
+    async function loadBestSeller() {
+      try {
+        setLoadingBestSeller(true)
+        console.log('Loading best seller products for sellerId:', product?.sellerId)
+        
+        const body = {
+          categoryId: product?.categoryPath?.[0] || '',
+          include: {},
+          exclude: {},
+          page: 0,
+          pageSize: 15,
+          priceMin: 0,
+          priceMax: 0,
+          sort: 0
+        }
+        
+        const res = await fetch(`https://api.sellpoint.pp.ua/api/Product/get-by-seller-id/${product?.sellerId}`, {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        
+        if (!res.ok || cancelled) return
+        
+        const data = await res.json()
+        const products = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+        const validProducts = products.filter((p: any) => p && p.id && p.name && p.name !== 'Без назви')
+        
+        if (!cancelled) {
+          // Get ratings for each product and sort by rating
+          const productsWithRatings = await Promise.all(
+            validProducts.slice(0, 15).map(async (p: any) => {
+              try {
+                const ratingRes = await fetch(`https://api.sellpoint.pp.ua/api/ProductReview/GetAllReviews?productId=${p.id}`, {
+                })
+                if (ratingRes.ok) {
+                  const ratingData = await ratingRes.json()
+                  const avgRating = typeof ratingData?.averageRating === 'number' ? ratingData.averageRating : 0
+                  return { ...p, rating: avgRating }
+                } else if (ratingRes.status === 404) {
+                  // Product has no reviews yet
+                  return { ...p, rating: 0 }
+                }
+                return { ...p, rating: 0 }
+              } catch (error) {
+                console.warn(`Failed to load reviews for product ${p.id}:`, error)
+                return { ...p, rating: 0 }
+              }
+            })
+          )
+          
+          // Sort by rating (highest first)
+          const sorted = productsWithRatings.sort((a, b) => b.rating - a.rating)
+          setBestSellerProducts(sorted)
+          
+          // Load images for these products
+          const productIds = sorted.map(p => p.id)
+          loadProductImages(productIds)
+        }
+      } catch (error) {
+        console.error('Failed to load best seller products:', error)
+      } finally {
+        if (!cancelled) setLoadingBestSeller(false)
+      }
+    }
+    
+    loadBestSeller()
+    return () => { cancelled = true }
+  }, [product?.sellerId, product?.categoryPath])
+
+  // Load viewed products from localStorage
+  useEffect(() => {
+    let cancelled = false
+    async function loadViewedProducts() {
+      try {
+        setLoadingViewed(true)
+        const viewedIds = typeof window !== 'undefined' ? 
+          JSON.parse(localStorage.getItem('viewed_products') || '[]') : []
+        
+        if (viewedIds.length === 0 || cancelled) {
+          setViewedProducts([])
+          return
+        }
+        
+        // Get unique recent viewed products (excluding current product)
+        const uniqueIds = [...new Set(viewedIds)].filter((id: any) => typeof id === 'string' && id !== productId).slice(0, 8)
+        
+        const products = await Promise.all(
+          uniqueIds.map(async (id: any) => {
+            try {
+              const res = await fetch(`/api/products/${id}`)
+              if (!res.ok) return null
+              const product = await res.json()
+              return product && product.id && product.name ? product : null
+            } catch {
+              return null
+            }
+          })
+        )
+        
+        if (!cancelled) {
+          const validProducts = products.filter(Boolean)
+          setViewedProducts(validProducts)
+          
+          // Load images for these products
+          const productIds = validProducts.map(p => p.id)
+          loadProductImages(productIds)
+        }
+      } catch (error) {
+        console.error('Failed to load viewed products:', error)
+      } finally {
+        if (!cancelled) setLoadingViewed(false)
+      }
+    }
+    
+    loadViewedProducts()
+    return () => { cancelled = true }
+  }, [productId])
+
+  // Load similar products from other sellers
+  useEffect(() => {
+    if (!product?.categoryPath?.[0]) return
+    
+    let cancelled = false
+    async function loadSimilarOther() {
+      try {
+        setLoadingSimilarOther(true)
+        
+        const body = {
+          categoryId: product?.categoryPath?.[0] || '',
+          include: {},
+          exclude: {},
+          page: 0,
+          pageSize: 8,
+          priceMin: 0,
+          priceMax: 0,
+          sort: 0
+        }
+        
+        const res = await fetch('https://api.sellpoint.pp.ua/api/Product/get-all', {
+          method: 'POST',
+          headers: {
+            'accept': '*/*',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        })
+        
+        if (!res.ok || cancelled) return
+        
+        const data = await res.json()
+        const products = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []
+        const validProducts = products.filter((p: any) => 
+          p && p.id && p.name && p.name !== 'Без назви' && p.sellerId !== product?.sellerId
+        )
+        
+        if (!cancelled) {
+          // Shuffle and take random products
+          const shuffled = validProducts.sort(() => Math.random() - 0.5)
+          const products = shuffled.slice(0, 8)
+          setSimilarOtherProducts(products)
+          
+          // Load images for these products
+          const productIds = products.map((p: any) => p.id)
+          loadProductImages(productIds)
+        }
+      } catch (error) {
+        console.error('Failed to load similar other products:', error)
+      } finally {
+        if (!cancelled) setLoadingSimilarOther(false)
+      }
+    }
+    
+    loadSimilarOther()
+    return () => { cancelled = true }
+  }, [product?.categoryPath, product?.sellerId])
+
+  // Save current product to viewed products
+  useEffect(() => {
+    if (!product?.id) return
+    
+    const viewedIds = typeof window !== 'undefined' ? 
+      JSON.parse(localStorage.getItem('viewed_products') || '[]') : []
+    
+    // Add current product to the beginning and keep only last 20
+    const updatedIds = [product.id, ...viewedIds.filter((id: string) => id !== product.id)].slice(0, 20)
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('viewed_products', JSON.stringify(updatedIds))
+    }
+  }, [product?.id])
+
+  // Function to load product images
+  const loadProductImages = async (productIds: string[]) => {
+
+    try {
+      const imagePromises = productIds.map(async (productId) => {
+        try {
+          console.log(`Loading image for product ${productId}`)
+          const res = await fetch(`https://api.sellpoint.pp.ua/api/ProductMedia/by-product-id/${productId}`, {
+          })
+          console.log(`Image API response for ${productId}:`, res.status, res.ok)
+          
+          if (res.ok) {
+            const data = await res.json()
+            console.log(`Image API data for ${productId}:`, data)
+            
+            // API returns an array of media objects, get the first one
+            if (Array.isArray(data) && data.length > 0) {
+              const firstMedia = data[0]
+              const imageUrl = firstMedia?.files?.sourceUrl || null
+              console.log(`Found image URL for ${productId}:`, imageUrl)
+              return [productId, imageUrl]
+            }
+            console.warn(`No media found for product ${productId}`)
+            return [productId, null]
+          } else {
+            console.warn(`Image API failed for ${productId}:`, res.status, res.statusText)
+            return [productId, null]
+          }
+        } catch (error) {
+          console.error(`Failed to load image for product ${productId}:`, error)
+          return [productId, null]
+        }
+      })
+
+      const results = await Promise.all(imagePromises)
+      const imageMap: Record<string, string> = {}
+      results.forEach(([id, url]) => {
+        if (url) {
+          imageMap[id] = url
+          console.log(`Loaded image for product ${id}:`, url)
+        } else {
+          console.warn(`No image found for product ${id}`)
+        }
+      })
+      
+      console.log('Product images loaded:', imageMap)
+      setProductImages(prev => ({ ...prev, ...imageMap }))
+    } catch (error) {
+      console.error('Failed to load product images:', error)
+    }
+  }
 
   const primaryPrice = product?.hasDiscount ? (product.finalPrice ?? product.discountPrice ?? product.price) : product?.price
   const showOld = Boolean(product?.hasDiscount && product?.price && primaryPrice && (product!.price > primaryPrice!))
@@ -318,42 +699,94 @@ export default function ProductPageTemplate({ productId }: Props) {
           {/* Gallery */}
           <div className="lg:col-span-7">
             <div className="overflow-hidden rounded-lg bg-white p-4 shadow-sm" >
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-0">
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-lg bg-gray-0 group">
                 {isLoading ? (
                   <div className="flex h-full w-full items-center justify-center">
                     <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-300 border-t-[#4563d1]"></div>
                   </div>
                 ) : images.length > 0 ? (
-                  images[activeIdx]?.type === 'video' ? (
-                    <video
-                      src={images[activeIdx]?.url || images[activeIdx]?.secondaryUrl || ''}
-                      className="h-full w-full object-contain"
-                      controls
-                    />
-                  ) : (
-                    <Image src={images[activeIdx]?.url || images[activeIdx]?.secondaryUrl || ''} alt={product?.name || ''} fill className="object-contain" />
-                  )
+                  <>
+                    <div className="relative h-full w-full">
+                      {images.map((img, index) => (
+                        <div
+                          key={index}
+                          className={`absolute inset-0 transition-opacity duration-300 ease-in-out ${
+                            index === activeIdx ? 'opacity-100' : 'opacity-0'
+                          }`}
+                        >
+                          {img.type === 'video' ? (
+                            <video
+                              src={img.url || img.secondaryUrl || ''}
+                              className="h-full w-full object-contain"
+                              controls
+                            />
+                          ) : (
+                            <Image 
+                              src={img.url || img.secondaryUrl || ''} 
+                              alt={product?.name || ''} 
+                              fill 
+                              className="object-contain" 
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Navigation arrows for main image */}
+                    {images.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => setActiveIdx(activeIdx === 0 ? images.length - 1 : activeIdx - 1)}
+                          className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg border border-gray-300 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-white hover:cursor-pointer hover:border-blue-500 hover:shadow-xl"
+                          aria-label="Попереднє зображення"
+                        >
+                          <ChevronLeft className="h-5 w-5 text-gray-700" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveIdx(activeIdx === images.length - 1 ? 0 : activeIdx + 1)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow-lg border border-gray-300 opacity-0 transition-all duration-200 group-hover:opacity-100 hover:bg-white hover:cursor-pointer hover:border-blue-500 hover:shadow-xl"
+                          aria-label="Наступне зображення"
+                        >
+                          <ChevronRight className="h-5 w-5 text-gray-700" />
+                        </button>
+                      </>
+                    )}
+                  </>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-gray-400">Немає фото</div>
                 )}
               </div>
-              {/* Thumbnails */}
+              
+              {/* Thumbnails with scrollable container */}
               {images.length > 1 && (
-                <div className="mt-3 grid grid-cols-6 gap-2">
-                  {images.slice(0, 6).map((img, i) => (
-                    <button
-                      type="button"
-                      key={i}
-                      onClick={() => setActiveIdx(i)}
-                      className={`relative aspect-[4/3] overflow-hidden hover:cursor-pointer rounded border ${activeIdx === i ? 'border-[#4563d1]' : 'border-transparent'} bg-gray-100`}
-                    >
-                      {img.type === 'video' ? (
-                        <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-700 bg-gray-200">Відео</div>
-                      ) : (img.url || img.secondaryUrl) ? (
-                        <Image src={img.url || img.secondaryUrl || ''} alt={`thumb-${i}`} fill className="object-cover" />
-                      ) : null}
-                    </button>
-                  ))}
+                <div className="mt-3">
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {images.map((img, i) => (
+                      <button
+                        type="button"
+                        key={i}
+                        onClick={() => setActiveIdx(i)}
+                        className={`relative aspect-[4/3] w-16 flex-shrink-0 overflow-hidden hover:cursor-pointer rounded border ${activeIdx === i ? 'border-[#4563d1]' : 'border-transparent'} bg-gray-100`}
+                      >
+                        {img.type === 'video' ? (
+                          <div className="absolute inset-0 flex items-center justify-center text-xs text-gray-700 bg-gray-200">
+                            <div className="text-center">
+                              <div className="text-[10px]">Відео</div>
+                            </div>
+                          </div>
+                        ) : (img.url || img.secondaryUrl) ? (
+                          <Image src={img.url || img.secondaryUrl || ''} alt={`thumb-${i}`} fill className="object-cover" />
+                        ) : null}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  {/* Image counter */}
+                  <div className="mt-2 text-center text-sm text-gray-500">
+                    {activeIdx + 1} з {images.length}
+                  </div>
                 </div>
               )}
             </div>
@@ -445,7 +878,12 @@ export default function ProductPageTemplate({ productId }: Props) {
                 <div className="flex items-center gap-1 text-gray-700 mt-2">
                   <Store className="h-4 w-4" />
                   <span>Продавець</span>
-                  <span className="text-[#4563d1] font-semibold">{sellerName || 'Магазин'}</span>
+                  <Link 
+                    href={`/seller/${product?.sellerId}`}
+                    className="text-[#4563d1] font-semibold hover:underline cursor-pointer"
+                  >
+                    {sellerName || 'Магазин'}
+                  </Link>
                 </div>
               </div>
 
@@ -455,7 +893,6 @@ export default function ProductPageTemplate({ productId }: Props) {
                   onClick={() => {
                     if (stockBadge.text === 'Немає в наявності') return
                     if (isInCart(productId)) { openCart(); return }
-                    if (!isAuthenticated) { router.push('/auth/login'); return }
                     addToCart(productId, 1)
                   }}
                   className={`rounded-full px-1 py-2 text-sm ${isInCart(productId) ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'text-white bg-[#4563d1] hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
@@ -465,7 +902,6 @@ export default function ProductPageTemplate({ productId }: Props) {
                 <button
                   onClick={() => {
                     if (stockBadge.text === 'Немає в наявності') return
-                    if (!isAuthenticated) { router.push('/auth/login'); return }
                     const sid = typeof product?.sellerId === 'string' ? product.sellerId : ''
                     if (!sid) return
                     router.push(`/checkout/${encodeURIComponent(sid)}?productId=${encodeURIComponent(productId)}&pcs=1`)
@@ -605,17 +1041,70 @@ export default function ProductPageTemplate({ productId }: Props) {
               )}
             </section>
 
-            {/* Seller block placeholder */}
-            <section className="rounded-lg bg-white p-4 shadow-sm">
-              <h3 className="mb-3 text-lg font-semibold text-gray-900">Продавець</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-medium text-gray-900">{sellerName || 'Магазин'}</p>
-                  <p className="text-sm text-gray-500">94% позитивних відгуків</p>
+            {/* Seller block */}
+            <section className="rounded-lg bg-white p-5 shadow-sm">
+              <div className="flex items-start gap-5 -mb-2.5">
+                {/* Seller Avatar */}
+                <div className="flex-shrink-0">
+                  {sellerAvatar ? (
+                    <div className="h-12 w-12 rounded-full overflow-hidden">
+                      <img 
+                        src={sellerAvatar} 
+                        alt={sellerName || 'Продавець'}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ) : (
+                    <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#4563d1] to-[#364ea8] flex items-center justify-center text-white text-lg font-bold">
+                      {(sellerName || 'М').charAt(0)}
+                    </div>
+                  )}
                 </div>
+
+                {/* Seller Info */}
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                <div>
+                      <Link 
+                        href={`/seller/${product?.sellerId}`}
+                        className="text-xl font-bold text-gray-900 mb-0 hover:text-[#4563d1] hover:underline cursor-pointer"
+                      >
+                        {sellerName || 'Магазин'}
+                      </Link>
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-4.5 w-4.5 ${
+                                  i < Math.floor(sellerRating.averageRating) 
+                                    ? 'text-yellow-400 fill-current' 
+                                    : 'text-gray-300'
+                                }`} 
+                              />
+                            ))}
+                </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            {sellerRating.averageRating.toFixed(1)}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <span>{sellerRating.totalReviews} відгуків</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Action Button */}
                 <div className="flex items-center gap-2">
-                  <Link href="#" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Каталог продавця</Link>
-                  <Link href="#" className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">Контакти</Link>
+                  <Link 
+                    href={`/seller/${product?.sellerId}`}
+                    className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50"
+                  >
+                    Каталог продавця
+                  </Link>
                 </div>
               </div>
             </section>
@@ -627,117 +1116,192 @@ export default function ProductPageTemplate({ productId }: Props) {
           {/* Схоже у продавця */}
           <div className="mb-8">
             <h3 className="mb-4 text-base text-lg font-bold text-gray-900">Схоже у продавця</h3>
+            {loadingSimilarSeller ? (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
-              {[
-                { id: 's1', name: 'Диски R19 колісні літні автомобільні', price: '36 940₴/комплект', img: 'https://picsum.photos/seed/201/400/300' },
-                { id: 's2', name: 'Диски R19 литі автомобільні для', price: '36 940₴/комплект', img: 'https://picsum.photos/seed/202/400/300' },
-                { id: 's3', name: 'Диски на авто 17" TOYOTA HILUX', price: '34 770₴/комплект', img: 'https://picsum.photos/seed/203/400/300' },
-                { id: 's4', name: 'Диски на авто 18" BMW 2 G42 3 G20', price: '30 420₴/комплект', img: 'https://picsum.photos/seed/204/400/300' },
-                { id: 's5', name: 'Диски R18 для автомобіля BMW', price: '30 420₴/комплект', img: 'https://picsum.photos/seed/205/400/300' },
-                { id: 's6', name: 'Литі диски R20 TOYOTA Sequoia', price: '47 800₴/комплект', img: 'https://picsum.photos/seed/206/400/300' },
-              ].map((card) => (
-                <div key={card.id} className="rounded-xl bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-md bg-gray-100">
-                    <Image src={card.img} alt={card.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-white p-2.5 shadow-sm">
+                    <div className="relative mb-3 aspect-square w-full animate-pulse rounded-md bg-gray-200" />
+                    <div className="h-4 animate-pulse rounded bg-gray-200 mb-2" />
+                    <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 mb-2" />
+                    <div className="h-6 animate-pulse rounded bg-gray-200" />
                   </div>
-                  <p className="line-clamp-2 min-h-[2.4rem] text-[14px] leading-snug text-gray-900">{card.name}</p>
-                  <div className="mt-2 text-[15px] font-semibold text-gray-900">{card.price}</div>
-                  <button className="mt-2 w-full rounded-full bg-[#4563d1] py-1.5 text-[15px] font-medium text-white hover:bg-[#364ea8]">Купити</button>
+                ))}
+              </div>
+            ) : similarSellerProducts.length > 0 ? (
+              <div className="overflow-x-auto pb-2">
+                <div className="flex gap-4 min-w-max">
+                  {similarSellerProducts.map((product) => (
+                    <div 
+                      key={product.id} 
+                      className="rounded-xl bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow w-[180px] flex-shrink-0"
+                      title={product.name}
+                    >
+                      <div 
+                        className="cursor-pointer"
+                        onClick={() => router.push(`/product/${product.id}`)}
+                      >
+                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-md bg-gray-100">
+                          <Image 
+                            src={productImages[product.id] || "/placeholder-product.jpg"} 
+                            alt={product.name} 
+                            fill 
+                            className="object-cover" 
+                            sizes="180px"
+                          />
+                  </div>
+                        <p className="line-clamp-2 min-h-[2.4rem] text-[14px] leading-snug text-gray-900">{product.name}</p>
+                        <div className="mt-2 text-[15px] font-semibold text-gray-900">
+                          {product.finalPrice || product.price ? `${Math.round(product.finalPrice || product.price)} ₴` : 'Ціна не вказана'}
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          if (isInCart(product.id)) { openCart(); return }
+                          addToCart(product.id, 1)
+                        }}
+                        className={`mt-2 w-full rounded-full py-1.5 text-[15px] font-medium transition-colors ${
+                          isInCart(product.id) 
+                            ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' 
+                            : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'
+                        }`}
+                      >
+                        {isInCart(product.id) ? 'У кошику' : 'Купити'}
+                      </button>
                 </div>
               ))}
             </div>
+              </div>
+            ) : (
+              <p className="text-gray-500">Товари від цього продавця поки що відсутні</p>
+            )}
           </div>
 
           {/* Найкраще у продавця */}
           <div className="mb-8">
-            <h3 className="mb-4 text-base text-lg font-bold  text-gray-900">Найкраще у продавця</h3>
+            <h3 className="mb-4 text-base text-lg font-bold text-gray-900">Найкраще у продавця</h3>
+            {loadingBestSeller ? (
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
-              {[
-                { id: 'b1', label: 'R18', img: 'https://picsum.photos/seed/211/200/200' },
-                { id: 'b2', label: 'R20', img: 'https://picsum.photos/seed/212/200/200' },
-                { id: 'b3', label: 'R19', img: 'https://picsum.photos/seed/213/200/200' },
-                { id: 'b4', label: 'R17', img: 'https://picsum.photos/seed/214/200/200' },
-                { id: 'b5', label: 'R21', img: 'https://picsum.photos/seed/215/200/200' },
-                { id: 'b6', label: 'R22', img: 'https://picsum.photos/seed/216/200/200' },
-                { id: 'b7', label: 'R16', img: 'https://picsum.photos/seed/217/200/200' },
-                { id: 'b8', label: 'R15', img: 'https://picsum.photos/seed/218/200/200' },
-              ].map((item) => (
-                <div key={item.id} className="rounded-xl bg-white pb-2.5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-t-md bg-gray-100">
-                    <Image src={item.img} alt={item.label} fill className="object-cover" sizes="(max-width: 768px) 100vw, 20vw" />
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-white pb-2.5 shadow-sm">
+                    <div className="relative mb-2 aspect-square w-full animate-pulse rounded-t-md bg-gray-200" />
+                    <div className="h-4 animate-pulse rounded bg-gray-200" />
                   </div>
-                  <div className="text-center text-[16px] font-medium text-gray-900">{item.label}</div>
+                ))}
+              </div>
+            ) : bestSellerProducts.length > 0 ? (
+              <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-10">
+                {bestSellerProducts.slice(0, 8).map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="rounded-xl bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow"
+                    title={product.name}
+                  >
+                    <div 
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/product/${product.id}`)}
+                    >
+                      <div className="relative mb-2 aspect-square w-full overflow-hidden rounded-md bg-gray-100">
+                        <Image 
+                          src={productImages[product.id] || "/placeholder-product.jpg"} 
+                          alt={product.name} 
+                          fill 
+                          className="object-cover" 
+                          sizes="(max-width: 768px) 100vw, 20vw"
+                        />
+                      </div>
+                      <div className="text-center text-[14px] font-medium text-gray-900 line-clamp-1">
+                        {product.name}
+                      </div>
+                      <div className="text-center text-[14px] text-gray-600 mt-1">
+                        {(product as any).rating ? `${(product as any).rating.toFixed(1)} ⭐` : 'Без рейтингу'}
+                      </div>
+                    </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (isInCart(product.id)) { openCart(); return }
+                        addToCart(product.id, 1)
+                      }}
+                      className={`mt-2 w-full rounded-full py-1.5 text-[15px] font-medium transition-colors ${
+                        isInCart(product.id) 
+                          ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' 
+                          : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'
+                      }`}
+                    >
+                      {isInCart(product.id) ? 'У кошику' : 'Купити'}
+                    </button>
                 </div>
               ))}
             </div>
+            ) : (
+              <p className="text-gray-500">Товари від цього продавця поки що відсутні</p>
+            )}
           </div>
 
           {/* Переглянуті */}
           <div className="mb-2">
             <h3 className="mb-4 text-base text-lg font-bold text-gray-900">Переглянуті</h3>
+            {loadingViewed ? (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
-              {[
-                { id: 'v1', name: 'Диски R19 литі автомобільні для', price: '36 940₴/комплект', img: 'https://picsum.photos/seed/221/400/300' },
-                { id: 'v2', name: 'Диски R18 для автомобіля BMW', price: '30 420₴/комплект', img: 'https://picsum.photos/seed/222/400/300' },
-                { id: 'v3', name: 'Диск R18 на авто Bmw OBR1567', price: '7 500₴/шт.', img: 'https://picsum.photos/seed/223/400/300' },
-                { id: 'v4', name: 'Диск R19 на авто Bmw OBR1698', price: '9 000₴/шт.', img: 'https://picsum.photos/seed/224/400/300' },
-                { id: 'v5', name: 'R19 оригінал BMW 4 i4 G26 G22', price: '19 600₴/шт.', img: 'https://picsum.photos/seed/225/400/300' },
-                { id: 'v6', name: 'Диски R19 литі автомобільні', price: '36 940₴/комплект', img: 'https://picsum.photos/seed/226/400/300' },
-              ].map((card) => (
-                <div key={card.id} className="rounded-xl bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-md bg-gray-100">
-                    <Image src={card.img} alt={card.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div key={i} className="rounded-xl bg-white p-2.5 shadow-sm">
+                    <div className="relative mb-3 aspect-square w-full animate-pulse rounded-md bg-gray-200" />
+                    <div className="h-4 animate-pulse rounded bg-gray-200 mb-2" />
+                    <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 mb-2" />
+                    <div className="h-6 animate-pulse rounded bg-gray-200" />
                   </div>
-                  <p className="line-clamp-2 min-h-[2.4rem] text-[14px] leading-snug text-gray-900">{card.name}</p>
-                  <div className="mt-2 text-[15px] font-semibold text-gray-900">{card.price}</div>
-                  <button className="mt-2 w-full rounded-full bg-[#4563d1] py-1.5 text-[15px] font-medium text-white hover:bg-[#364ea8]">Купити</button>
+                ))}
+              </div>
+            ) : viewedProducts.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8">
+                {viewedProducts.map((product) => (
+                  <div 
+                    key={product.id} 
+                    className="rounded-xl bg-white p-2.5 shadow-sm hover:shadow-md transition-shadow"
+                    title={product.name}
+                  >
+                    <div 
+                      className="cursor-pointer"
+                      onClick={() => router.push(`/product/${product.id}`)}
+                    >
+                  <div className="relative mb-3 aspect-square w-full overflow-hidden rounded-md bg-gray-100">
+                        <Image 
+                          src={productImages[product.id] || "/placeholder-product.jpg"} 
+                          alt={product.name} 
+                          fill 
+                          className="object-cover" 
+                          sizes="(max-width: 768px) 100vw, 33vw"
+                        />
+                  </div>
+                      <p className="line-clamp-2 min-h-[2.4rem] text-[14px] leading-snug text-gray-900">{product.name}</p>
+                      <div className="mt-2 text-[15px] font-semibold text-gray-900">
+                        {product.finalPrice || product.price ? `${Math.round(product.finalPrice || product.price)} ₴` : 'Ціна не вказана'}
                 </div>
+            </div>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (isInCart(product.id)) { openCart(); return }
+                        addToCart(product.id, 1)
+                      }}
+                      className={`mt-2 w-full rounded-full py-1.5 text-[15px] font-medium transition-colors ${
+                        isInCart(product.id) 
+                          ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' 
+                          : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'
+                      }`}
+                    >
+                      {isInCart(product.id) ? 'У кошику' : 'Купити'}
+                    </button>
+          </div>
               ))}
             </div>
-          </div>
+            ) : (
+              <p className="text-gray-500">Ви ще не переглядали товари</p>
+            )}
+            </div>
 
-          {/* Схоже в інших продавців */}
-          <div className="mt-8">
-            <h3 className="mb-4 text-base text-lg font-bold text-gray-900">Схоже в інших продавців</h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {[
-                { id: 'o1', name: 'Диски R20 на Bmw X3 X5 F15 3 F30 4 F32 5 F10 7 F01 X6', price: 10779, img: 'https://picsum.photos/seed/231/600/600' },
-                { id: 'o2', name: 'Диски 5*120 R20 на Bmw X5 F15 X6 F16 X3 5 F10 7 F01 6 F06', price: 10379, img: 'https://picsum.photos/seed/232/600/600' },
-                { id: 'o3', name: 'Нові диски 763 M Style R19 на BMW', price: 8819, img: 'https://picsum.photos/seed/233/600/600' },
-                { id: 'o4', name: 'Диски R19 колісні литі автомобільні BMW 1000M X1 X2', price: 36950, img: 'https://picsum.photos/seed/234/600/600' },
-                { id: 'o5', name: 'Диски на Авто R19 5×120 BMW X3 X4 X5 X6 E70 F15 F16 F10', price: 8100, img: 'https://picsum.photos/seed/235/600/600' },
-              ].map((p) => (
-                <ApiProductCard
-                  key={p.id}
-                  id={p.id}
-                  name={p.name}
-                  price={p.price}
-                  imageUrl={p.img}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Tags blocks */}
-          <div className="mt-10">
-            <h3 className="mb-2 text-lg font-bold text-gray-900">
-              Популярні виробники в категорії{' '}
-              {crumbs.length ? (
-                <Link href={`/category/${crumbs[crumbs.length - 1].id}`} className="text-[#4563d1] font-bold hover:underline">
-                  {crumbs[crumbs.length - 1].name}
-                </Link>
-              ) : (
-                <span className="text-[#4563d1] font-bold">Категорія</span>
-              )}
-            </h3>
-            <div className="flex flex-wrap gap-4">
-              {['Mak','RC Design','BMW','ZW','DEZENT','GMP Italia','Porshe','Replica','VOIN','Autec','Borbet','RIAL','Brock','Mercedes-Benz','Audi'].map((tag) => (
-                <Link key={tag} href="#" className="rounded-lg bg-white px-3 py-1 text-[14px] text-[#4563d1] hover:bg-gray-50">
-                  {tag}
-                </Link>
-              ))}
-            </div>
-          </div>
+         
         </section>
 
       </main>

@@ -9,7 +9,7 @@ import React, {
   useState,
 } from 'react'
 import Image from 'next/image'
-import { X, Trash2, Minus, Plus, CheckCircle2 } from 'lucide-react'
+import { X, Trash2, Minus, Plus, CheckCircle2, Star } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 
@@ -80,6 +80,7 @@ export default function CartDrawerProvider({ children }: Props) {
   const [showToast, setShowToast] = useState<null | { name: string; imageUrl?: string | null }>(null)
   const [limitReached, setLimitReached] = useState<Record<string, boolean>>({})
   const [sellerInfos, setSellerInfos] = useState<Record<string, StoreInfo>>({})
+  const [sellerRatings, setSellerRatings] = useState<Record<string, { averageRating: number; totalReviews: number }>>({})
   const router = useRouter()
 
   const openCart = useCallback(() => setIsOpen(true), [])
@@ -244,6 +245,46 @@ export default function CartDrawerProvider({ children }: Props) {
       cancelled = true
     }
   }, [items, sellerInfos])
+
+  // Load seller ratings
+  useEffect(() => {
+    const uniqueSellerIds = Array.from(
+      new Set(items.map((it) => it.product?.sellerId).filter((s): s is string => Boolean(s)))
+    )
+    const toFetch = uniqueSellerIds.filter((sid) => !sellerRatings[sid])
+    if (toFetch.length === 0) return
+    let cancelled = false
+    ;(async () => {
+      try {
+        const results = await Promise.all(
+          toFetch.map(async (sid) => {
+            try {
+              const r = await fetch(`https://api.sellpoint.pp.ua/api/ProductReview/GetAllReviewsByStoreId?storeId=${encodeURIComponent(sid)}`)
+              if (!r.ok) return [sid, undefined] as const
+              const data = await r.json()
+              return [sid, {
+                averageRating: data.averageRating || 0,
+                totalReviews: data.totalReviews || 0
+              }] as const
+            } catch {
+              return [sid, undefined] as const
+            }
+          })
+        )
+        if (cancelled) return
+        setSellerRatings((prev) => {
+          const next = { ...prev }
+          for (const [sid, rating] of results) {
+            if (rating) next[sid] = rating
+          }
+          return next
+        })
+      } catch {}
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [items, sellerRatings])
 
   const addToCart = useCallback(
     async (productId: string, pcs: number = 1) => {
@@ -502,9 +543,25 @@ export default function CartDrawerProvider({ children }: Props) {
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-semibold text-gray-900">{sellerInfos[sellerId]?.name || sellerId}</div>
-                        <div className="flex items-center gap-1 text-xs text-gray-600">
-                          <CheckCircle2 className="h-4 w-4 text-[#4563d1]" />
-                          <span>100% позитивних відгуків</span>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                          <div className="flex items-center">
+                            {[...Array(5)].map((_, i) => (
+                              <Star 
+                                key={i} 
+                                className={`h-3 w-3 ${
+                                  i < Math.floor(sellerRatings[sellerId]?.averageRating || 0)
+                                    ? 'text-yellow-400 fill-current' 
+                                    : 'text-gray-300'
+                                }`} 
+                              />
+                            ))}
+                          </div>
+                          <span>
+                            {sellerRatings[sellerId]?.averageRating ? 
+                              `${sellerRatings[sellerId].averageRating.toFixed(1)} (${sellerRatings[sellerId].totalReviews} відгуків)` : 
+                              'Немає відгуків'
+                            }
+                          </span>
                         </div>
                       </div>
                       <button className="ml-auto text-xs text-[#4563d1] hover:underline">&nbsp;</button>

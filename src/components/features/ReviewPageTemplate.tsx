@@ -7,7 +7,6 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ChevronRight, Star, ThumbsUp, ThumbsDown, Store } from 'lucide-react'
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
-import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
 
 type Product = {
@@ -71,7 +70,6 @@ export default function ReviewPageTemplate({ productId }: Props) {
   const [thumbUrl, setThumbUrl] = useState<string | null>(null)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const { addToCart, isInCart, openCart } = useCartDrawer()
-  const { isAuthenticated } = useAuth()
   const router = useRouter()
   
   const normalizedStatus = typeof product?.quantityStatus === 'string' ? product.quantityStatus.toLowerCase() : ''
@@ -353,7 +351,6 @@ export default function ReviewPageTemplate({ productId }: Props) {
                   onClick={() => {
                     if (stockBadge.text === 'Немає в наявності') return
                     if (isInCart(productId)) { openCart(); return }
-                    if (!isAuthenticated) { router.push('/auth/login'); return }
                     addToCart(productId, 1)
                   }}
                   className={`w-full hover:cursor-pointer rounded-full py-2 text-sm ${isInCart(productId) ? 'bg-white border border-[#4563d1] text-[#4563d1] hover:bg-[#4563d1]/5' : 'bg-[#4563d1] text-white hover:bg-[#364ea8]'} ${stockBadge.text === 'Немає в наявності' ? 'bg-gray-300 cursor-not-allowed text-white' : ''}`}
@@ -437,7 +434,20 @@ function ReviewCard({ review, productId, initialLikeCount, initialDislikeCount, 
         if (!r || !r.ok) return
         const u = await r.json()
         if (cancelled) return
-        const name = (typeof u?.fullName === 'string' && u.fullName.trim()) ? u.fullName : (typeof u?.username === 'string' ? u.username : 'Користувач')
+        // Формируем имя из firstName и lastName
+        const firstName = typeof u?.firstName === 'string' ? u.firstName.trim() : ''
+        const lastName = typeof u?.lastName === 'string' ? u.lastName.trim() : ''
+        let name = 'Користувач'
+        
+        if (firstName && lastName) {
+          name = `${firstName} ${lastName}`
+        } else if (firstName) {
+          name = firstName
+        } else if (lastName) {
+          name = lastName
+        } else if (typeof u?.username === 'string' && u.username.trim()) {
+          name = u.username
+        }
         const avatarObj = u?.avatar
         const avatar = (avatarObj && typeof avatarObj?.sourceUrl === 'string') ? avatarObj.sourceUrl : (typeof u?.avatarUrl === 'string' ? u.avatarUrl : null)
         setUserName(name)

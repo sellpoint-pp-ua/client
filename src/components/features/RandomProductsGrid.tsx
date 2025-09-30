@@ -83,7 +83,7 @@ export default function RandomProductsGrid() {
         </button>
         {products.length > PAGE_SIZE && (
           <button
-            className="text-sm text-gray-600 hover:text-[#4563d1]"
+            className="text-sm text-gray-600 hover:text-[#4563d1] hover:cursor-pointer"
             onClick={() => fetchPage(1, true)}
           >
             Сховати зайві товари

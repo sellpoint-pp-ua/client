@@ -115,7 +115,7 @@ export default function AccountSidebar() {
 						</Link>
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+						<Link href="/reviews" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/reviews' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
 							<MessageSquare className="h-5 w-5" />
 							<span>Відгуки</span>
 						</Link>
@@ -145,7 +145,7 @@ export default function AccountSidebar() {
 						</Link>
 					</li>
 					<li>
-						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+						<Link href="/info/pidtrymka" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
 							<Headphones className="h-5 w-5" />
 							<span>Sell point-підтримка</span>
 						</Link>

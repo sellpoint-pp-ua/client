@@ -250,6 +250,20 @@ export default function PayPage() {
         </div>
       </main>
       <SiteFooter />
+      
+      {/* Loading overlay */}
+      {busy && (
+        <div className="fixed inset-0 z-[130] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50" />
+          <div className="relative z-[131] flex flex-col items-center gap-4 rounded-2xl bg-white p-8 shadow-2xl">
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-[#4563d1]"></div>
+            <div className="text-center">
+              <h3 className="text-lg font-semibold text-gray-900">Обробка оплати</h3>
+              <p className="mt-1 text-sm text-gray-600">Будь ласка, зачекайте...</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -6,6 +6,7 @@ import AnimatedLogo from '@/components/shared/AnimatedLogo'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useCartDrawer } from '@/components/cart/CartDrawerProvider'
+import Image from 'next/image'
 
 export default function PaySuccessPage() {
   const { clearCart } = useCartDrawer()
@@ -42,7 +43,18 @@ export default function PaySuccessPage() {
               <Link href="/" aria-label="На головну">
                 <AnimatedLogo className="h-12 mx-auto" />
               </Link>
+             
             </div>
+            <div className="mb-6">
+                    <Image
+                      src="/success.png"
+                      alt="Відгуки"
+                      width={160}
+                      height={160}
+                      className="mx-auto"
+                    />
+                  </div>
+            
             <h1 className="text-2xl font-bold text-gray-900">Дякуємо за покупку!</h1>
             <p className="mt-2 text-gray-600">Очікуйте відправлення товару. Статус можна відстежити у ваших замовленнях. При потребі з Вами зв'яжеться продавець</p>
             {!cleared ? <p className="mt-1 text-[12px] text-gray-500">Очищення кошика…</p> : null}
