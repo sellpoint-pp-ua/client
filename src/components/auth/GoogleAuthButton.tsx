@@ -43,7 +43,7 @@ export default function GoogleAuthButton({
         console.log('Google Client ID:', clientId)
 
         if (!clientId) {
-          setError('Google Client ID не настроен. Проверьте переменные окружения контейнера/хоста.')
+          setError('Помилка сервера.')
           return
         }
 
