@@ -35,5 +35,5 @@ jobs:
             docker stop app-client-container || true
             docker rm app-client-container || true
             docker pull pashhun/app-client-image:latest
-            docker run -d -p 3000:3000 --restart=always --name app-client-container pashhun/app-client-image:latest
+            docker run -d -p 3000:3000 --restart=always --name app-client-container --env-file .env pashhun/app-client-image:latest
 
