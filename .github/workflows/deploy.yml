@@ -32,6 +32,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: 22
           script: |
+            cd /home/pashhun/docker-start-client
             docker stop app-client-container || true
             docker rm app-client-container || true
             docker pull pashhun/app-client-image:latest
