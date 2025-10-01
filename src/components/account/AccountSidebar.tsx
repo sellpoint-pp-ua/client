@@ -1,0 +1,168 @@
+'use client'
+
+import Link from 'next/link'
+import Image from 'next/image'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { Package, Truck, Heart, MessageSquare, Wallet, BadgePercent, Store, Settings, Headphones, HelpCircle, LogOut } from 'lucide-react'
+import { authService } from '@/services/authService'
+
+export default function AccountSidebar() {
+	const [userName, setUserName] = useState<string>('')
+	const [userLogin, setUserLogin] = useState<string>('')
+	const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+	const router = useRouter()
+	const pathname = usePathname()
+
+	useEffect(() => {
+		const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+		if (!token) {
+			setUserName('')
+			setAvatarUrl(null)
+			return
+		}
+		let cancelled = false
+		async function loadCurrentUser() {
+			try {
+				let res = await fetch('https://api.sellpoint.pp.ua/api/User/GetUserByMyId', {
+					headers: { 'Authorization': `Bearer ${token}` },
+					cache: 'no-store',
+				}).catch(() => null as any)
+				if (!res || !res.ok) {
+					res = await fetch('/api/users/current', {
+						headers: { 'Authorization': `Bearer ${token}` },
+						cache: 'no-store',
+					})
+				}
+				if (!res || !res.ok) return
+				const u = await res.json()
+				if (cancelled) return
+				const part = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+				const last = part(u?.lastName)
+				const first = part(u?.firstName)
+				const middle = part(u?.middleName)
+				const fio = [last, first, middle].filter(Boolean).join(' ').trim()
+				const name: string = fio || (typeof u?.username === 'string' ? u.username : (localStorage.getItem('user_display_name') || ''))
+				const loginVal: string = typeof u?.username === 'string' ? u.username : ''
+				const avatarObj = u?.avatar
+				const avatar: string | null = (avatarObj && typeof avatarObj?.sourceUrl === 'string')
+					? avatarObj.sourceUrl
+					: (avatarObj && typeof avatarObj?.compressedUrl === 'string' ? avatarObj.compressedUrl : null)
+				setUserName(name)
+				setUserLogin(loginVal)
+				setAvatarUrl(avatar)
+			} catch {}
+		}
+		loadCurrentUser()
+		function handleProfileUpdated(e: any) {
+			try {
+				const detail = e?.detail || {}
+				if (detail?.fullName) setUserName(detail.fullName)
+				if (typeof detail?.avatarUrl === 'string') setAvatarUrl(detail.avatarUrl)
+			} catch {}
+		}
+		try { window.addEventListener('user:profile-updated', handleProfileUpdated as any) } catch {}
+		return () => { cancelled = true }
+	}, [])
+
+	const initials = useMemo(() => {
+		if (!userName) return '—'
+		const parts = userName.trim().split(/\s+/)
+		const first = parts[0]?.[0] || ''
+		const last = parts.length > 1 ? parts[parts.length - 1][0] : ''
+		return (first + last).toUpperCase() || first.toUpperCase() || '—'
+	}, [userName])
+
+	const handleLogout = useCallback(async () => {
+		try {
+			await authService.serverLogout()
+		} finally {
+			router.push('/')
+		}
+	}, [router])
+
+	return (
+		<aside className="rounded-xl bg-white shadow-sm">
+			{/* Profile header */}
+			<div className="flex items-center gap-3 border-b border-gray-200 p-4">
+				<div className="relative h-10 w-10 overflow-hidden rounded-full bg-gray-200 flex-shrink-0">
+					{avatarUrl ? (
+						<Image src={avatarUrl} alt={userName || 'User'} fill className="object-cover" />
+					) : (
+						<div className="flex h-full w-full items-center justify-center bg-[#4563d1] text-white font-semibold">{initials}</div>
+					)}
+				</div>
+				<div>
+					<p className="text-sm font-medium text-gray-900 leading-tight break-words">{userName || 'Кабінет'}</p>
+					<p className="text-xs text-gray-500">{userLogin ? `${userLogin}` : '\u00A0'}</p>
+				</div>
+			</div>
+
+			{/* Menu */}
+			<nav className="p-2 text-sm">
+				<ul className="space-y-1">
+					<li>
+						<Link href="/orders" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/orders' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
+							<Package className="h-5 w-5" />
+							<span>Мої замовлення</span>
+						</Link>
+					</li>
+					
+					<li>
+						<Link href="/favorites" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/favorites' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
+							<Heart className="h-5 w-5" />
+							<span>Обране</span>
+						</Link>
+					</li>
+					<li>
+						<Link href="/reviews" className={`flex items-center gap-3 rounded-lg px-3 py-2 ${pathname === '/reviews' ? 'text-[#4563d1] bg-[#4563d1]/10' : 'text-gray-700 hover:bg-gray-100'}`}>
+							<MessageSquare className="h-5 w-5" />
+							<span>Відгуки</span>
+						</Link>
+					</li>
+					<li>
+						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<Wallet className="h-5 w-5" />
+							<span>Мій гаманець</span>
+						</Link>
+					</li>
+					<li>
+						<Link href="#" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<BadgePercent className="h-5 w-5" />
+							<span>Знижки та бонуси</span>
+						</Link>
+					</li>
+					<li>
+						<Link href="/requests" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<Store className="h-5 w-5" />
+							<span>Створити магазин на sell point</span>
+						</Link>
+					</li>
+					<li>
+					<Link href="/settings" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<Settings className="h-5 w-5" />
+							<span>Налаштування</span>
+						</Link>
+					</li>
+					<li>
+						<Link href="/info/pidtrymka" className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<Headphones className="h-5 w-5" />
+							<span>Sell point-підтримка</span>
+						</Link>
+					</li>
+					<li className="h-px bg-gray-200 my-1">
+
+					</li>
+					<li>
+						<button onClick={handleLogout} className="w-full hover:cursor-pointer text-left flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 hover:bg-gray-100">
+							<LogOut className="h-5 w-5" />
+							<span>Вийти</span>
+						</button>
+					</li>
+				</ul>
+			</nav>
+		</aside>
+	)
+}
+
+
